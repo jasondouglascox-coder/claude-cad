@@ -241,14 +241,16 @@ def design(p: Params = P) -> Design:
             glints = unary_union([_circle(x, y, max(r, p.eye_glint_min_r)) for x, y, r in k.glints])
             strokes = k.lines.buffer(p.stroke_w / 2, cap_style="round", join_style="round")
             strokes = strokes.difference(eye_polys.buffer(p.eye_clear))  # eyes stay perfect circles
-            details.append(("white", glints.intersection(eye_polys)))
-            details.append(("brown", unary_union([eye_polys, k.nose, strokes]).intersection(inner)))
+            face_top = p.zone_top["paw"]  # eyes, glints and nose stand up to paw height
+            details.append(("white", glints.intersection(eye_polys), face_top))
+            details.append(("brown", unary_union([eye_polys, k.nose]).intersection(inner), face_top))
+            details.append(("brown", strokes.intersection(inner)))
             near_cat = cv2.dilate(zmask("cat").astype(np.uint8), np.ones((int(m.px_mm), int(m.px_mm)), np.uint8)) > 0
             fur_orange = F(T(mask_polys((fur == orange) & near_cat, m, p)))
             patches = _close_open(fur_orange, p.patch_close, p.patch_open).intersection(inner)
             patches = _keep(patches, p, min_w=0.5, min_area=p.min_patch_area)
             # tiny white islands left between orange fur and the lines become orange
-            rest = inner.difference(unary_union([band, patches] + [g for _, g in details]))
+            rest = inner.difference(unary_union([band, patches] + [d_[1] for d_ in details]))
             islands = [g for g in _multi(rest).geoms if g.area < p.min_white_island]
             details.append(("orange", unary_union([patches, *islands])))
         elif z in ("ring", "banner"):
@@ -256,21 +258,23 @@ def design(p: Params = P) -> Design:
             if z == "ring":  # the top paw print gives way to the keyring hole
                 d = MultiPolygon([g for g in _multi(d).geoms
                                   if g.centroid.distance(Point(hole[:2])) > 4.0])
-            details.append(("brown", _keep(d, p)))
+            # ribbon letters stand proud of the yellow; ring paw prints keep the ring's full height
+            details.append(("brown", _keep(d, p), h + p.letter_raise if z == "banner" else h))
 
         taken = band
         pieces.append(("brown", h, _multi(band)))
-        for f, g in details:
+        for f, g, *top in details:
             g = _multi(g.difference(taken))
             if not g.is_empty:
-                pieces.append((f, h, g))
+                pieces.append((f, top[0] if top else h, g))
                 taken = taken.union(g)
         base = _multi(inner.difference(taken))
         slivers = [g for g in base.geoms if g.buffer(-p.min_detail / 2).is_empty]  # unprintable
         if slivers:
             pieces.append(("brown", h, MultiPolygon(slivers)))  # merge into the outline
             base = MultiPolygon([g for g in base.geoms if not g.buffer(-p.min_detail / 2).is_empty])
-        pieces.append((BASE[z], h, base))
+        # the ring's orange sinks below its outlines and paw prints
+        pieces.append((BASE[z], h - p.ring_sink if z == "ring" else h, base))
         higher = higher.union(zones[z])
 
     ring_h = p.zone_top["ring"]

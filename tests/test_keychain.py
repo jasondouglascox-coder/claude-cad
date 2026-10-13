@@ -45,7 +45,8 @@ def test_flat_on_bed_and_size(b):
 
 
 def test_z_levels_are_whole_layers():
-    for z in [P.back_t, P.core_top, *P.zone_top.values()]:
+    for z in [P.back_t, P.core_top, *P.zone_top.values(),
+              P.zone_top["ring"] - P.ring_sink, P.zone_top["banner"] + P.letter_raise]:
         assert round(z / P.layer, 6) == pytest.approx(round(z / P.layer), abs=1e-6), z
 
 
@@ -142,8 +143,8 @@ def test_letters_and_paw_prints_clear_of_outlines(d):
     for zone in ("banner", "ring"):
         vis, h = d.zones[zone], P.zone_top[zone]
         edge = vis.boundary
-        brown = [g for f, z, gs in d.pieces if f == "brown" and z == h
-                 for g in gs.geoms if g.intersects(vis.buffer(-1e-3))]
+        brown = [g for f, z, gs in d.pieces if f == "brown" and z >= h
+                 for g in gs.geoms if vis.buffer(-1e-3).contains(g.representative_point())]
         outline = [g for g in brown if g.distance(edge) < 1e-3]
         details = [g for g in brown if g.distance(edge) >= 1e-3]
         assert details, zone
@@ -177,3 +178,13 @@ def test_ribbon_sketch_lands_on_the_artwork():
     assert ribbon.area > 0.9 * traced.area  # nothing lost in registration
     left, right = rb.tails
     assert abs(left.area - right.area) / right.area < 0.01  # mirrored tails
+
+
+def test_relief_details(d):
+    """Ring paw prints stand above the sunk orange; eyes/nose at paw height; letters above the ribbon."""
+    tops = {(f, z) for f, z, _ in d.pieces}
+    ring, banner, paw = P.zone_top["ring"], P.zone_top["banner"], P.zone_top["paw"]
+    assert ("orange", ring - P.ring_sink) in tops and ("brown", ring) in tops
+    assert ("brown", banner + P.letter_raise) in tops
+    eyes = [g for f, z, g in d.pieces if f == "brown" and z == paw]
+    assert eyes and sum(x.area for x in eyes) > 2 * 3.0  # two eye discs + nose

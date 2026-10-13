@@ -57,6 +57,9 @@ class Params:
     # three print layers: base (backdrop, ribbon flaps) / ring, ribbon, face / paws
     zone_tops: tuple = (("disk", 2.8), ("tail", 2.8), ("ring", 3.6), ("banner", 3.6), ("cat", 3.6), ("paw", 4.2))
 
+    ring_sink: float = 0.4  # ring's orange sits this far below its outlines and paw prints
+    letter_raise: float = 0.4  # ribbon letters stand this far above the yellow
+
     @property
     def zone_top(self) -> dict:
         return dict(self.zone_tops)
