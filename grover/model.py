@@ -1,9 +1,9 @@
-"""Traced logo -> one solid per filament. Print orientation: back face (QR) on Z=0.
+"""Design polygons -> one fused solid per filament. Print orientation: back face (QR) on Z=0.
 
 Z stack:  0 .. back_t        QR panel (white) + modules (brown) inlaid; core elsewhere
           back_t .. core_top core: yellow under the ribbon, orange elsewhere
           core_top .. zone   each color patch rises to its zone's height
-                             (disk < ring < tails < cat < banner < paws)
+                             (disk < ring < tails < ribbon < Grover)
 """
 
 from functools import lru_cache
@@ -11,31 +11,27 @@ from functools import lru_cache
 from build123d import Color, Compound, Part
 
 from . import vector as V
+from .design import design
 from .params import P, Params
-from .trace import maps
 
 COLORS = ("orange", "yellow", "white", "brown")
 
 
 def _fuse(solids: list) -> Part:
-    if len(solids) == 1:
-        out = solids[0]
-    else:
-        out = solids[0].fuse(*solids[1:]).clean()
+    out = solids[0] if len(solids) == 1 else solids[0].fuse(*solids[1:]).clean()
     return Part(out.solids())
 
 
 @lru_cache(maxsize=2)
 def bodies(p: Params = P) -> dict[str, Part]:
-    m = maps(p)
-    lay = V.layout(m, p)
+    d = design(p)
     panel, mods = V.qr_shapes(p)
     panel_white = panel.difference(mods)
 
     solids: dict[str, list] = {c: [] for c in COLORS}
-    for f, z, g in lay["top"]:
+    for f, z, g in d.pieces:
         solids[f] += V.prisms(g, p.core_top, z)
-    for f, g in lay["core"].items():
+    for f, g in d.core.items():
         solids[f] += V.prisms(g.difference(panel), 0.0, p.back_t)
         solids[f] += V.prisms(g, p.back_t, p.core_top)
     solids["white"] += V.prisms(panel_white, 0.0, p.back_t)

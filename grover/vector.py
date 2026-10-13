@@ -1,19 +1,19 @@
-"""Raster maps -> non-overlapping 2D polygons (shapely, mm) -> extruded build123d solids."""
+"""Shapely <-> raster/build123d helpers: mask contours, QR geometry, extruded prisms."""
 
 import cv2
 import numpy as np
 import segno
 import shapely
 from build123d import Face, Part, Pos, Vector, Wire, extrude
-from shapely.geometry import MultiPolygon, Point, Polygon, box
+from shapely.geometry import MultiPolygon, Polygon, box
 from shapely.ops import unary_union
 
 from .params import P, Params
-from .trace import FILAMENTS, ZONES, Maps
+from .trace import Maps
 
 
 def mask_polys(mask: np.ndarray, m: Maps, p: Params = P) -> MultiPolygon:
-    """Smooth sub-pixel outline of a boolean mask, in mm."""
+    """Sub-pixel outline of a boolean mask, in mm. Douglas-Peucker keeps corners sharp."""
     up = p.vec_upsample
     f = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), p.vec_smooth * m.px_mm)
     f = cv2.resize(f, None, fx=up, fy=up, interpolation=cv2.INTER_LINEAR)
@@ -56,14 +56,6 @@ def _multi(g) -> MultiPolygon:
     return MultiPolygon([x for x in getattr(g, "geoms", []) if isinstance(x, Polygon)])
 
 
-def _drop_slivers(g, p: Params) -> MultiPolygon:
-    return MultiPolygon([x for x in _multi(g).geoms if x.area >= p.vec_min_area])
-
-
-def hole(m: Maps, p: Params = P) -> Polygon:
-    return Point(*m.hole_mm).buffer(p.hole_r, quad_segs=32)
-
-
 def qr_shapes(p: Params = P) -> tuple[Polygon, MultiPolygon]:
     """(white panel, dark modules) at the origin, mirrored so the code reads from the back."""
     q = segno.make(p.url, error=p.qr_error, micro=False, boost_error=False)
@@ -76,32 +68,6 @@ def qr_shapes(p: Params = P) -> tuple[Polygon, MultiPolygon]:
     half = (n + 2 * p.qr_quiet) * s / 2
     panel = box(-half, p.qr_y - half, half, p.qr_y + half).buffer(-p.qr_corner).buffer(p.qr_corner, quad_segs=16)
     return panel, _multi(mods)
-
-
-def layout(m: Maps, p: Params = P) -> dict:
-    """{'top': [(filament, top_z, polys)], 'core': {filament: polys}, 'silhouette': polys}"""
-    valid = m.fil > 0
-    sil = _multi(mask_polys(valid, m, p).difference(hole(m, p)))
-
-    order = ["brown", "white", "yellow", "orange"]
-    top, placed = [], Polygon()
-    for f in order:
-        fi = FILAMENTS.index(f) + 1
-        for zi, z in enumerate(ZONES, start=1):
-            mask = (m.fil == fi) & (m.zone == zi)
-            if mask.sum() < 4:
-                continue
-            g = mask_polys(mask, m, p).buffer(p.vec_gap, join_style="mitre")
-            g = _drop_slivers(g.intersection(sil).difference(placed), p)
-            if g.is_empty:
-                continue
-            placed = unary_union([placed, g])
-            top.append((f, p.zone_top[z], g))
-
-    ribbon = np.isin(m.zone, [ZONES.index("banner") + 1, ZONES.index("tail") + 1])
-    yel = _drop_slivers(mask_polys(ribbon, m, p).buffer(p.vec_gap).intersection(sil), p)
-    core = {"yellow": yel, "orange": _drop_slivers(sil.difference(yel), p)}
-    return {"top": top, "core": core, "silhouette": sil, "gaps": sil.difference(placed).area}
 
 
 def face(poly: Polygon) -> Face:
