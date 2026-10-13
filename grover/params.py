@@ -15,6 +15,9 @@ class Params:
 
     # Overall size: ribbon tip to tip
     width: float = 50.0
+    figure_drop: float = 0.10  # Grover + ribbon sit this fraction of the ring diameter lower than the logo
+    tail_tuck: float = 1.5  # mm the tails extend under the ring
+    tail_in: float = 3.0  # mm each ribbon tail slides toward the middle
 
     # Keyring hole through the ring at 12 o'clock (replaces the top paw print)
     hole_r: float = 1.5
@@ -51,7 +54,7 @@ class Params:
     layer: float = 0.2
     back_t: float = 0.8  # QR inlay depth from the bed
     core_top: float = 2.2
-    zone_tops: tuple = (("disk", 2.8), ("ring", 3.2), ("tail", 3.4), ("banner", 3.8), ("cat", 4.2))
+    zone_tops: tuple = (("disk", 2.8), ("tail", 3.0), ("ring", 3.2), ("banner", 3.8), ("cat", 4.2))
 
     @property
     def zone_top(self) -> dict:
@@ -71,6 +74,7 @@ class Params:
     vec_tol: float = 0.04  # mm Douglas-Peucker (keeps corners sharp)
     zone_hole_fill: float = 3.0  # mm^2, smaller holes in a traced zone are misclassified art
     zone_clean: float = 0.45  # mm mitred close/open on traced zone outlines
+    gap_close: float = 0.4  # mm, slivers between sketched and fitted shapes narrower than 2x are filled
     underlap: float = 0.05  # lower zones extend under higher ones so nothing cracks open
 
     # Bambu A1

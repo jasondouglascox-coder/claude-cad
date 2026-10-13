@@ -36,6 +36,27 @@ class Sketch:
     lines: MultiLineString
 
 
+def _straight_inner_side(paw: Polygon, mid_x: float, toe_h: float) -> Polygon:
+    """Square off the paw side facing Grover's chin: vertical from its widest point to the toes."""
+    from shapely.geometry import box
+
+    side = 1 if paw.centroid.x < mid_x else -1  # +1: inner side is the right-hand side
+    pts = np.array(paw.exterior.coords)
+    x_edge = pts[:, 0].max() if side > 0 else pts[:, 0].min()
+    y_edge = pts[np.argmax(pts[:, 0] * side), 1]
+    y_low = paw.bounds[1] + toe_h * 0.6
+    x_c = paw.centroid.x
+    fill = box(min(x_c, x_edge), y_low, max(x_c, x_edge), y_edge).buffer(-0.5).buffer(0.5)  # soft toe corner
+    return unary_union([paw, fill])
+
+
+def _above(p, h: float):
+    from shapely.geometry import box
+
+    b = p.bounds
+    return box(b[0] - 1, b[1] + h, b[2] + 1, b[3] + 1)
+
+
 def chaikin(coords, iters: int = 3, sharp_deg: float = 50.0, closed: bool = False):
     """Corner-cutting smoothing that keeps sharp corners (ear tips, paw corners) sharp."""
     pts = [tuple(c) for c in coords]
@@ -75,7 +96,7 @@ def fit_circle(pts: np.ndarray):
 
 
 @lru_cache(maxsize=4)
-def load(r_out_mm: float, path: str = str(SKETCH)) -> Sketch:
+def load(r_out_mm: float, path: str = str(SKETCH), toe_h: float = 1.4) -> Sketch:
     msp = ezdxf.readfile(path).modelspace()
     raw, circles = [], []
     for e in msp:
@@ -130,12 +151,75 @@ def load(r_out_mm: float, path: str = str(SKETCH)) -> Sketch:
                     glints.append((gx, gy, math.sqrt(f.area / math.pi)))
     nose = Polygon(chaikin(nose.exterior.coords, closed=True))
     paws = [Polygon(chaikin(p.exterior.coords, closed=True)) for p in paws]
+    # straight paw sides: hull everything above the toes (sketch sides bow inward)
+    paws = [unary_union([p.buffer(0), p.buffer(0).intersection(_above(p, toe_h)).convex_hull]) for p in paws]
+    paws = [max(getattr(p, "geoms", [p]), key=lambda g: g.area) for p in paws]
+    paws = [_straight_inner_side(pw, head.centroid.x, toe_h) for pw in paws]
     # interior lines only: the silhouette gets its own generated outline
     def on_outline(g):
         pts = np.array(g.segmentize(0.2).coords)
         near = [head.exterior.distance(shapely.Point(q)) < 0.1 for q in pts]
         return np.mean(near) > 0.6
 
-    lines = MultiLineString([LineString(chaikin(g.coords)) for g in opened if not on_outline(g)] +
+    def on_paw(g):
+        pts = np.array(g.segmentize(0.2).coords)
+        return any(np.mean([pw.exterior.distance(shapely.Point(q)) < 0.4 for q in pts]) > 0.6 for pw in paws)
+
+    lines = MultiLineString([LineString(chaikin(g.coords)) for g in opened
+                             if not on_outline(g) and not on_paw(g)] +
                             [LineString(chaikin(g.coords, closed=True)) for g in closed])
     return Sketch(head=head, paws=paws, eyes=eyes, glints=glints, nose=nose, lines=lines)
+
+
+RIBBON = Path(__file__).resolve().parent.parent / "art" / "ribbon_sketch.dxf"
+
+
+@dataclass
+class Ribbon:
+    front: Polygon  # ribbon front face incl. its outline
+    tails: list  # [left, right]
+    folds: list  # small tucked folds where the front meets each tail
+
+
+def _ribbon_raw(path: str):
+    msp = ezdxf.readfile(path).modelspace()
+    lines = [shapely.set_precision(LineString([(p[0], p[1]) for p in e.get_points("xy")]), 1e-3)
+             for e in msp if e.dxftype() == "LWPOLYLINE"]
+    faces = sorted(polygonize(unary_union(lines)), key=lambda f: -f.area)
+    sil = unary_union(faces)
+    front = faces[0]  # inner face of the ribbon front
+    # the sketch draws both edges of each outline; recover that thickness from the front's top edge
+    cx = front.centroid.x
+    top_in = max(y for x, y in front.exterior.coords if abs(x - cx) < 5)
+    top_out = max(y for g in getattr(sil, "geoms", [sil]) for x, y in g.exterior.coords if abs(x - cx) < 5)
+    t = max(top_out - top_in, 0.0)
+    tail_r = max((f for f in faces[1:] if f.centroid.x > cx and f.area > 50), key=lambda f: f.area)
+    folds = [f for f in faces if f.area < 0.02 * front.area]
+    axis = (min(front.exterior.xy[0]) + max(front.exterior.xy[0])) / 2  # ribbon is symmetric
+    tail_l = scale(tail_r, -1, 1, origin=(axis, 0))
+    grow = lambda g: g.buffer(t, join_style="mitre")
+    return grow(front), [grow(tail_l), grow(tail_r)], [grow(f) for f in folds]
+
+
+@lru_cache(maxsize=4)
+def load_ribbon(target_wkt: str, path: str = str(RIBBON)) -> Ribbon:
+    """Register the ribbon sketch onto the traced ribbon (target, mm) by scale + shift."""
+    from scipy.optimize import minimize
+
+    target = shapely.from_wkt(target_wkt)
+    front, tails, folds = _ribbon_raw(path)
+    src = unary_union([front, *tails])
+    sb, tb = src.bounds, target.bounds
+    s0 = (tb[2] - tb[0]) / (sb[2] - sb[0])
+    x0, y0 = tb[0] - sb[0] * s0, tb[3] - sb[3] * s0
+
+    def place(g, v):
+        return translate(scale(g, v[0], v[0], origin=(0, 0)), v[1], v[2])
+
+    def cost(v):
+        return place(src, v).symmetric_difference(target).area
+
+    v = minimize(cost, [s0, x0, y0], method="Nelder-Mead",
+                 options={"xatol": 1e-4, "fatol": 1e-4, "maxiter": 400}).x
+    return Ribbon(front=place(front, v), tails=[place(t, v) for t in tails],
+                  folds=[place(f, v) for f in folds])

@@ -19,7 +19,7 @@ from .params import P, Params
 ART = Path(__file__).resolve().parent.parent / "art" / "logo.svg"
 
 FILAMENTS = ("orange", "yellow", "white", "brown")  # label ids 1..4; 0 = empty
-ZONES = ("disk", "ring", "tail", "banner", "cat")  # ids ascending height; Grover sits proud of the ribbon
+ZONES = ("disk", "tail", "ring", "banner", "cat")  # ids ascending height: tails tuck under the ring
 
 # art color -> (filament, zone). zone None = linework, resolved from neighbours.
 PALETTE = [

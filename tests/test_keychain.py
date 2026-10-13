@@ -40,7 +40,7 @@ def test_flat_on_bed_and_size(b):
     bb = _bbox(b)
     assert bb.min.Z == pytest.approx(0, abs=1e-6)
     assert bb.max.Z == pytest.approx(max(P.zone_top.values()), abs=1e-6)
-    assert bb.size.X == pytest.approx(P.width, abs=0.6)
+    assert bb.size.X == pytest.approx(P.width - 2 * P.tail_in, abs=0.6)  # tails pulled in
     assert bb.size.X < P.bed - P.bed_margin and bb.size.Y < P.bed - P.bed_margin
 
 
@@ -160,3 +160,20 @@ def test_sketch_parts_found(d):
     assert k.nose.area > 2.0
     for x, y, _ in k.glints:  # every glint sits inside an eye
         assert any(math.hypot(x - ex, y - ey) < er for ex, ey, er in k.eyes)
+
+
+def test_ribbon_sketch_lands_on_the_artwork():
+    from shapely.ops import unary_union
+
+    from grover import sketch
+    from grover.trace import ZONES, maps
+
+    m = maps(P)
+    traced = V.mask_polys((m.zone == ZONES.index("banner") + 1) | (m.zone == ZONES.index("tail") + 1), m, P)
+    # same frame as the sketch registration: compare after centering both on their bounds
+    rb = sketch.load_ribbon(design(P).zones["banner"].wkt)  # registers onto any target; reuse design's own
+    d = design(P)
+    ribbon = unary_union([d.zones["banner"], d.zones["tail"]])
+    assert ribbon.area > 0.9 * traced.area  # nothing lost in registration
+    left, right = rb.tails
+    assert abs(left.area - right.area) / right.area < 0.01  # mirrored tails

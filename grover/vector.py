@@ -84,8 +84,11 @@ def face(poly: Polygon) -> Face:
 def prisms(polys, z0: float, z1: float) -> list:
     # a tiny opening splits pinch points (hole touching outline), which OCC rejects
     polys = _multi(polys).buffer(-0.002, join_style="mitre").buffer(0.002, join_style="mitre")
+    # zero-area slivers (holes or pieces) make OCC solids invalid; they're far below print size
+    polys = [Polygon(g.exterior, [r for r in g.interiors if Polygon(r).area > 1e-3])
+             for g in _multi(polys).geoms if g.area > 1e-3]
     out = []
-    for g in _multi(polys).geoms:
+    for g in polys:
         pr = Pos(0, 0, z0) * extrude(face(g), z1 - z0)
         if not pr.is_valid:
             raise ValueError(f"invalid prism at {g.representative_point()} z={z0}..{z1}")

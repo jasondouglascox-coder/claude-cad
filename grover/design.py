@@ -101,6 +101,32 @@ def _sharp_tip(g, r: float, extend: float = 1.0):
     return unary_union([g, tri]).buffer(0)
 
 
+def _wing(t, side: int, r_out: float, p: Params):
+    """Slide a ribbon tail toward the middle, and carry its lower edge on until it meets the ring."""
+    t = shapely.affinity.translate(t, -side * p.tail_in, 0)
+    pts = np.array(t.exterior.segmentize(0.1).coords)
+    tip = pts[pts[:, 1].argmin()]  # lowest point: bottom of the swallowtail
+    d = (tip[0] - pts[:, 0]) * side  # distance from the tip toward the middle
+    sel = pts[(d > 1.0) & (d < 6.0)]
+    bins = np.round(sel[:, 0] / 0.2)
+    low = np.array([sel[bins == q][sel[bins == q][:, 1].argmin()] for q in np.unique(bins)])
+    a, b = np.polyfit(low[:, 0], low[:, 1], 1)  # the lower edge, y = a x + b
+    A, B, C = 1 + a * a, 2 * a * b, b * b - r_out * r_out
+    disc = B * B - 4 * A * C
+    if disc <= 0:
+        return t
+    roots = [(-B + q * math.sqrt(disc)) / (2 * A) for q in (1, -1)]
+    x_hit = min(roots, key=lambda x: abs(x - tip[0]))  # where the edge reaches the ring
+    x_far = x_hit - side * 1.0
+    x_near = tip[0] - side * 5.0  # still on the tail's own lower edge
+    # above the extended edge, from the tail to just past the ring, below the ring's center line;
+    # the ring is drawn over the tail, so only the sliver between edge and ring shows
+    patch = Polygon([(x_near, a * x_near + b), (x_far, a * x_far + b), (x_far, 0.0), (x_near, 0.0)])
+    patch = patch.difference(Point(0, 0).buffer(r_out - p.tail_tuck, quad_segs=64))
+    below = Polygon([(x_near, a * x_near + b), (x_far, a * x_far + b), (x_far, -100), (x_near, -100)])
+    return unary_union([t.difference(below), patch])  # one straight lower edge
+
+
 def _close_open(g, close: float, open_: float, **kw):
     """Fill gaps narrower than 2*close, then drop slivers thinner than 2*open_."""
     g = g.buffer(close, **kw).buffer(-close, **kw)
@@ -133,16 +159,46 @@ def design(p: Params = P) -> Design:
                                             join_style="mitre", mitre_limit=5.0), p.zone_hole_fill)
            for z in ("tail", "cat", "banner")},
     }
+    # The ribbon comes from its hand-traced sketch, registered onto the traced ribbon.
+    rb = sketch.load_ribbon(unary_union([zones["banner"], zones["tail"]]).wkt)
+
+    # Grover and the ribbon sit lower in the ring than in the logo, filling the orange below
+    dy = -p.figure_drop * 2 * r_out
+
+    def F(g):
+        return shapely.affinity.translate(g, 0, dy)
+
+    zones["banner"] = F(rb.front)
+    wings = [_wing(F(t), side, r_out, p) for t, side in zip(rb.tails, (-1, 1))]
+    tails = unary_union([*wings, *[F(f) for f in rb.folds]]).difference(zones["banner"])
+    # tails tuck under the ring (which is drawn over them), so extend them beneath it
+    zones["tail"] = unary_union([tails, tails.buffer(p.tail_tuck, **MITRE).intersection(zones["ring"])])
+    # hairline gaps where the sketched tails meet the fitted ring belong to the tails
+    every = unary_union(list(zones.values()))
+    gaps = every.buffer(p.gap_close, **MITRE).buffer(-p.gap_close, **MITRE).difference(every)
+    zones["tail"] = unary_union([zones["tail"], gaps.buffer(0.01)])
+
     # Grover comes from the hand-traced sketch: his head is hidden behind the ribbon except
     # for the paws, which rest on top of it.
     k = sketch.load(round(r_out, 6))
+    k = sketch.Sketch(head=F(k.head), paws=[F(g) for g in k.paws], nose=F(k.nose), lines=F(k.lines),
+                      eyes=[(x, y + dy, r) for x, y, r in k.eyes],
+                      glints=[(x, y + dy, r) for x, y, r in k.glints])
     head = k.head
     top = head.bounds[3]
     ear_box = box(-100, top - p.ear_len, 100, 100)
     ears = [_sharp_tip(head.intersection(ear_box).intersection(b), p.ear_tip_trim)
             for b in (box(-100, -100, head.centroid.x, 100), box(head.centroid.x, -100, 100, 100))]
     head = unary_union([head.difference(ear_box), *ears])
-    zones["cat"] = unary_union([head.difference(zones["banner"]), *k.paws])
+    above = max(_multi(head.difference(zones["banner"])).geoms, key=lambda g: g.area)  # drop the bit below the ribbon
+    zones["cat"] = unary_union([above, *k.paws])
+
+    # specks of the backdrop circle peeking out under the ribbon become ring
+    shown = _multi(zones["disk"].difference(unary_union([zones[z] for z in ("tail", "banner", "cat")])))
+    specks = [g for g in shown.geoms if g.area < p.min_zone_area * 3]
+    if specks:
+        zones["disk"] = zones["disk"].difference(unary_union(specks).buffer(0.01))
+        zones["ring"] = unary_union([zones["ring"], *specks])
 
     order = list(ZONES)  # ascending height
     # lower zones reach slightly under higher ones so the stack never cracks open
@@ -157,7 +213,8 @@ def design(p: Params = P) -> Design:
     world = box(-100, -100, 100, 100)
 
     def art(f: int, z: str):
-        return T(mask_polys((m.fil == f) & zmask(z), m, p))
+        g = T(mask_polys((m.fil == f) & zmask(z), m, p))
+        return F(g) if z in ("tail", "banner", "cat") else g
 
     # Grover's fur colors with the art linework filled in from the nearest fur color,
     # so orange/white patches run right up to the generated outline.
@@ -182,9 +239,12 @@ def design(p: Params = P) -> Design:
             glints = unary_union([_circle(x, y, max(r, p.eye_glint_min_r)) for x, y, r in k.glints])
             strokes = k.lines.buffer(p.stroke_w / 2, cap_style="round", join_style="round")
             strokes = strokes.difference(eye_polys.buffer(p.eye_clear))  # eyes stay perfect circles
+            # paw outlines sit inside the paw, matching the outline where the paw meets the ribbon
+            strokes = unary_union([strokes, *[pw.difference(pw.buffer(-p.line_w, **MITRE)) for pw in k.paws]])
             details.append(("white", glints.intersection(eye_polys)))
             details.append(("brown", unary_union([eye_polys, k.nose, strokes]).intersection(inner)))
-            fur_orange = T(mask_polys((fur == orange) & (m.zone > 0), m, p))
+            near_cat = cv2.dilate(zmask("cat").astype(np.uint8), np.ones((int(m.px_mm), int(m.px_mm)), np.uint8)) > 0
+            fur_orange = F(T(mask_polys((fur == orange) & near_cat, m, p)))
             patches = _close_open(fur_orange, p.patch_close, p.patch_open).intersection(inner)
             patches = _keep(patches, p, min_w=0.5, min_area=p.min_patch_area)
             # tiny white islands left between orange fur and the lines become orange
