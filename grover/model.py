@@ -8,7 +8,7 @@ Z stack:  0 .. back_t        QR panel (white) + modules (brown) inlaid; core els
 
 from functools import lru_cache
 
-from build123d import Color, Compound, Part
+from build123d import Align, Color, Compound, Cone, Part, Pos
 from shapely.ops import unary_union
 
 from . import vector as V
@@ -51,9 +51,18 @@ def bodies(p: Params = P) -> dict[str, Part]:
     solids["white"] += V.prisms(panel_white, 0.0, p.back_t)
     solids["brown"] += V.prisms(mods, 0.0, p.back_t)
 
+    # chamfer both ends of the keyring hole so a clasp slides in instead of catching an edge
+    hx, hy, hr = d.hole
+    c_ = p.hole_chamfer
+    top = p.zone_top["ring"] - p.ring_sink
+    cutter = (Pos(hx, hy, top - c_) * Cone(hr, hr + c_ + 0.05, c_ + 0.05, align=(Align.CENTER, Align.CENTER, Align.MIN))
+              + Pos(hx, hy, -0.05) * Cone(hr + c_ + 0.05, hr, c_ + 0.05, align=(Align.CENTER, Align.CENTER, Align.MIN)))
+
     out = {}
     for c in COLORS:
         body = _fuse(solids[c])
+        if body.bounding_box().max.Z > 0 and (body & cutter).volume > 1e-6:
+            body = Part((body - cutter).solids())
         body.label = f"grover_{c}"
         body.color = Color(*getattr(p, c))
         out[c] = body

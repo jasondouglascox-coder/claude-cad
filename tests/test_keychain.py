@@ -46,7 +46,7 @@ def test_flat_on_bed_and_size(b):
 
 def test_z_levels_are_whole_layers():
     for z in [P.back_t, P.core_top, *P.zone_top.values(),
-              P.zone_top["ring"] - P.ring_sink, P.zone_top["banner"] + P.letter_raise]:
+              P.zone_top["ring"] - P.ring_sink, P.zone_top["banner"] + P.letter_raise, P.eye_top]:
         assert round(z / P.layer, 6) == pytest.approx(round(z / P.layer), abs=1e-6), z
 
 
@@ -95,6 +95,11 @@ def test_hole_through_all_bodies(b, d):
     from build123d import Cylinder, Pos
 
     probe = Pos(*d.hole[:2], 2.5) * Cylinder(P.hole_r - 0.05, 6)
+    # and the hole is flush (no raised lip) with chamfered ends: wider at both faces
+    top = P.zone_top["ring"] - P.ring_sink
+    for z in (0.1, top - 0.1):
+        ring_probe = Pos(*d.hole[:2], z) * Cylinder(P.hole_r + 0.2, 0.05)
+        assert all((body & ring_probe).volume < 1e-4 for body in b.values()), z
     for c, body in b.items():
         assert (body & probe).volume < 1e-3, c
 
@@ -186,5 +191,8 @@ def test_relief_details(d):
     ring, banner, paw = P.zone_top["ring"], P.zone_top["banner"], P.zone_top["paw"]
     assert ("orange", ring - P.ring_sink) in tops and ("brown", ring) in tops
     assert ("brown", banner + P.letter_raise) in tops
-    eyes = [g for f, z, g in d.pieces if f == "brown" and z == paw]
-    assert eyes and sum(x.area for x in eyes) > 2 * 3.0  # two eye discs + nose
+    eyes = [g for f, z, g in d.pieces if f == "brown" and z == P.eye_top]
+    assert eyes and sum(x.area for x in eyes) > 2 * 10.0  # two eye discs
+    assert P.zone_top["cat"] < P.eye_top < paw
+    nose = [g for f, z, g in d.pieces if f == "brown" and z == paw]
+    assert nose and sum(x.area for x in nose) > 2.0

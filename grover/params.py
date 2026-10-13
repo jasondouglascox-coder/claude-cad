@@ -20,8 +20,9 @@ class Params:
     tail_in: float = 3.0  # mm each ribbon tail slides toward the middle
 
     # Keyring hole through the ring at 12 o'clock (replaces the top paw print)
-    hole_r: float = 1.5
+    hole_r: float = 1.75  # 3.5 mm: room for a lobster-clasp hook (~2 mm wire)
     hole_wall: float = 2.0  # plastic between the hole and the outer edge
+    hole_chamfer: float = 0.5  # 45 deg on both faces
 
     # Linework
     line_w: float = 0.5  # generated outline on the raised side of every relief step
@@ -59,6 +60,10 @@ class Params:
 
     ring_sink: float = 0.4  # ring's orange sits this far below its outlines and paw prints
     letter_raise: float = 0.4  # ribbon letters stand this far above the yellow
+    letter_smooth: float = 0.1  # mm round smoothing of the traced letter outlines
+    letter_tol: float = 0.01  # mm trace tolerance for letters (finer than vec_tol)
+    letter_blur: float = 0.08  # mm blur before tracing letters (melts pixel stair-steps)
+    eye_top: float = 3.8  # eyes just above the face (3.6), below the nose (paw height)
 
     @property
     def zone_top(self) -> dict:

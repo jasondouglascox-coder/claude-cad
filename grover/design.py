@@ -11,7 +11,7 @@ Output pieces are disjoint (filament, top_z, polygons) that tile the silhouette.
 """
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 
 import cv2
@@ -215,7 +215,9 @@ def design(p: Params = P) -> Design:
     world = box(-100, -100, 100, 100)
 
     def art(f: int, z: str):
-        g = T(mask_polys((m.fil == f) & zmask(z), m, p))
+        # letters keep a finer trace (curves stay curves); everything else uses the default
+        pz = replace(p, vec_tol=p.letter_tol, vec_smooth=p.letter_blur) if z == "banner" else p
+        g = T(mask_polys((m.fil == f) & zmask(z), m, pz))
         return F(g) if z in ("tail", "banner", "cat") else g
 
     # Grover's fur colors with the art linework filled in from the nearest fur color,
@@ -241,9 +243,10 @@ def design(p: Params = P) -> Design:
             glints = unary_union([_circle(x, y, max(r, p.eye_glint_min_r)) for x, y, r in k.glints])
             strokes = k.lines.buffer(p.stroke_w / 2, cap_style="round", join_style="round")
             strokes = strokes.difference(eye_polys.buffer(p.eye_clear))  # eyes stay perfect circles
-            face_top = p.zone_top["paw"]  # eyes, glints and nose stand up to paw height
-            details.append(("white", glints.intersection(eye_polys), face_top))
-            details.append(("brown", unary_union([eye_polys, k.nose]).intersection(inner), face_top))
+            # nose stands up to paw height; eyes (with glints) sit between face and nose
+            details.append(("white", glints.intersection(eye_polys), p.eye_top))
+            details.append(("brown", k.nose.intersection(inner), p.zone_top["paw"]))
+            details.append(("brown", eye_polys.intersection(inner), p.eye_top))
             details.append(("brown", strokes.intersection(inner)))
             near_cat = cv2.dilate(zmask("cat").astype(np.uint8), np.ones((int(m.px_mm), int(m.px_mm)), np.uint8)) > 0
             fur_orange = F(T(mask_polys((fur == orange) & near_cat, m, p)))
@@ -258,6 +261,9 @@ def design(p: Params = P) -> Design:
             if z == "ring":  # the top paw print gives way to the keyring hole
                 d = MultiPolygon([g for g in _multi(d).geoms
                                   if g.centroid.distance(Point(hole[:2])) > 4.0])
+            if z == "banner":  # smooth the traced letter edges (round open + close)
+                r = p.letter_smooth
+                d = d.buffer(r).buffer(-2 * r).buffer(r).intersection(clear)
             # ribbon letters stand proud of the yellow; ring paw prints keep the ring's full height
             details.append(("brown", _keep(d, p), h + p.letter_raise if z == "banner" else h))
 
@@ -277,7 +283,8 @@ def design(p: Params = P) -> Design:
         pieces.append((BASE[z], h - p.ring_sink if z == "ring" else h, base))
         higher = higher.union(zones[z])
 
-    ring_h = p.zone_top["ring"]
+    # the ring around the keyring hole is flush with the ring's orange: no lip for the clasp to catch
+    ring_h = p.zone_top["ring"] - p.ring_sink
     pieces.append(("brown", ring_h, _multi(hole_band.difference(hole_poly).intersection(sil))))
     pieces = [(f, h, _multi(g.intersection(sil))) for f, h, g in pieces]
     pieces = [(f, h, g) for f, h, g in pieces if not g.is_empty]
