@@ -26,15 +26,12 @@ class Params:
     min_detail: float = 0.4  # mm, brown/white details thinner than this are dropped
     min_detail_area: float = 0.25  # mm^2
     eye_glint_min_r: float = 0.3
-    eye_r_range: tuple = (1.2, 3.5)  # mm, round brown blobs this size in the face are eyes
+    stroke_w: float = 0.45  # sketch lines inside Grover (paw tops, inner ears, mouth)
 
     # Grover
-    ear_keep: float = 7.0  # mm below the ear tips that keep sharp (unsmoothed) outlines
-    cheek_smooth: float = 0.5  # mm round close/open on the rest of his outline
-    ear_simplify: float = 0.6  # mm, ears may deviate this far from the art (fur jogs removed)
-    ear_tip_trim: float = 1.5  # mm, hull vertices this close to the apex are dropped -> one sharp tip
-    mouth_reach: float = 2.0  # mm around the nose where thin lines are mouth, not whiskers
-    mouth_thicken: float = 0.12  # mm each side, so mouth lines reach a printable width
+    ear_len: float = 4.0  # mm below the top of the head that counts as ear (tip sharpening)
+    ear_tip_trim: float = 1.6  # mm around each ear tip rebuilt from its straight edges
+    eye_clear: float = 0.6  # mm around each eye where sketch lines are dropped
 
     # Fur patches (orange on Grover's white face)
     patch_close: float = 0.5  # mm, fills white fur strokes inside orange

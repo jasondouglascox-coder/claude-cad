@@ -21,6 +21,7 @@ from shapely.ops import unary_union
 
 from .params import P, Params
 from .trace import FILAMENTS, ZONES, Maps, maps, nearest_fill
+from . import sketch
 from .vector import _multi, mask_polys
 
 BASE = {"disk": "white", "ring": "orange", "tail": "yellow", "cat": "white", "banner": "yellow"}
@@ -70,36 +71,34 @@ def _fill_small_holes(g, max_area: float) -> MultiPolygon:
                          for x in _multi(g).geoms])
 
 
-def _sharp_tip(g, r: float, reach: float = 4.0, extend: float = 0.5):
-    """Rebuild an ear's tip where its two straight edges meet (art fur notches removed)."""
+def _sharp_tip(g, r: float, extend: float = 1.0):
+    """Rebuild an ear tip: continue each edge (its direction just below the tip) until they meet."""
     g = g.buffer(0)
-    pts = np.array([q for x in _multi(g.segmentize(0.1)).geoms for q in x.exterior.coords])
+    pts = np.array([q for x in _multi(g.segmentize(0.05)).geoms for q in x.exterior.coords])
     top = pts[pts[:, 1].argmax()]
     d = np.hypot(*(pts - top).T)
-    win = pts[(d >= r) & (d <= reach) & (pts[:, 1] > top[1] - reach)]
-    sides = [win[win[:, 0] < top[0]], win[win[:, 0] > top[0]]]
-    if any(len(s) < 5 for s in sides):
+    band_ = pts[(d >= r) & (d <= r + 1.2) & (pts[:, 1] > top[1] - r - 1.5)]
+    sides = [band_[band_[:, 0] < top[0]], band_[band_[:, 0] > top[0]]]
+    if any(len(s_) < 4 for s_ in sides):
         return g
-
-    def line(q):  # point + unit direction (PCA)
-        c = q.mean(0)
-        _, _, vt = np.linalg.svd(q - c)
-        return c, vt[0]
-
-    (c1, d1), (c2, d2) = line(sides[0]), line(sides[1])
-    A = np.c_[d1, -d2]
+    rays = []
+    for s_ in sides:
+        c = s_.mean(0)
+        _, _, vt = np.linalg.svd(s_ - c)
+        v = vt[0] if np.dot(vt[0], top - c) > 0 else -vt[0]  # point toward the tip
+        start = s_[np.argmin(np.abs(np.hypot(*(s_ - top).T) - r))]  # on the outline, r from the tip
+        rays.append((start, v))
+    (c1, v1), (c2, v2) = rays
+    A = np.c_[v1, -v2]
     if abs(np.linalg.det(A)) < 1e-6:
         return g
     t = np.linalg.solve(A, c2 - c1)
-    apex = c1 + t[0] * d1
+    apex = c1 + t[0] * v1
     dist = np.hypot(*(apex - top))
-    if dist > extend:  # don't grow a needle: stop a little past the art's tip
+    if dist > extend:
         apex = top + (apex - top) * extend / dist
-    zone = Point(*top).buffer(r, quad_segs=32)
-    base = _multi(g.difference(zone))
-    rim = [q for x in base.geoms for q in x.exterior.coords if math.dist(q, top) <= r + 1e-3]
-    tri = Polygon([tuple(apex), *rim]).convex_hull
-    return unary_union([base, tri]).buffer(0)
+    tri = Polygon([tuple(c1), tuple(apex), tuple(c2)]).buffer(0)
+    return unary_union([g, tri]).buffer(0)
 
 
 def _close_open(g, close: float, open_: float, **kw):
@@ -134,16 +133,16 @@ def design(p: Params = P) -> Design:
                                             join_style="mitre", mitre_limit=5.0), p.zone_hole_fill)
            for z in ("tail", "cat", "banner")},
     }
-    # Grover's cheeks: round-smooth the fur tufts; above the eye line keep the sharp ears
-    cat = zones["cat"]
-    ears_y = cat.bounds[3] - p.ear_keep
-    soft = _close_open(cat, p.cheek_smooth, p.cheek_smooth)
-    ears = cat.intersection(box(-100, ears_y - 0.5, 100, 100)).simplify(p.ear_simplify)
-    ears = ears.intersection(cat.buffer(0.05)).intersection(box(-100, ears_y - 0.3, 100, 100))
-    cx_cat = cat.centroid.x
-    ears = unary_union([_sharp_tip(ears.intersection(b), p.ear_tip_trim)
-                        for b in (box(-100, -100, cx_cat, 100), box(cx_cat, -100, 100, 100))])
-    zones["cat"] = unary_union([soft.difference(box(-100, ears_y, 100, 100)), ears])
+    # Grover comes from the hand-traced sketch: his head is hidden behind the ribbon except
+    # for the paws, which rest on top of it.
+    k = sketch.load(round(r_out, 6))
+    head = k.head
+    top = head.bounds[3]
+    ear_box = box(-100, top - p.ear_len, 100, 100)
+    ears = [_sharp_tip(head.intersection(ear_box).intersection(b), p.ear_tip_trim)
+            for b in (box(-100, -100, head.centroid.x, 100), box(head.centroid.x, -100, 100, 100))]
+    head = unary_union([head.difference(ear_box), *ears])
+    zones["cat"] = unary_union([head.difference(zones["banner"]), *k.paws])
 
     order = list(ZONES)  # ascending height
     # lower zones reach slightly under higher ones so the stack never cracks open
@@ -178,42 +177,17 @@ def design(p: Params = P) -> Design:
 
         details = []  # (filament, polys), earlier wins
         if z == "cat":
-            eye_c = []
-            for g in _keep(art(brown, z).intersection(clear), p).geoms:
-                (ex, ey), er = cv2.minEnclosingCircle(np.array(g.exterior.coords, np.float32))
-                round_ = 4 * math.pi * g.area / g.exterior.length ** 2
-                if p.eye_r_range[0] <= er <= p.eye_r_range[1] and round_ > 0.6:
-                    eye_c.append((g.area, float(ex), float(ey), float(er)))
-            eyes = sorted(e[1:] for e in sorted(eye_c, reverse=True)[:2])
+            eyes = k.eyes
             eye_polys = unary_union([_circle(*e) for e in eyes])
-            glints = []
-            for g in art(white, z).geoms:
-                c = g.centroid
-                for ex, ey, er in eyes:
-                    if math.hypot(c.x - ex, c.y - ey) < er - 0.2 and g.area > math.pi * 0.15 ** 2:
-                        gr = max(p.eye_glint_min_r, math.sqrt(g.area / math.pi))
-                        gr = min(gr, er - math.hypot(c.x - ex, c.y - ey) - 0.3)
-                        if gr > 0.2:
-                            glints.append(_circle(c.x, c.y, gr))
-            details.append(("white", unary_union(glints)))
-            details.append(("brown", eye_polys.intersection(inner)))
-            other = art(brown, z).difference(eye_polys.buffer(0.3)).intersection(clear)
-            solid = _keep(other.buffer(-p.min_detail / 2).buffer(p.min_detail / 2), p)  # nose etc.
-            nose = max(solid.geoms, key=lambda g: g.area) if not solid.is_empty else None
-            if nose is not None:  # a clean solid nose, no glint
-                solid = MultiPolygon([g.convex_hull if g is nose else Polygon(g.exterior) for g in solid.geoms])
-                nose = nose.convex_hull
-            mouth = Polygon()
-            if nose is not None:  # thin lines right under the nose are the mouth; elsewhere whiskers
-                near = _circle(nose.centroid.x, nose.centroid.y - 0.8, p.mouth_reach)
-                lines = other.difference(solid).intersection(near)
-                mouth = _keep(lines.buffer(p.mouth_thicken), p, min_w=0.3, min_area=0.05)
-            face_lines = _fill_small_holes(unary_union([solid, mouth]), 1.0)  # no glint trapped in the nose
-            details.append(("brown", face_lines.intersection(clear)))
-            fur_orange = T(mask_polys((fur == orange) & zmask(z), m, p))
+            glints = unary_union([_circle(x, y, max(r, p.eye_glint_min_r)) for x, y, r in k.glints])
+            strokes = k.lines.buffer(p.stroke_w / 2, cap_style="round", join_style="round")
+            strokes = strokes.difference(eye_polys.buffer(p.eye_clear))  # eyes stay perfect circles
+            details.append(("white", glints.intersection(eye_polys)))
+            details.append(("brown", unary_union([eye_polys, k.nose, strokes]).intersection(inner)))
+            fur_orange = T(mask_polys((fur == orange) & (m.zone > 0), m, p))
             patches = _close_open(fur_orange, p.patch_close, p.patch_open).intersection(inner)
             patches = _keep(patches, p, min_w=0.5, min_area=p.min_patch_area)
-            # tiny white islands left between orange fur and the outline become orange
+            # tiny white islands left between orange fur and the lines become orange
             rest = inner.difference(unary_union([band, patches] + [g for _, g in details]))
             islands = [g for g in _multi(rest).geoms if g.area < p.min_white_island]
             details.append(("orange", unary_union([patches, *islands])))

@@ -150,3 +150,13 @@ def test_letters_and_paw_prints_clear_of_outlines(d):
         for g in details:
             gap = min(g.distance(o) for o in outline)
             assert gap >= P.detail_gap - 0.02, (zone, g.centroid, gap)
+
+
+def test_sketch_parts_found(d):
+    from grover.sketch import load
+
+    k = load(round(d.ring[0], 6))
+    assert len(k.paws) == 2 and len(k.eyes) == 2
+    assert k.nose.area > 2.0
+    for x, y, _ in k.glints:  # every glint sits inside an eye
+        assert any(math.hypot(x - ex, y - ey) < er for ex, ey, er in k.eyes)
