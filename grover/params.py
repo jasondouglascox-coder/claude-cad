@@ -54,7 +54,8 @@ class Params:
     layer: float = 0.2
     back_t: float = 0.8  # QR inlay depth from the bed
     core_top: float = 2.2
-    zone_tops: tuple = (("disk", 2.8), ("tail", 3.0), ("ring", 3.2), ("banner", 3.8), ("cat", 4.2))
+    # three print layers: base (backdrop, ribbon flaps) / ring, ribbon, face / paws
+    zone_tops: tuple = (("disk", 2.8), ("tail", 2.8), ("ring", 3.6), ("banner", 3.6), ("cat", 3.6), ("paw", 4.2))
 
     @property
     def zone_top(self) -> dict:

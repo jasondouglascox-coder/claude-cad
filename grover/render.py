@@ -28,14 +28,20 @@ def _faces(bodies: dict, p: Params, up: bool):
 
 
 def flat(bodies: dict, path: str, p: Params = P, up: bool = True, px: int = 2400, bg="white"):
-    fig = plt.figure(figsize=(px / 200, px / 200 * 44 / 54), dpi=200)
+    from build123d import Compound
+
+    bb = Compound(children=list(bodies.values())).bounding_box()
+    x0, x1, y0, y1 = bb.min.X - 1.5, bb.max.X + 1.5, bb.min.Y - 1.5, bb.max.Y + 1.5
+    if not up:
+        x0, x1 = -x1, -x0
+    fig = plt.figure(figsize=(px / 200, px / 200 * (y1 - y0) / (x1 - x0)), dpi=200)
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_facecolor(bg)
     fig.patch.set_facecolor(bg)
     for _, rgb, polys in _faces(bodies, p, up):
         ax.add_collection(PolyCollection(polys, facecolors=[rgb], edgecolors=[rgb], linewidths=0.15))
-    ax.set_xlim(-27, 27)
-    ax.set_ylim(-23, 21)
+    ax.set_xlim(x0, x1)
+    ax.set_ylim(y0, y1)
     ax.set_aspect("equal")
     ax.axis("off")
     fig.savefig(path, facecolor=bg)

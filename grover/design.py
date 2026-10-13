@@ -1,6 +1,7 @@
 """Vector composition of the keychain face (mm, origin = ring center).
 
-Relief zones (ascending height): disk < ring < tail < banner < cat (paws rest over the ribbon).
+Zones in front-to-back priority: disk < tail < ring < banner < cat < paw, printed as three layers
+(backdrop + ribbon flaps / ring + ribbon + face / paws). Outlines go on the higher-priority side.
   - ring / disk are exact fitted circles; the other zones are traced and simplified with
     Douglas-Peucker, which keeps ear tips and ribbon corners sharp.
   - Every relief step gets a constant-width brown outline on its raised side (mitred offset).
@@ -24,7 +25,7 @@ from .trace import FILAMENTS, ZONES, Maps, maps, nearest_fill
 from . import sketch
 from .vector import _multi, mask_polys
 
-BASE = {"disk": "white", "ring": "orange", "tail": "yellow", "cat": "white", "banner": "yellow"}
+BASE = {"disk": "white", "ring": "orange", "tail": "yellow", "cat": "white", "banner": "yellow", "paw": "white"}
 MITRE = dict(join_style="mitre", mitre_limit=2.0)
 
 
@@ -191,7 +192,8 @@ def design(p: Params = P) -> Design:
             for b in (box(-100, -100, head.centroid.x, 100), box(head.centroid.x, -100, 100, 100))]
     head = unary_union([head.difference(ear_box), *ears])
     above = max(_multi(head.difference(zones["banner"])).geoms, key=lambda g: g.area)  # drop the bit below the ribbon
-    zones["cat"] = unary_union([above, *k.paws])
+    zones["cat"] = above
+    zones["paw"] = unary_union(k.paws)
 
     # specks of the backdrop circle peeking out under the ribbon become ring
     shown = _multi(zones["disk"].difference(unary_union([zones[z] for z in ("tail", "banner", "cat")])))
@@ -239,8 +241,6 @@ def design(p: Params = P) -> Design:
             glints = unary_union([_circle(x, y, max(r, p.eye_glint_min_r)) for x, y, r in k.glints])
             strokes = k.lines.buffer(p.stroke_w / 2, cap_style="round", join_style="round")
             strokes = strokes.difference(eye_polys.buffer(p.eye_clear))  # eyes stay perfect circles
-            # paw outlines sit inside the paw, matching the outline where the paw meets the ribbon
-            strokes = unary_union([strokes, *[pw.difference(pw.buffer(-p.line_w, **MITRE)) for pw in k.paws]])
             details.append(("white", glints.intersection(eye_polys)))
             details.append(("brown", unary_union([eye_polys, k.nose, strokes]).intersection(inner)))
             near_cat = cv2.dilate(zmask("cat").astype(np.uint8), np.ones((int(m.px_mm), int(m.px_mm)), np.uint8)) > 0
@@ -278,7 +278,8 @@ def design(p: Params = P) -> Design:
     pieces = [(f, h, _multi(g.intersection(sil))) for f, h, g in pieces]
     pieces = [(f, h, g) for f, h, g in pieces if not g.is_empty]
 
-    ribbon = unary_union([zones["banner"], zones["tail"]]).intersection(sil)
-    core = {"yellow": _multi(ribbon), "orange": _multi(sil.difference(ribbon))}
+    # base layer seen from the back: the full orange ring disc, yellow wherever the ribbon sticks out
+    disc = _circle(0, 0, r_out)
+    core = {"orange": _multi(sil.intersection(disc)), "yellow": _multi(sil.difference(disc))}
     return Design(pieces=pieces, core=core, silhouette=sil, hole=hole, ring=(r_out, r_in),
                   eyes=eyes, zones=vis_zones)
