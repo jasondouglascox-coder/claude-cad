@@ -116,6 +116,10 @@ plates and packing, and the bus cradle.
     the project.
   - Checked against Bambu Studio itself: it re-saves the plate with the same filament per part, and slicing a ladder
     plate prints layers 0–11 brown and 12–18 gray, one change.
+  - **Mesh ids are unique across the whole file.** Bambu Studio keys meshes by object id alone, whatever file
+    they're in. The first version numbered each object file from 1, so the starter plate's three ladders all opened
+    as copies of the middle one, gaps included. Ids now run in one sequence (meshes, then their object), as Bambu
+    writes them. The round-trip test checks that every object keeps its own geometry.
 - **No tie plate over a tab slot.** A tie sits centered on every panel tab, so its tie plate bridged the 3.4 mm slot
   (it would need supports). That tie now gets no plate and the slot runs up through it, open to the sky. Steel is
   also clipped to the wood's footprint, which trims the 0.5 mm the first plate hung over each jigsaw socket.

@@ -47,10 +47,10 @@ def _uuid(*key) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, "hotrain/" + "/".join(map(str, key))))
 
 
-def _object_file(parts: list[tuple[str, Shape, int]], key: str) -> str:
+def _object_file(parts: list[tuple[str, Shape, int]], ids: list[int], key: str) -> str:
     out = [f'<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" {NS}>',
            ' <metadata name="BambuStudio:3mfVersion">1</metadata>', " <resources>"]
-    for i, (_, shape, _) in enumerate(parts, start=1):
+    for i, (_, shape, _) in zip(ids, parts):
         v, t = mesh(shape)
         out.append(f'  <object id="{i}" p:UUID="{_uuid(key, i)}" type="model">\n   <mesh>\n    <vertices>')
         out += [f'     <vertex x="{x:.6f}" y="{y:.6f}" z="{z:.6f}"/>' for x, y, z in v]
@@ -70,20 +70,23 @@ def write(path: Path, objects: list[tuple[str, list[tuple[str, Shape, int]]]]) -
     cfg = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"]
     plate = ["  <plate>", '    <metadata key="plater_id" value="1"/>', '    <metadata key="plater_name" value=""/>',
              '    <metadata key="locked" value="false"/>']
+    last = 0  # one id sequence for meshes and objects across the package, as Bambu Studio writes it: it keys
+    #           meshes by id alone, so a repeated id makes it reuse another object's mesh
     for k, (name, parts) in enumerate(objects, start=1):
-        oid, fname = 2 * k, f"/3D/Objects/object_{k}.model"
-        files[fname[1:]] = _object_file(parts, f"{path.name}/{k}")
+        ids = list(range(last + 1, last + 1 + len(parts)))
+        oid, last, fname = ids[-1] + 1, ids[-1] + 1, f"/3D/Objects/object_{k}.model"
+        files[fname[1:]] = _object_file(parts, ids, f"{path.name}/{k}")
         rels.append(f' <Relationship Target="{fname}" Id="rel-{k}" '
                     'Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>')
         model.append(f'  <object id="{oid}" p:UUID="{_uuid(path.name, k)}" type="model">\n   <components>')
         model += [f'    <component p:path="{fname}" objectid="{i}" p:UUID="{_uuid(path.name, k, "c", i)}" '
-                  f'transform="{IDENTITY}"/>' for i in range(1, len(parts) + 1)]
+                  f'transform="{IDENTITY}"/>' for i in ids]
         model.append("   </components>\n  </object>")
         build_items.append(f'  <item objectid="{oid}" p:UUID="{_uuid(path.name, k, "item")}" '
                            f'transform="{IDENTITY}" printable="1"/>')
         cfg += [f'  <object id="{oid}">', f'    <metadata key="name" value={quoteattr(name)}/>',
                 f'    <metadata key="extruder" value="{parts[0][2]}"/>']
-        for i, (pname, _, fil) in enumerate(parts, start=1):
+        for i, (pname, _, fil) in zip(ids, parts):
             cfg += [f'    <part id="{i}" subtype="normal_part">', f'      <metadata key="name" value={quoteattr(pname)}/>',
                     f'      <metadata key="extruder" value="{fil}"/>', "    </part>"]
         cfg.append("  </object>")

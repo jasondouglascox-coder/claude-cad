@@ -46,14 +46,44 @@ def settings(z: zipfile.ZipFile) -> dict:
 
 
 def meshes(z: zipfile.ZipFile) -> list[tuple[list, list]]:
+    return [(vs, ts) for _, vs, ts in mesh_objects(z)]
+
+
+def mesh_objects(z: zipfile.ZipFile) -> list[tuple[str, list, list]]:
+    """(object id, vertices, triangles) for every mesh in 3D/Objects/, in file order."""
     out = []
-    for n in z.namelist():
+    for n in sorted(z.namelist()):
         if n.startswith("3D/Objects/"):
             for o in ET.fromstring(z.read(n)).iter(f"{CORE}object"):
                 vs = [(float(v.get("x")), float(v.get("y")), float(v.get("z"))) for v in o.iter(f"{CORE}vertex")]
                 ts = [(int(t.get("v1")), int(t.get("v2")), int(t.get("v3"))) for t in o.iter(f"{CORE}triangle")]
-                out.append((vs, ts))
+                out.append((o.get("id"), vs, ts))
     return out
+
+
+def spans(z: zipfile.ZipFile) -> dict:
+    """{object name: sorted x-spans of its meshes}, placement-independent, to tell parts apart."""
+    names = {o.get("id"): {m.get("key"): m.get("value") for m in o.findall("metadata")}["name"]
+             for o in ET.fromstring(z.read("Metadata/model_settings.config")).iter("object")}
+    by_id = {i: round(max(v[0] for v in vs) - min(v[0] for v in vs), 1) for i, vs, _ in mesh_objects(z)}
+    out = {}
+    for o in ET.fromstring(z.read("3D/3dmodel.model")).iter(f"{CORE}object"):
+        comps = [c.get("objectid") for c in o.iter(f"{CORE}component")]
+        if comps:
+            out[names[o.get("id")]] = sorted(by_id[c] for c in comps)
+    return out
+
+
+def test_every_mesh_id_unique_across_the_file(tmp_path):
+    """Bambu Studio keys meshes by object id alone, whatever file they're in: a repeated id makes it reuse
+    the first object's mesh (three ladders came out as three copies of the middle one)."""
+    seg = L.segments(D, [16 * INCH])
+    z = _write(tmp_path, [(f"ladder_{k:02d}", tie_ladder.make_colored(D, [16 * INCH], s)) for k, s in enumerate(seg)])
+    ids = [i for i, _, _ in mesh_objects(z)] + [o.get("id") for o in ET.fromstring(z.read("3D/3dmodel.model"))
+                                               .iter(f"{CORE}object")]
+    assert len(ids) == len(set(ids))
+    sp = spans(z)
+    assert sp["ladder_00"] != sp["ladder_01"] and sp["ladder_02"] != sp["ladder_01"]
 
 
 def test_two_color_part_opens_brown_and_gray(tmp_path):
@@ -100,10 +130,16 @@ def test_meshes_watertight_outward_and_in_place(tmp_path):
 @pytest.mark.skipif(not BAMBU.exists(), reason="Bambu Studio not installed")
 def test_bambu_studio_keeps_the_filaments(tmp_path):
     """Bambu Studio itself loads the plate and saves it back with the same filament per part."""
-    _write(tmp_path, [("ladder", _ladder()), ("bracket", Pos(0, 60, 0) * bracket.make(D))])
+    segs = L.segments(D, [16 * INCH])
+    items = [(f"ladder_{k:02d}", Pos(0, 50 * k, 0) * tie_ladder.make_colored(D, [16 * INCH], s))
+             for k, s in enumerate(segs)]
+    z = _write(tmp_path, items + [("bracket", Pos(0, 160, 0) * bracket.make(D))])
     out = tmp_path / "roundtrip.3mf"
     subprocess.run([str(BAMBU), "--export-3mf", str(out), str(tmp_path / "pl.3mf")], check=True,
                    capture_output=True, timeout=300, cwd=tmp_path)
-    got = settings(zipfile.ZipFile(out))
-    assert got["ladder"][1] == {"ladder_wood": D.filament_brown, "ladder_steel": D.filament_gray}
+    back = zipfile.ZipFile(out)
+    got = settings(back)
+    for k in range(len(segs)):
+        assert got[f"ladder_{k:02d}"][1] == {"ladder_wood": D.filament_brown, "ladder_steel": D.filament_gray}
     assert got["bracket"][0] == D.filament_gray
+    assert spans(back) == spans(z), "every object keeps its own geometry"
