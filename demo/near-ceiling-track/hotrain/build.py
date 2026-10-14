@@ -21,9 +21,9 @@ from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
-from build123d import Compound, ExportSVG, LineType, Mesher, Shape, export_step, export_stl
+from build123d import Compound, ExportSVG, LineType, Shape, export_step, export_stl
 
-from hotrain import assembly, paint, plates
+from hotrain import assembly, bambu3mf, paint, plates
 from hotrain import layout as L
 from hotrain.params import INCH, P, Params
 from hotrain.parts import arch_half, bracket, cross_frame, end_pier, fit_test, handrail, keystone, tie_ladder
@@ -106,32 +106,9 @@ def cmd_assembly(p: Params, bays: list[float], out: Path, mesh: bool, preview: b
     export(assembly.make(p, [p.bay_len, p.bay_len]), out, "demo_two_bays", mesh, preview, FROM_ROOM)
 
 
-def add_multipart(mesher: Mesher, bodies: list, name: str | None = None) -> None:
-    """Add bodies as ONE 3MF object with one part per body (Bambu Studio: one object, assign a filament per
-    part), instead of separate objects that the slicer would each drop onto the bed."""
-    n0 = len(mesher.meshes)
-    for b in bodies:
-        mesher.add_shape(b)
-    meshes = mesher.meshes[n0:]
-    ids = {m.GetResourceID() for m in meshes}
-    items = mesher.model.GetBuildItems()
-    doomed = []
-    while items.MoveNext():
-        it = items.GetCurrent()
-        if it.GetObjectResourceID() in ids:
-            doomed.append(it)
-    for it in doomed:
-        mesher.model.RemoveBuildItem(it)
-    group = mesher.model.AddComponentsObject()
-    if name:
-        group.SetName(name)
-    for m in meshes:
-        group.AddComponent(m, mesher.wrapper.GetIdentityTransform())
-    mesher.model.AddBuildItem(group, mesher.wrapper.GetIdentityTransform())
-
-
-def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = None) -> None:
-    """Each plate as STEP (painted) + 3MF (one object per part, per color), plus a quantity sheet."""
+def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = None, p: Params = P) -> None:
+    """Each plate as STEP (painted) + Bambu Studio 3MF (one object per part, one filament per color body),
+    plus a quantity sheet."""
     d.mkdir(parents=True, exist_ok=True)
     rows = []
     for pl in pls:
@@ -141,14 +118,14 @@ def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = 
             children.append(s)
         comp = Compound(children=children, label=pl.name)
         paint.export_step(comp, d / f"{pl.name}.step")
-        mesher = Mesher()
+        objects = []  # two-color parts: one object, a part per color, so the gray can't drop onto the bed
         for s in children:
             if plates.is_two_color(s):
-                add_multipart(mesher, s.children, s.label)
+                objects.append((s.label, [(b.label, b, bambu3mf.filament(p, b.label)) for b in s.children]))
             else:
                 for body in (s.children if isinstance(s, Compound) and s.children else [s]):
-                    mesher.add_shape(body)
-        mesher.write(str(d / f"{pl.name}.3mf"))
+                    objects.append((s.label, [(s.label, body, bambu3mf.filament(p, s.label))]))
+        bambu3mf.write(d / f"{pl.name}.3mf", objects)
         if preview_dir is not None:
             write_svg(comp, preview_dir / f"plate_{pl.name}.svg", TOP)
         counts = {}
@@ -164,7 +141,7 @@ def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = 
 
 def cmd_plates(p: Params, bays: list[float], out: Path, preview: bool) -> None:
     write_plates(plates.plates(p, bays) + plates.corner_plates(p), out / "plates", out / "plates.csv",
-                 out / "preview" if preview else None)
+                 out / "preview" if preview else None, p=p)
 
 
 def cmd_starter(p: Params, out: Path, bay_in: float = 16.0) -> Path:
@@ -172,7 +149,7 @@ def cmd_starter(p: Params, out: Path, bay_in: float = 16.0) -> Path:
     from hotrain.plates import Plate
     d = out / "starter"
     pls = plates.all_in_one(p, [bay_in * INCH]) + [Plate("fit_test", 1, [("fit_test", fit_test.make(p))])]
-    write_plates(pls, d, d / "plates.csv")
+    write_plates(pls, d, d / "plates.csv", p=p)
     return d
 
 

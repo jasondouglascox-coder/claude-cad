@@ -190,6 +190,11 @@ class Params:
     # printer (Bambu A1)
     bed: float = 256.0
     bed_margin: float = 5.0
+    # Bambu Studio filament per print color (the plate 3MFs assign them per part). The user's AMS: 1 gray PETG,
+    # 2 brown PETG; the white PLA for the ceiling cleats goes in 3 when they print.
+    filament_gray: int = 1
+    filament_brown: int = 2
+    filament_white: int = 3
 
     @property
     def rail_ctc(self) -> float:

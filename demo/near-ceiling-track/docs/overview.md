@@ -74,10 +74,15 @@ Common to both:
 
 - Bambu A1, PETG, 0.4 mm nozzle, 0.2 mm layers, **no supports**. Every Z level sits on a 0.2 mm multiple.
 - **Two filaments:** brown and gray. The ceiling cleats are white PLA.
+- **Plates open colored in Bambu Studio.** Each 3MF is a Bambu project (`hotrain/bambu3mf.py`) with a filament per
+  part: 1 gray PETG, 2 brown PETG, 3 white PLA (`filament_*` in params). A plain 3MF would load as geometry only,
+  all on filament 1.
 - **At most one color change per plate:**
   - Two-color parts (tie ladders, corner decks) are pooled onto their own plates.
-  - Each two-color part is written as one 3MF object with two parts: set brown on "wood" and gray on "steel".
+  - Each two-color part is one object with a brown "wood" part and a gray "steel" part.
   - Every other plate is single-color.
+- **Gray only over brown:** a tie plate never hangs over a hole. A tie over a panel tab's slot gets no plate, so
+  the slot is open to the sky.
 - **Print the fit-test coupon first.** It has 3 variants each of the tie-plate groove, tab slot, keystone socket,
   latch and rod-groove seat. Pick the one that fits, then retune `fit_slide`, `fit_snap` and `rail_base_w` in
   `hotrain/params.py`.

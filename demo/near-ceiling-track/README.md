@@ -59,8 +59,11 @@ A whole-room file takes a few minutes to translate.
 - Bambu A1 (256 × 256 mm bed), PETG, 0.4 mm nozzle, 0.2 mm layers, **no supports**.
 - **Print `fit_test` first.** Pick the variant of each joint (1/2/3 notches) that fits, then retune `fit_slide`,
   `fit_snap` and `rail_base_w` in `hotrain/params.py` and rebuild.
-- Tie-ladder and corner-deck plates are two-color. Each part opens as **one object with two parts**: set brown on
-  "wood" and gray on "steel". One color change per plate, at the tie tops.
+- Every plate 3MF is a **Bambu Studio project** that opens already colored (File → Open Project, or "Open as
+  project" when asked). Filament 1 is gray PETG, 2 brown PETG and 3 white PLA, matching the AMS. Change
+  `filament_gray`, `filament_brown` and `filament_white` in `hotrain/params.py` if the slots move.
+- Tie-ladder and corner-deck plates are two-color: each part is one object, brown "wood" and gray "steel" parts.
+  One color change per plate, at the tie tops.
 - Every other plate is single-color gray. The ceiling cleats are white PLA.
 
 ## Install a straight bay

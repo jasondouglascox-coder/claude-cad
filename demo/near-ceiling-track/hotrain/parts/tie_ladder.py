@@ -5,7 +5,8 @@ edge outward, and the gap ties keep only their center part between the rails. Th
 stay continuous and carry the rail. On the room side the gap ties keep a short end stub (held by a low,
 set-back bar on top, flush with the tie tops) so the tie line still reads from the room. In the gap's first
 opening a feeder groove runs straight across under both rails, over a thin floor, so the room rail's feeder
-ducks under both rails to the wall side and the rest of the gap is free to bend the wire and solder."""
+ducks under both rails to the wall side and the rest of the gap is free to bend the wire and solder.
+A tie over a panel tab's slot gets no tie plate (it would bridge the slot), so the slot is open to the sky."""
 from build123d import Align, Box, Compound, Cylinder, Location, Part, Pos, Rot, Sketch, extrude
 
 from hotrain import layout as L
@@ -59,7 +60,8 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
             cuts.append(rect(t.x - px, t.x + px, p.handrail_offset - py, p.handrail_offset + py))
     if female_start:
         cuts += [jigsaw(p, x_start, y, p.fit_snap) for y in p.rail_ys]
-    wood = extrude((Sketch() + base) - cuts, p.tie_h)
+    footprint = (Sketch() + base) - cuts
+    wood = extrude(footprint, p.tie_h)
     if gaps:  # feeder groove across both runners, between the full tie and the first gap tie, over a floor
         pb = min(abs(a.x - b.x) for a, b in zip(ties, ties[1:]))
         xn, yw = min(t.x for t in gaps) - pb / 2, max(p.rail_ys) + p.runner_w / 2 + 0.01
@@ -74,7 +76,8 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
                                                                       align=(Align.CENTER, Align.CENTER, Align.MIN))
 
     plates, shoulders, lips = [], [], []
-    for t in ts:
+    slots = [x for x in tab_xs if x_start + tl < x < x_end - tl]
+    for t in (t for t in ts if all(abs(t.x - x) >= tl + hw for x in slots)):  # over a tab slot: no plate, open
         for y in p.rail_ys:
             plates.append(rect(t.x - hw, t.x + hw, y - g - sw, y + g + sw))
             shoulders += [rect(t.x - hw, t.x + hw, y - g - sw, y - g), rect(t.x - hw, t.x + hw, y + g, y + g + sw)]
@@ -89,6 +92,7 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
     z += p.shoulder_h
     if lips:
         steel += Pos(0, 0, z) * extrude(Sketch() + lips, p.spike_lip_t)
+    steel &= extrude(footprint, p.tie_h + 10)  # gray only over brown: nothing hangs over a socket or slot
     return {"wood": Part(wood.solids()), "steel": Part(steel.solids())}
 
 

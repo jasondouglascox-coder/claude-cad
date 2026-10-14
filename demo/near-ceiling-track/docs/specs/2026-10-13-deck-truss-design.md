@@ -102,3 +102,20 @@ plates and packing, and the bus cradle.
   stubs. The floor keeps each runner, and so the ladder, in one piece.
 - Tests: the groove is clear from the wall-side tie ends to the room-side stubs, with its floor intact, for bays
   from 8" to the 480 mm max. In the run assembly a 22 AWG wire in the groove touches no part, for both run styles.
+
+## Amendments (2026-10-14): plates open colored; no tie plate over a tab slot
+
+- **Bambu Studio project 3MF.** The user's first look in Bambu Studio showed "the 3mf is not from Bambu Lab, load
+  geometry data and color data only", with every part on filament 1. Bambu Studio only reads a filament per part from
+  its own project format.
+  - `hotrain/bambu3mf.py` now writes every plate that way. Each printed part is one object, each color body one part,
+    and `Metadata/model_settings.config` gives each part a filament: `filament_gray` 1, `filament_brown` 2,
+    `filament_white` 3 (the user's AMS).
+  - `Metadata/project_settings.config` comes from `hotrain/bambu_project_settings.config`, saved by Bambu Studio
+    2.08 (A1 0.4, 0.20mm Standard, PETG Basic, filament 3 recolored white). Without it the Bambu CLI crashes on
+    the project.
+  - Checked against Bambu Studio itself: it re-saves the plate with the same filament per part, and slicing a ladder
+    plate prints layers 0–11 brown and 12–18 gray, one change.
+- **No tie plate over a tab slot.** A tie sits centered on every panel tab, so its tie plate bridged the 3.4 mm slot
+  (it would need supports). That tie now gets no plate and the slot runs up through it, open to the sky. Steel is
+  also clipped to the wood's footprint, which trims the 0.5 mm the first plate hung over each jigsaw socket.

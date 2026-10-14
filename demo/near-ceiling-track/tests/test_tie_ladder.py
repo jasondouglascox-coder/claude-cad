@@ -48,6 +48,28 @@ def test_flangeway_clear_for_deep_vintage_flanges():
         assert (lad & probe).volume < 1e-9
 
 
+@pytest.mark.parametrize("b", [16 * INCH, 76 * 5.5, P.max_bay_len])
+def test_tie_plates_rest_on_wood_and_tab_slots_open_to_the_sky(b):
+    """The gray prints on the brown with no supports: every tie plate sits on wood. A tie over a panel tab's slot
+    gets no plate, so the slot runs up through everything."""
+    bays = [b]
+    mn = (Align.MIN, Align.MIN, Align.MIN)
+    tl, tw = P.tab_len / 2 - 0.1, P.panel_t / 2 - 0.1
+    for seg in L.segments(P, bays):
+        body = tie_ladder.bodies(P, L.ties(P, bays), seg.x_start, seg.x_end, L.tab_xs(P, bays),
+                                 seg.female_start, seg.male_end)
+        wood, steel = body["wood"], body["steel"]
+        bb = steel.bounding_box()
+        slab = steel & (Pos(bb.min.X - 1, bb.min.Y - 1, P.tie_h) * Box(bb.size.X + 2, bb.size.Y + 2, 0.1, align=mn))
+        below = Pos(0, 0, -0.2) * slab
+        assert (below & wood).volume == pytest.approx(below.volume, rel=1e-6), "a tie plate overhangs"
+        for x in L.tab_xs(P, bays):
+            if seg.x_start + P.tab_len < x < seg.x_end - P.tab_len:
+                for y in P.rail_ys:
+                    shaft = Pos(x - tl, y - tw, -1) * Box(2 * tl, 2 * tw, P.tie_h + 5, align=mn)
+                    assert (shaft & (wood + steel)).volume < 1e-6
+
+
 # ---- solder gap at mid-bay ------------------------------------------------------------------------
 
 def _seg_with(p, bays, x):
