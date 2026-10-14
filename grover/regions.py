@@ -100,11 +100,20 @@ def _drop_islands(lab: np.ndarray, inside: np.ndarray, min_px: float) -> np.ndar
     return _fill_nearest(out, inside)
 
 
-def _no_pinholes(m: np.ndarray, min_px: float, r_px: float) -> np.ndarray:
-    """Drop pieces smaller than min_px and fill holes narrower than 2 r (a counter a nozzle can't leave open)."""
-    out = _big(m, min_px)
-    holes = ndi.binary_fill_holes(out) & ~out
-    return out | (holes & ~V.opened(holes, r_px))
+def _open_counters(m: np.ndarray, yellow: np.ndarray, min_d_px: float) -> np.ndarray:
+    """A letter's counter (a hole in the mark, or yellow the classifier's smoothing swallowed inside it) narrower
+    than min_d becomes a round hole of that diameter: a nozzle can't leave a thinner one open, and the G, & and A
+    have to read."""
+    inside = ndi.binary_fill_holes(m)
+    holes = (inside & ~m) | (V.eroded(inside, min_d_px / 3) & yellow)  # edge pixels aren't counters
+    out = m.copy()
+    for c in V.components(holes, int(0.3 * (min_d_px / 2) ** 2)):
+        if not V.opened(c, min_d_px / 2).any():  # too narrow somewhere
+            ys, xs = np.where(c)
+            (cx, cy), r = cv2.minEnclosingCircle(np.column_stack([xs, ys]).astype(np.float32))
+            yy, xx = np.ogrid[:m.shape[0], :m.shape[1]]
+            out &= ~((xx - cx) ** 2 + (yy - cy) ** 2 <= (max(r, min_d_px / 2)) ** 2)
+    return out
 
 
 def _stamp_around(stamp: np.ndarray, art: A.Art, radius: float, step_deg: float, scale: float = 1.0) -> list:
@@ -197,7 +206,6 @@ def design(p: Params = P) -> Design:
         if best is None or y > best:
             best, nose = y, c
     nose = V.closed(nose | (V.dilated(nose, 0.15 * px) & thick), 0.1 * px)
-    thin &= ~V.dilated(pink & ~nose, 0.25 * px)
 
     # eyes: round dark/iris blobs inside the cat, the two largest; one glint each (the biggest white spot)
     eye_src = V.opened((cls_s == C["ink"]) | iris, 0.3 * px) & V.eroded(cat_mask | fig_ink_s, 0.2 * px)
@@ -273,15 +281,16 @@ def design(p: Params = P) -> Design:
     nys, nxs = np.where(nose)
     nx, ny = art.to_mm(nxs.mean(), nys.mean())
     dx0, dx1, dy0, dy1 = p.whisker_zone
-    zone = (np.abs(X - nx) >= dx0) & (np.abs(X - nx) <= dx1) & (Y - ny >= dy0) & (Y - ny <= dy1)
-    outline = V.dilated(~V.closed(cat_mask | fig_ink_s, 0.1 * px), 0.6 * px)  # near the figure's edge
-    thin &= ~(zone & ~V.dilated(thick, 0.35 * px) & ~outline & ~V.dilated(paws0, 0.8 * px))
+    if dx1 > dx0:  # an empty zone keeps every whisker
+        zone = (np.abs(X - nx) >= dx0) & (np.abs(X - nx) <= dx1) & (Y - ny >= dy0) & (Y - ny <= dy1)
+        outline = V.dilated(~V.closed(cat_mask | fig_ink_s, 0.1 * px), 0.6 * px)  # near the figure's edge
+        thin &= ~(zone & ~V.dilated(thick, 0.35 * px) & ~outline & ~V.dilated(paws0, 0.8 * px))
     ink_print = thick | thin | ext_ink
 
     # pass 2: the label map that prints
     lab, figure, cat_fill = labels(ink_print)
     fig_top = float(art.to_mm(0, np.where(figure)[0].min())[1])
-    paws = find_paws(lab)
+    paws = paws0 & (lab == WHITE)  # found with the untrimmed strokes: trimmed ends widen the wrist gap
     paw_ink = (lab == BROWN) & V.dilated(paws, 0.4 * px) & ~eye_mask
 
     # letters: marks surrounded by ribbon yellow (the outline isn't; the cat's marks aren't), each smoothed
@@ -301,11 +310,14 @@ def design(p: Params = P) -> Design:
     r_line = (p.line_w - 0.05) / 2 * px
     paw_ink = V.opened(paw_ink, r_line)
     letters = V.opened(letters, r_line)
+    letters = _open_counters(letters, cls_s == C["ribbon"], p.counter_min_d * px)
+    glyph_zone = V.dilated(ndi.binary_fill_holes(letters), 0.3 * px)
+    letters &= ~V.dilated((lab == BROWN) & ~glyph_zone, p.letter_clear * px)  # a letter never touches the ribbon's outline
     top_brown = (eye_mask & ~glints) | nose | letters | paw_ink
-    top_brown = _no_pinholes(top_brown, p.min_island * px * px, r_line)
+    top_brown = _big(top_brown, p.min_island * px * px)
     top_white = (paws & ~paw_ink) | glints
     face = lab.copy()
-    face_brown = V.opened((lab == BROWN) & ~letters & ~paw_ink, r_line) | eye_mask | nose
+    face_brown = V.opened((lab == BROWN) & ~glyph_zone & ~paw_ink, r_line) | eye_mask | nose  # yellow under a glyph
     face[(lab == BROWN) & ~face_brown] = EMPTY
     face = _drop_islands(_fill_nearest(face, figure), figure, p.min_island * px * px)
     for k in (YELLOW, WHITE, ORANGE):  # fill slivers thinner than a nozzle join their neighbours

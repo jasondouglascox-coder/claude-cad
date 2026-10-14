@@ -43,7 +43,9 @@ class Params:
     paw_print_scale: float = 1.25  # the logo's prints are small for a 5.8 mm ring
     eye_glint_min_d: float = 0.8  # one glint per eye, big enough to print as a dot
     spur: float = 0.35  # mm, skeleton branches shorter than this are spurs, not strokes
-    whisker_zone: tuple = (2.0, 9.0, -3.2, 1.5)  # dx min, dx max, dy min, dy max from the nose: thin ink here is whiskers
+    whisker_zone: tuple = (0.0, 0.0, 0.0, 0.0)  # (dx min, dx max, dy min, dy max from the nose) to drop whiskers; empty keeps them
+    letter_clear: float = 0.35  # mm, a raised letter keeps this far from the ribbon's outline
+    counter_min_d: float = 0.55  # mm, a letter's counter opens to at least this (one yellow extrusion)
     letter_smooth: float = 0.1  # mm, bumps on the traced letters smaller than this are smoothed away
     paw_print_step: float = 45.0  # degrees between ring paw prints (the 12 o'clock one is the hole)
     paw_min_area: float = 5.0  # mm^2, white blobs touching the ribbon between these sizes are the paws
