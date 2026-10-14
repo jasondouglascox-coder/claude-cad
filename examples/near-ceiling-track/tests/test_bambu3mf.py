@@ -42,6 +42,6 @@ def test_starter_ladders_survive_bambu_studio(tmp_path):
              for k, s in enumerate(segs)]
     path = _write(tmp_path, items + [("bracket", Pos(0, 160, 0) * bracket.make(D))])
     back = bambu.roundtrip(path, tmp_path / "rt.3mf")
-    assert bambu3mf.object_sizes(back) == bambu3mf.object_sizes(path)
+    assert bambu3mf.same_objects(back, path)
     assert len({s for n, s in bambu3mf.object_sizes(back) if n.startswith("ladder")}) == 3
     assert sorted(bambu3mf.read_filaments(back)) == sorted(bambu3mf.read_filaments(path))

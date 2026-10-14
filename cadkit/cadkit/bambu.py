@@ -3,7 +3,7 @@
 Unit tests can't tell you what Bambu Studio will do with a file. These can:
 
 - `roundtrip(src)`: Bambu loads the file and saves it back. Compare with `bambu3mf.read_filaments` and
-  `bambu3mf.object_sizes`: a filament or a mesh it didn't understand comes back different.
+  `bambu3mf.same_objects`: a filament or a mesh it didn't understand comes back different.
 - `slice_report(src)`: Bambu slices plate 1 and reports grams per filament and which filaments print on which
   layers, e.g. a two-color ladder: brown layers 0-11, gray 12-18, one change.
 

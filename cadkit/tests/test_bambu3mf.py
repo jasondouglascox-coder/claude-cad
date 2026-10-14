@@ -50,6 +50,15 @@ def test_meshes_watertight_outward_and_in_place(tmp_path, two_color):
         assert vol == pytest.approx(body.volume, rel=1e-3), "normals point out"
 
 
+def test_same_objects_compares_with_a_tolerance_not_rounding(tmp_path):
+    """Bambu saves 32-bit floats: 60.15 comes back as 60.149..., which rounds the other way. Compare within tol."""
+    a = _write(tmp_path, [("b", box(0, 0, 0, 60.15, 10, 3))], "a")
+    b = _write(tmp_path, [("b", box(0, 0, 0, 60.149, 10, 3))], "b")
+    c = _write(tmp_path, [("b", box(0, 0, 0, 60.3, 10, 3))], "c")
+    assert bambu3mf.same_objects(a, b)
+    assert not bambu3mf.same_objects(a, c)
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
 def test_bambu_studio_reads_it_back_and_slices_one_color_change(tmp_path, two_color):
@@ -57,7 +66,7 @@ def test_bambu_studio_reads_it_back_and_slices_one_color_change(tmp_path, two_co
                              ("block", Pos(0, 40, 0) * box(0, 0, 0, 20, 20, 3))])
     back = bambu.roundtrip(path, tmp_path / "rt.3mf")
     assert sorted(bambu3mf.read_filaments(back)) == sorted(bambu3mf.read_filaments(path))
-    assert bambu3mf.object_sizes(back) == bambu3mf.object_sizes(path)
+    assert bambu3mf.same_objects(back, path)
     report = bambu.slice_report(_write(tmp_path, [("deck", two_color())], "deck"), tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (1,)]  # brown up to the seam, then gray: one change
     assert report["layers"][0][2] == round(2.4 / 0.2) - 1

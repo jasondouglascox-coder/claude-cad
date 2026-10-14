@@ -72,13 +72,14 @@ Unit tests can't tell you what the slicer does with a file. Bambu Studio has a C
 from cadkit import bambu, bambu3mf
 back = bambu.roundtrip("out/plates/p1.3mf")            # Bambu loads it and saves it back
 assert bambu3mf.read_filaments(back) == ...            # same filament per part
-assert bambu3mf.object_sizes(back) == bambu3mf.object_sizes("out/plates/p1.3mf")   # same mesh per object
+assert bambu3mf.same_objects(back, "out/plates/p1.3mf")   # same mesh per object, within 0.01 mm
 r = bambu.slice_report("out/plates/p1.3mf")            # {"grams": {1: 0.6, 2: 12.1}, "layers": [((2,), 0, 11), ((1,), 12, 18)]}
 ```
 
 - `slice_info.config` numbers filaments from 0 in `layer_filament_list`; `slice_report` converts to 1-based.
 - The CLI writes `result.json` into its working directory; `cadkit.bambu` runs it in a temp dir.
-- Bambu saves 32-bit floats, so sizes agree to 0.1 mm, not exactly.
+- Bambu saves 32-bit floats, so compare sizes within a tolerance (`same_objects`), never by rounding: 60.15 comes
+  back as 60.149…, which rounds to 60.1 instead of 60.2 and reports a false mismatch.
 - Make the slicer test `@pytest.mark.slow` and `skipif(bambu.find() is None)`, so the suite runs without it.
 
 ## Before the first real print

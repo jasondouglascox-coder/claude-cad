@@ -147,8 +147,8 @@ def read_meshes(path: Path) -> dict[str, tuple[np.ndarray, np.ndarray]]:
 
 
 def object_sizes(path: Path, digits: int = 1) -> list[tuple[str, tuple]]:
-    """Sorted [(object name, sorted part sizes (dx, dy, dz, triangles))]: placement-independent, so a file and its
-    Bambu Studio round trip should match (to 0.1 mm: Bambu saves 32-bit floats)."""
+    """Sorted [(object name, sorted part sizes (dx, dy, dz, triangles))], placement-independent. To compare two
+    files, use same_objects (a tolerance), not == on these (rounding flips on boundary values)."""
     z = zipfile.ZipFile(path)
     names = {o.get("id"): _meta(o)["name"]
              for o in ET.fromstring(z.read("Metadata/model_settings.config")).iter("object")}
@@ -160,3 +160,23 @@ def object_sizes(path: Path, digits: int = 1) -> list[tuple[str, tuple]]:
         if comps:
             out.append((names[o.get("id")], tuple(sorted(sizes[c] for c in comps))))
     return sorted(out)
+
+
+def _match(xs: list, ys: list, eq) -> bool:
+    """Every x pairs with its own y under eq (greedy), and nothing is left over."""
+    ys = list(ys)
+    for x in xs:
+        j = next((j for j, y in enumerate(ys) if eq(x, y)), None)
+        if j is None:
+            return False
+        ys.pop(j)
+    return not ys
+
+
+def same_objects(a: Path, b: Path, tol: float = 0.01) -> bool:
+    """Both files hold the same objects (by name), each with parts of the same size within tol mm and the same
+    triangle count; placement doesn't matter. Use it to compare a file with its Bambu Studio round trip: Bambu saves
+    32-bit floats, so exact or rounded sizes can differ (60.15 comes back as 60.149..., which rounds the other way)."""
+    part = lambda p, q: p[3] == q[3] and all(abs(x - y) <= tol for x, y in zip(p[:3], q[:3]))
+    return _match(object_sizes(a, digits=6), object_sizes(b, digits=6),
+                  lambda x, y: x[0] == y[0] and _match(list(x[1]), list(y[1]), part))
