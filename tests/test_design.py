@@ -84,7 +84,7 @@ def test_two_paws_raised_and_resting_on_white(d):
 def test_top_band_rests_on_the_face_band(d):
     face = unary_union([d.ribbon, d.cat_white, d.cat_orange, d.face_ink]).buffer(0.03)
     for g in (d.top_white, d.top_brown):
-        assert face.contains(g)
+        assert g.difference(face).area < 0.01
 
 
 def test_hole_sits_in_the_ring_with_its_wall(d):
@@ -104,6 +104,17 @@ def test_qr_panel_and_url_fit_inside_the_back(d):
     url = B.url_polys(P, d.hole, d.silhouette)
     assert inside.contains(url) and url.distance(panel) >= P.text_gap - 0.05
     assert url.bounds[0] < -10 and url.bounds[2] > 10  # a readable width
+
+
+def test_url_glyphs_print_apart_with_real_strokes(d):
+    """Brown between neighbouring glyphs and the strokes themselves are at least a nozzle width."""
+    url = B.url_polys(P, d.hole, d.silhouette)
+    glyphs = list(url.geoms)
+    nozzle = P.printer.nozzle
+    for i, g in enumerate(glyphs):
+        for h in glyphs[i + 1:]:
+            assert g.distance(h) >= nozzle, f"glyph gap {g.distance(h):.2f}"
+    assert _opened(url, nozzle).area >= 0.9 * url.area
 
 
 def test_url_reads_from_the_back(d):

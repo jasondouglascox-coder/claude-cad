@@ -3,6 +3,7 @@
 Raster work at the art's resolution, vectorized at the end. The figure (cat + ribbon + their ink) is moved down
 by figure_drop; the ring, its circles and paw prints stay. Each band is a gap-free label map, so the regions of
 one band tile it exactly and never overlap."""
+import dataclasses
 from dataclasses import dataclass, field
 from functools import lru_cache
 
@@ -42,11 +43,21 @@ class Design:
     masks: dict = field(default_factory=dict)  # named raster masks, for debugging and tests
 
 
+# ---- raster helpers ------------------------------------------------------------------------------------------
+
 def _shift(mask: np.ndarray, dy_px: int) -> np.ndarray:
     """Move a mask down the image by dy_px rows (down in the picture = -Y in mm)."""
     out = np.zeros_like(mask)
     out[dy_px:] = mask[:mask.shape[0] - dy_px]
     return out
+
+
+def _sweep_down(mask: np.ndarray, dy_px: int, step: int = 4) -> np.ndarray:
+    """Union of the mask moved down by 0 .. dy_px."""
+    out = mask.copy()
+    for d in range(step, dy_px + 1, step):
+        out |= _shift(mask, d)
+    return out | _shift(mask, dy_px)
 
 
 def _fit_circle(mask: np.ndarray, art: A.Art) -> tuple:
@@ -62,6 +73,22 @@ def _disc(shape, art: A.Art, x: float, y: float, r: float) -> np.ndarray:
     return (xx - ex) ** 2 + (yy - ey) ** 2 <= (r * art.px_mm) ** 2
 
 
+def _big(mask: np.ndarray, min_px: float) -> np.ndarray:
+    out = np.zeros_like(mask)
+    for c in V.components(mask, int(min_px)):
+        out |= c
+    return out
+
+
+def _fill_nearest(lab: np.ndarray, inside: np.ndarray) -> np.ndarray:
+    """Every unlabeled pixel inside takes the label of the nearest labeled pixel: no slivers between regions."""
+    keep = lab > 0
+    _, (iy, ix) = ndi.distance_transform_edt(~keep, return_indices=True)
+    out = lab[iy, ix]
+    out[~inside] = 0
+    return out
+
+
 def _drop_islands(lab: np.ndarray, inside: np.ndarray, min_px: float) -> np.ndarray:
     """Fill pieces smaller than min_px join their neighbours (a nozzle can't print a fleck)."""
     out = lab.copy()
@@ -73,6 +100,45 @@ def _drop_islands(lab: np.ndarray, inside: np.ndarray, min_px: float) -> np.ndar
     return _fill_nearest(out, inside)
 
 
+def _no_pinholes(m: np.ndarray, min_px: float, r_px: float) -> np.ndarray:
+    """Drop pieces smaller than min_px and fill holes narrower than 2 r (a counter a nozzle can't leave open)."""
+    out = _big(m, min_px)
+    holes = ndi.binary_fill_holes(out) & ~out
+    return out | (holes & ~V.opened(holes, r_px))
+
+
+def _stamp_around(stamp: np.ndarray, art: A.Art, radius: float, step_deg: float, scale: float = 1.0) -> list:
+    """Copies of an upright mark placed every step_deg around the ring at `radius`, each pointing outward, skipping
+    12 o'clock (the hole). The copies are what print: the logo's prints sit at uneven radii."""
+    ys, xs = np.where(stamp)
+    sx, sy = xs.mean(), ys.mean()
+    out = []
+    src = stamp.astype(np.float32)
+    ang = step_deg
+    while ang < 360 - 1e-6:
+        tx, ty = art.to_px(radius * np.cos(np.radians(90 + ang)), radius * np.sin(np.radians(90 + ang)))
+        m = cv2.getRotationMatrix2D((float(sx), float(sy)), -ang, scale)  # image y points down: clockwise = +angle
+        m[:, 2] += (tx - sx, ty - sy)
+        out.append(cv2.warpAffine(src, m, (stamp.shape[1], stamp.shape[0]), flags=cv2.INTER_LINEAR) > 0.5)
+        ang += step_deg
+    return out
+
+
+def _spread_pads(prints: np.ndarray, gap: float, px: float) -> np.ndarray:
+    """A paw print's pads sit a hair apart in the art; each pad backs off from its neighbours until `gap` of
+    orange fits between them (only the facing edges move)."""
+    pads = V.components(V.opened(prints, 0.1 * px), int(0.1 * px * px))
+    out = np.zeros_like(prints)
+    d = (gap + 0.15) / 2 * px
+    for c in pads:
+        others = np.zeros_like(prints)
+        for o in pads:
+            if o is not c:
+                others |= o
+        out |= c & ~V.dilated(others, d)
+    return V.closed(V.opened(out, 0.08 * px), 0.08 * px)
+
+
 def _minus(g, *higher, sliver: float = 0.02):
     """g minus every higher-priority region, without the hairline slivers a near-coincident boundary leaves."""
     out = g.difference(unary_union(list(higher))) if higher else g
@@ -80,14 +146,7 @@ def _minus(g, *higher, sliver: float = 0.02):
     return V.multi(unary_union([q for q in V.multi(out).geoms if q.area >= sliver]))
 
 
-def _fill_nearest(lab: np.ndarray, inside: np.ndarray) -> np.ndarray:
-    """Every unlabeled pixel inside takes the label of the nearest labeled pixel: no slivers between regions."""
-    keep = lab > 0
-    _, (iy, ix) = ndi.distance_transform_edt(~keep, return_indices=True)
-    out = lab[iy, ix]
-    out[~inside] = 0
-    return out
-
+# ---- the design -----------------------------------------------------------------------------------------------
 
 @lru_cache(maxsize=2)
 def design(p: Params = P) -> Design:
@@ -111,36 +170,37 @@ def design(p: Params = P) -> Design:
     fig_ink = ink & reach & (~band | keep)
     bg_ink = ink & ~fig_ink
 
-    # --- paw prints on the ring (thick marks between the circles); the top one becomes the hole
+    # --- paw prints: the 12 o'clock print (upright) is the stamp; copies go evenly around the ring
     ring_zone = (D > art.r + p.circle_w + 0.3) & (D < art.R - p.circle_w - 0.3)
-    thick_bg, _, _ = I.split(bg_ink & ring_zone, px, p)
-    paws_ring = np.zeros_like(ink)
-    for c in V.components(thick_bg, int(0.5 * px * px)):
+    _, _, kept_bg = I.split(bg_ink & ring_zone, px, p)
+    stamp = np.zeros_like(ink)  # the print's pad and toes are separate marks: take them all, nothing bigger
+    for c in V.components(V.opened(kept_bg, 0.08 * px), int(0.3 * px * px)):
         ys, xs = np.where(c)
         x, y = art.to_mm(xs.mean(), ys.mean())
-        if not (abs(x) < 2.0 and y > 0):  # all but the 12 o'clock print
-            paws_ring |= c
+        if abs(x) < 2.5 and y > 0 and (xs.max() - xs.min()) < 3 * px and (ys.max() - ys.min()) < 3 * px:
+            stamp |= c
+    prints = [_spread_pads(m, p.pad_gap, px)
+              for m in _stamp_around(stamp, art, (art.r + art.R) / 2, p.paw_print_step, p.paw_print_scale)]
 
     # --- the figure: cat + ribbon fills and ink, moved down
     dy = int(round(p.figure_drop * px))
-    cat_mask, ribbon_mask, fig_ink = (_shift(m, dy) for m in (cat, ribbon, fig_ink))
+    cat_mask, ribbon_mask, fig_ink_s = (_shift(m, dy) for m in (cat, ribbon, fig_ink))
     cls_s = _shift(cls, dy)
-    thick, thin, kept = I.split(fig_ink, px, p)
-
-    # pink: the nose is the top pink blob; the tongue and anything else turn white
+    thick, thin, kept = I.split(fig_ink_s, px, p)
     pink = cls_s == C["pink"]
+    iris = cls_s == C["iris"]
+
+    # pink: the nose is the top pink blob; the tongue and anything else turn white, their outline goes too
     nose, best = np.zeros_like(pink), None
     for c in V.components(pink, int(0.3 * px * px)):
         y = art.to_mm(0, np.where(c)[0].mean())[1]
         if best is None or y > best:
             best, nose = y, c
     nose = V.closed(nose | (V.dilated(nose, 0.15 * px) & thick), 0.1 * px)
-    tongue = V.dilated(pink & ~nose, 0.25 * px)
-    thin &= ~tongue
-    ink_print = thick | thin
+    thin &= ~V.dilated(pink & ~nose, 0.25 * px)
 
-    # eyes: round dark/iris blobs inside the cat, the two largest; glints are the white spots inside them
-    eye_src = V.opened((cls_s == C["ink"]) | (cls_s == C["iris"]), 0.3 * px) & V.eroded(cat_mask | fig_ink, 0.2 * px)
+    # eyes: round dark/iris blobs inside the cat, the two largest; one glint each (the biggest white spot)
+    eye_src = V.opened((cls_s == C["ink"]) | iris, 0.3 * px) & V.eroded(cat_mask | fig_ink_s, 0.2 * px)
     eyes, eye_mask, glints = [], np.zeros_like(pink), np.zeros_like(pink)
     white_cls = np.isin(cls_s, [C["cat_white"], C["cat_white2"]])
     for c in sorted(V.components(eye_src, int(2.0 * px * px)), key=lambda c: -c.sum()):
@@ -153,51 +213,88 @@ def design(p: Params = P) -> Design:
         disc = _disc(cls.shape, art, x, y, r)
         eye_mask |= disc
         spots = sorted(V.components(white_cls & V.eroded(disc, 0.25 * px), int(0.05 * px * px)), key=lambda g: -g.sum())
-        for g in spots[:2]:
+        for g in spots[:1]:
             gx, gy, gr = _fit_circle(g, art)
             glints |= _disc(cls.shape, art, gx, gy, min(max(gr, p.eye_glint_min_d / 2), 0.35 * r))
 
-    # --- face band label map: ribbon / cat white / cat orange / ink, gap-free inside the figure
-    cat_region = np.zeros_like(pink)
-    for c in V.components(V.closed(cat_mask | pink | (cls_s == C["iris"]) | ink_print, 0.1 * px),
-                          int(p.cat_min_area * px * px)):
-        cat_region |= c
-    cat_fill = cat_region & ~ribbon_mask
-    figure = np.zeros_like(pink)
-    for c in V.components(V.closed(cat_fill | ribbon_mask | ink_print, 0.15 * px), int(p.cat_min_area * px * px)):
-        figure |= ndi.binary_fill_holes(c)
-    fig_top = float(art.to_mm(0, np.where(figure)[0].min())[1])
-    cat_white = np.isin(cls_s, [C[n] for n in ("cat_white", "cat_white2", "cat_tan", "cat_tan2", "cat_tan3",
-                                                 "pink_light")]) | (pink & ~nose)
-    cat_white = V.opened(cat_white & cat_fill, p.fill_min / 2 * px)
-    cat_orange = V.opened(cat_fill & ~cat_white, p.fill_min / 2 * px)
-    lab = np.zeros(cls.shape, np.uint8)
-    lab[V.opened(ribbon_mask, p.fill_min / 2 * px)] = YELLOW
-    lab[cat_orange] = ORANGE
-    lab[cat_white] = WHITE
-    lab[ink_print | nose | eye_mask] = BROWN
-    lab = _drop_islands(_fill_nearest(lab, figure), figure, p.min_island * px * px)
+    # the ribbon's folds ended at the ring before the drop; sweep them down so they still touch it
+    under_ring = _sweep_down(D <= art.R, dy) & (D > art.R)
+    outside = ribbon & (D > art.R - 0.2)
+    circle_ink = V.dilated(bg_ink & (np.abs(D - (art.R - p.circle_w / 2)) < p.circle_w / 2 + 0.2), 0.6 * px)
+    fold = np.zeros_like(ribbon)
+    for c in V.components(outside, int(1.0 * px * px)):  # a fold's yellow meets the ring's own outline; the band in
+        if (c & circle_ink & (Y < 0)).any():  # front of the ring interrupts that outline, so its ends don't
+            fold |= c
+    fold_ink = ink & V.dilated(fold, 0.4 * px) & ~V.dilated(ribbon & ~fold, 0.4 * px)
+    ext_ink = _sweep_down(fold_ink, dy) & under_ring
+    ext_fill = _sweep_down(fold, dy) & under_ring & ~ext_ink
+    ext_ink = V.dilated(V.opened(V.closed(ext_ink, 0.1 * px), (p.line_w - 0.1) / 2 * px), 0.05 * px)
+    ribbon_mask = ribbon_mask | ext_fill
 
-    # paws: the big white blobs at the ribbon. Closing the ink shuts the wrist gap that joins a paw to the
-    # chest fur; the rim the closing ate is grown back from the white.
-    paws = np.zeros_like(pink)
-    near_ribbon = V.dilated(ribbon_mask, 1.0 * px)
-    white = lab == WHITE
-    core = white & ~V.closed(lab == BROWN, p.paw_close / 2 * px)
-    for c in V.components(core, int(p.paw_min_area * px * px)):
-        if (c & near_ribbon).any():
-            paws |= white & V.dilated(c, p.paw_close / 2 * px + 2) & ~V.dilated(lab == YELLOW, 0.05 * px)
+    white_src = np.isin(cls_s, [C[n] for n in ("cat_white", "cat_white2", "cat_tan", "cat_tan2", "cat_tan3",
+                                                "pink_light")]) | (pink & ~nose)
+
+    def labels(ink_print):
+        """Face-band label map: ribbon / cat white / cat orange / ink, gap-free inside the figure."""
+        cat_region = _big(V.closed(cat_mask | pink | iris | ink_print, 0.1 * px), p.cat_min_area * px * px)
+        cat_fill = cat_region & ~ribbon_mask
+        figure = np.zeros_like(pink)
+        for c in V.components(V.closed(cat_fill | ribbon_mask | ink_print, 0.15 * px), int(p.cat_min_area * px * px)):
+            figure |= ndi.binary_fill_holes(c)
+        cat_white = V.opened(white_src & cat_fill, p.fill_min / 2 * px)
+        cat_orange = V.opened(cat_fill & ~cat_white, p.fill_min / 2 * px)
+        lab = np.zeros(cls.shape, np.uint8)
+        lab[V.opened(ribbon_mask, p.fill_min / 2 * px)] = YELLOW
+        lab[cat_orange] = ORANGE
+        lab[cat_white] = WHITE
+        lab[ink_print | nose | eye_mask] = BROWN
+        lab = _drop_islands(_fill_nearest(lab, figure), figure, p.min_island * px * px)
+        return lab, figure, cat_fill
+
+    def find_paws(lab):
+        """The big white blobs at the ribbon. Closing the ink shuts the wrist gap that joins a paw to the chest
+        fur; the rim the closing ate is grown back from the white."""
+        paws = np.zeros_like(pink)
+        near_ribbon = V.dilated(ribbon_mask, 1.0 * px)
+        white = lab == WHITE
+        core = white & ~V.closed(lab == BROWN, p.paw_close / 2 * px)
+        for c in V.components(core, int(p.paw_min_area * px * px)):
+            if (c & near_ribbon).any() and c.sum() <= p.paw_max_area * px * px:  # the chest between them is bigger
+                paws |= white & V.dilated(c, p.paw_close / 2 * px + 2) & ~V.dilated(lab == YELLOW, 0.05 * px)
+        return paws
+
+    # pass 1: find the paws with every stroke in place and untrimmed (the arm's top edge doubles as a whisker,
+    # and the trimmed stroke ends would widen the wrist gap)
+    _, thin_full, _ = I.split(fig_ink_s, px, dataclasses.replace(p, spur=0.0))
+    lab0, _, _ = labels(thick | thin_full | ext_ink)
+    paws0 = find_paws(lab0)
+
+    # whiskers: thin strokes beside the nose that aren't part of a thick mark, the head's outline or a paw
+    nys, nxs = np.where(nose)
+    nx, ny = art.to_mm(nxs.mean(), nys.mean())
+    dx0, dx1, dy0, dy1 = p.whisker_zone
+    zone = (np.abs(X - nx) >= dx0) & (np.abs(X - nx) <= dx1) & (Y - ny >= dy0) & (Y - ny <= dy1)
+    outline = V.dilated(~V.closed(cat_mask | fig_ink_s, 0.1 * px), 0.6 * px)  # near the figure's edge
+    thin &= ~(zone & ~V.dilated(thick, 0.35 * px) & ~outline & ~V.dilated(paws0, 0.8 * px))
+    ink_print = thick | thin | ext_ink
+
+    # pass 2: the label map that prints
+    lab, figure, cat_fill = labels(ink_print)
+    fig_top = float(art.to_mm(0, np.where(figure)[0].min())[1])
+    paws = find_paws(lab)
     paw_ink = (lab == BROWN) & V.dilated(paws, 0.4 * px) & ~eye_mask
 
-    # letters: thick marks surrounded by ribbon yellow (the outline isn't; the cat's marks aren't)
+    # letters: marks surrounded by ribbon yellow (the outline isn't; the cat's marks aren't), each smoothed
     letters = np.zeros_like(pink)
     near = V.dilated(ribbon_mask, 2.0 * px)
+    r_s = p.letter_smooth * px
     for c in V.components(V.opened(kept, 0.1 * px), int(0.5 * px * px)):
         if (c & ~near).any() or (c & cat_fill).any():
             continue
         rim = V.dilated(c, 0.35 * px) & ~c
         if (rim & ribbon_mask).sum() >= p.letter_surround * rim.sum():
-            letters |= c
+            g = V.closed(V.opened(c, r_s), r_s)
+            letters |= cv2.GaussianBlur(g.astype(np.float32), (0, 0), 0.6 * r_s) > 0.5
 
     # top band rests on the face band: under letters the face band is yellow, under paw lines white.
     # Splitting a line between bands leaves slivers; marks thinner than a line join the nearest fill.
@@ -205,10 +302,14 @@ def design(p: Params = P) -> Design:
     paw_ink = V.opened(paw_ink, r_line)
     letters = V.opened(letters, r_line)
     top_brown = (eye_mask & ~glints) | nose | letters | paw_ink
+    top_brown = _no_pinholes(top_brown, p.min_island * px * px, r_line)
     top_white = (paws & ~paw_ink) | glints
     face = lab.copy()
     face_brown = V.opened((lab == BROWN) & ~letters & ~paw_ink, r_line) | eye_mask | nose
     face[(lab == BROWN) & ~face_brown] = EMPTY
+    face = _drop_islands(_fill_nearest(face, figure), figure, p.min_island * px * px)
+    for k in (YELLOW, WHITE, ORANGE):  # fill slivers thinner than a nozzle join their neighbours
+        face[(face == k) & ~V.opened(face == k, p.sliver / 2 * px)] = EMPTY
     face = _drop_islands(_fill_nearest(face, figure), figure, p.min_island * px * px)
     face_ink = face == BROWN
 
@@ -220,6 +321,11 @@ def design(p: Params = P) -> Design:
     base_orange = silhouette_m & ~base_white
     outer_circle = silhouette_m & (D > art.R - p.circle_w)
     disc_circle = (D > art.r) & (D <= art.r + p.circle_w)
+    paws_ring = np.zeros_like(ink)
+    ribbon_zone = V.dilated(ribbon_mask | (ink_print & ~V.dilated(cat_fill, 0.3 * px)), 0.8 * px)
+    for m in prints:  # a print the ribbon would cut is left out altogether (an ear tip over one is the logo's look)
+        if not (m & ribbon_zone).any():
+            paws_ring |= m
     ring_ink = (outer_circle | disc_circle | paws_ring) & ~V.dilated(figure, 0.05 * px)
 
     def poly(m):
@@ -243,10 +349,10 @@ def design(p: Params = P) -> Design:
         face_ink=face_ink_g, ring_ink=ring_ink_g,
         top_white=top_white_g, top_brown=top_brown_g, paws=poly(paws | paw_ink),
         eyes=eyes, figure_top=fig_top, R=art.R, r=art.r,
-        masks=dict(ink=ink, fig_ink=fig_ink, thick=thick, thin=thin, figure=figure, face=face, lab=lab,
+        masks=dict(ink=ink, fig_ink=fig_ink_s, thick=thick, thin=thin, figure=figure, face=face, lab=lab,
                    face_ink=face_ink, ring_ink=ring_ink, top_white=top_white, top_brown=top_brown,
                    letters=letters, paws=paws, paw_ink=paw_ink, nose=nose, eye_mask=eye_mask, glints=glints,
-                   base_white=base_white, base_orange=base_orange),
+                   base_white=base_white, base_orange=base_orange, paws_ring=paws_ring),
     )
     # the hole's brown ring sits on the orange base like a paw print
     hx, hy, hr = hole

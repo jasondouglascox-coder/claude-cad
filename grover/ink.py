@@ -16,9 +16,22 @@ def split(ink: np.ndarray, px_mm: float, p: Params = P) -> tuple[np.ndarray, np.
     kept = V.opened(ink, p.ink_min_src / 2 * px_mm)
     thick = V.opened(kept, p.ink_thick / 2 * px_mm)
     sk = skeletonize(kept & ~V.dilated(thick, 0.05 * px_mm))
+    sk = _trim_ends(sk, int(round(p.spur * px_mm)))
     sk = _prune(sk, min_len_px=p.ink_min_len * px_mm)
     thin = V.dilated(sk, p.line_w / 2 * px_mm)
     return thick, thin, kept
+
+
+def _trim_ends(sk: np.ndarray, n: int) -> np.ndarray:
+    """Peel n pixels off every free end: branches shorter than n (spurs from width wobble) vanish, real strokes
+    get n px shorter (the round stroke cap gives most of it back)."""
+    sk = sk.copy()
+    for _ in range(n):
+        s8 = np.pad(sk, 1).astype(np.uint8)
+        nb = sum(s8[1 + dy:s8.shape[0] - 1 + dy, 1 + dx:s8.shape[1] - 1 + dx]
+                 for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx)
+        sk &= nb > 1
+    return sk
 
 
 def _prune(sk: np.ndarray, min_len_px: float) -> np.ndarray:

@@ -6,7 +6,7 @@ from cadkit import Printer
 
 ROOT = Path(__file__).resolve().parent.parent
 ART = ROOT / "art" / "logo.svg"
-FONT = "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf"
+FONT = "Avenir Next"  # its Bold face: strokes that survive a 0.4 mm nozzle at 3.6 mm, narrow enough to fit
 
 
 @dataclass(frozen=True)
@@ -28,18 +28,26 @@ class Params:
     # keyring hole, replacing the top paw print
     hole_d: float = 3.5
     hole_wall: float = 2.0  # plastic between the hole and the outer edge
-    hole_ring_w: float = 0.6  # brown ring around the hole, raised like a paw print
+    hole_ring_w: float = 1.0  # brown ring around the hole, raised like a paw print; the chamfer eats hole_chamfer of it
     hole_chamfer: float = 0.4
 
     # ink and fills
     line_w: float = 0.5  # every thin stroke is re-drawn this wide
     ink_thick: float = 0.7  # marks at least this wide in the art keep their traced shape
     ink_min_src: float = 0.12  # strokes thinner than this in the art are dropped (the cat's outline is ~0.25)
-    ink_min_len: float = 0.8  # mm, shorter stroke fragments (specks) are dropped
+    ink_min_len: float = 1.2  # mm, shorter stroke fragments (specks, ear tuft stubs) are dropped
     fill_min: float = 0.6  # fills narrower than this are dropped (ear tufts, fur wisps)
     min_island: float = 0.4  # mm^2, smaller fill pieces are dropped
-    eye_glint_min_d: float = 0.6
-    paw_min_area: float = 5.0  # mm^2, white blobs touching the ribbon this big are the paws
+    sliver: float = 0.4  # mm, fill slivers narrower than this (a nozzle width) join their neighbours
+    pad_gap: float = 0.4  # mm, each ring paw print's pads back off until this much orange fits between them
+    paw_print_scale: float = 1.25  # the logo's prints are small for a 5.8 mm ring
+    eye_glint_min_d: float = 0.8  # one glint per eye, big enough to print as a dot
+    spur: float = 0.35  # mm, skeleton branches shorter than this are spurs, not strokes
+    whisker_zone: tuple = (2.0, 9.0, -3.2, 1.5)  # dx min, dx max, dy min, dy max from the nose: thin ink here is whiskers
+    letter_smooth: float = 0.1  # mm, bumps on the traced letters smaller than this are smoothed away
+    paw_print_step: float = 45.0  # degrees between ring paw prints (the 12 o'clock one is the hole)
+    paw_min_area: float = 5.0  # mm^2, white blobs touching the ribbon between these sizes are the paws
+    paw_max_area: float = 30.0
     paw_close: float = 0.7  # mm, gaps in the paw outline up to this wide don't join a paw to the chest
     cat_min_area: float = 20.0  # mm^2, smaller cat-colored blobs are stray pixels, not the cat
     letter_surround: float = 0.6  # a mark with this much ribbon around it is a letter
@@ -60,7 +68,8 @@ class Params:
     qr_corner: float = 1.5  # panel corner radius
     qr_gap: float = 0.6  # panel clear of the hole ring
     font: str = FONT
-    text_size: float = 3.4  # em; ~0.46 mm strokes in Arial Rounded MT Bold, fine on the first layer
+    text_size: float = 3.6  # em
+    text_tracking: float = 0.45  # mm added between glyphs so the brown between them is a nozzle width
     text_gap: float = 0.8  # between the panel and the text
     text_margin: float = 1.0  # text clear of the silhouette edge
 

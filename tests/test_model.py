@@ -74,7 +74,7 @@ def test_colors_per_layer_follow_the_stack(b):
 
 def test_every_band_rests_on_the_one_below(b):
     everything = Compound(children=list(b.values()))
-    for z in (P.z_body, P.z_base, P.z_face):
+    for z in (P.z_back, P.z_body, P.z_base, P.z_face):
         above = everything & Pos(-100, -100, z) * Box(200, 200, 0.1, align=(Align.MIN,) * 3)
         below = everything & Pos(-100, -100, z - 0.3) * Box(200, 200, 0.3, align=(Align.MIN,) * 3)
         assert unsupported(above, below) == pytest.approx(0, abs=0.05), f"z={z}"
@@ -92,23 +92,47 @@ def test_hole_goes_through_with_chamfers(whole):
     assert pieces[1].min.X - pieces[0].max.X > P.hole_d + P.hole_chamfer  # chamfer widens the mouth
 
 
-def _back_image(b, px_per_mm=12):
-    """Raster of the bed face: white where the white body touches the plate, dark elsewhere."""
-    from grover.render import draw
-    from grover.regions import design
+def _section_polys(body, z):
     from shapely.geometry import Polygon
     from shapely.ops import unary_union
     polys = []
-    for f in section(b["white"], Plane.XY.offset(0.05)).faces():
+    for f in section(body, Plane.XY.offset(z)).faces():
         v, tris = f.tessellate(0.02, 0.2)
         pts = [(q.X, q.Y) for q in v]
         polys.append(unary_union([Polygon([pts[i], pts[j], pts[k]]) for i, j, k in tris]))
-    white = unary_union(polys)
+    return unary_union(polys)
+
+
+def _back_image(b, px_per_mm=12):
+    """Raster of the bed face from the solids themselves: what each body puts on the plate."""
     import tempfile
     from pathlib import Path
+    from grover.render import draw
     path = Path(tempfile.mkdtemp()) / "back.png"
-    draw([("brown", design(P).silhouette), ("white", white)], path, P, bg="#808080", px_per_mm=px_per_mm, mirror=True)
+    draw([("brown", _section_polys(b["brown"], 0.05)), ("white", _section_polys(b["white"], 0.05))],
+         path, P, bg="#808080", px_per_mm=px_per_mm, mirror=True)
     return cv2.imread(str(path))
+
+
+def test_qr_modules_are_brown_body_on_the_plate(b):
+    """The dark modules are the body, not voids: brown covers panel minus white at the bed."""
+    from grover import back as B
+    from grover.regions import design
+    panel, mods = B.qr_shapes(P, design(P).hole)
+    brown = _section_polys(b["brown"], 0.05)
+    assert brown.intersection(mods).area == pytest.approx(mods.area, rel=0.02)
+
+
+def test_hole_ring_survives_the_chamfer(b):
+    """At the top of the brown ring around the hole, after the chamfer, at least a line width is left."""
+    from grover.regions import design
+    x, y, r = design(P).hole
+    probe = Pos(x - r - P.hole_ring_w - 1, y - 0.05, P.z_ring_ink - 0.02) * Box(2 * (r + P.hole_ring_w + 1), 0.1, 0.01,
+                                                                               align=(Align.MIN,) * 3)
+    pieces = sorted((s.bounding_box() for s in (b["brown"] & probe).solids()), key=lambda bb: bb.min.X)
+    assert len(pieces) == 2
+    for bb in pieces:
+        assert bb.size.X >= P.line_w - 0.02
 
 
 def test_qr_decodes_from_the_bed_face(b):

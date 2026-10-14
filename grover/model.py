@@ -44,8 +44,8 @@ def bodies(p: Params = P) -> dict[str, Part]:
     solids = {c: [] for c in COLORS}
 
     # back inlay and body
-    pockets = panel  # the URL pocket is cut with build123d below
-    solids["white"] += V.prisms(panel.difference(mods), 0, p.z_back)
+    pockets = panel.difference(mods)  # only the white is a pocket: the dark modules are brown body
+    solids["white"] += V.prisms(pockets, 0, p.z_back)
     body = _fuse(V.prisms(d.silhouette.difference(pockets), 0, p.z_back) + V.prisms(d.silhouette, p.z_back, p.z_body))
     url_solid = Part(extrude(url, p.z_back).solids())
     body = Part((body - url_solid).solids())

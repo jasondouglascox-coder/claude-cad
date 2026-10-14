@@ -7,7 +7,7 @@ from functools import lru_cache
 import numpy as np
 import segno
 import shapely
-from build123d import Align, Location, Plane, Sketch, Text, mirror
+from build123d import Align, FontStyle, Location, Plane, Sketch, Text, mirror
 from shapely.geometry import MultiPolygon, Polygon, box
 from shapely.ops import unary_union
 
@@ -44,33 +44,57 @@ def qr_shapes(p: Params, hole: tuple) -> tuple[Polygon, MultiPolygon]:
     return panel, V.multi(mods)
 
 
-def url_y(p: Params, hole: tuple, silhouette, w: float, h: float) -> float:
-    """Highest text center below the panel where a w x h box sits inside the silhouette with its margin."""
+def url_y(p: Params, hole: tuple, silhouette, glyphs) -> float:
+    """Highest text center below the panel where the glyphs (centered on the panel's x) sit inside the
+    silhouette with the text margin around them."""
     cx, cy, half = panel_box(p, hole)
     inside = silhouette.buffer(-p.text_margin)
-    y = cy - half - p.text_gap - h / 2
+    b = glyphs.bounds
+    g = shapely.affinity.translate(glyphs, cx - (b[0] + b[2]) / 2, -(b[1] + b[3]) / 2)  # centered at (cx, 0)
+    y = cy - half - p.text_gap - (b[3] - b[1]) / 2
     while y > -p.width:
-        if inside.contains(box(cx - w / 2, y - h / 2, cx + w / 2, y + h / 2)):
+        if inside.contains(shapely.affinity.translate(g, 0, y)):
             return y
         y -= 0.1
-    raise ValueError(f"the URL ({w:.1f} x {h:.1f} mm) fits nowhere under the QR panel")
+    raise ValueError(f"the URL ({b[2] - b[0]:.1f} x {b[3] - b[1]:.1f} mm) fits nowhere under the QR panel")
 
 
+def sketch_polys(sk: Sketch, tol: float = 0.02) -> MultiPolygon:
+    """A sketch's faces as shapely polygons (tessellated)."""
+    out = []
+    for f in sk.faces():
+        v, tris = f.tessellate(tol, 0.2)
+        pts = [(q.X, q.Y) for q in v]
+        out.append(unary_union([Polygon([pts[a], pts[b], pts[c]]) for a, b, c in tris]).buffer(1e-4).buffer(-1e-4))
+    return V.multi(unary_union(out))
+
+
+def _glyph(p: Params, ch: str) -> Sketch:
+    return Text(ch, p.text_size, font=p.font, font_style=FontStyle.BOLD, align=(Align.MIN, Align.NONE))  # keeps the baseline
+
+
+def url_text(p: Params) -> Sketch:
+    """The URL set glyph by glyph with p.text_tracking of extra space, so the brown between letters prints."""
+    x, parts = 0.0, []
+    for ch in p.url:
+        g = _glyph(p, ch)
+        bb = g.bounding_box()
+        parts.append(Location((x - bb.min.X, 0, 0)) * g)
+        x += bb.size.X + p.text_tracking
+    return Sketch() + parts
+
+
+@lru_cache(maxsize=4)
 def url_sketch(p: Params, hole: tuple, silhouette) -> Sketch:
     """The URL as build123d faces, mirrored, centered under the QR panel where it fits."""
     cx, cy, half = panel_box(p, hole)
-    t = Text(p.url, p.text_size, font_path=p.font, align=(Align.CENTER, Align.CENTER))
+    t = url_text(p)
     bb = t.bounding_box()
-    y = url_y(p, hole, silhouette, bb.size.X, bb.size.Y)
+    y = url_y(p, hole, silhouette, sketch_polys(t))
     t = Location((cx - bb.center().X, y - bb.center().Y, 0)) * t
     return mirror(t, Plane.YZ)
 
 
 def url_polys(p: Params, hole: tuple, silhouette, tol: float = 0.02) -> MultiPolygon:
-    """The URL faces as shapely polygons (tessellated), for tests and previews."""
-    out = []
-    for f in url_sketch(p, hole, silhouette).faces():
-        v, tris = f.tessellate(tol, 0.2)
-        pts = [(q.X, q.Y) for q in v]
-        out.append(unary_union([Polygon([pts[a], pts[b], pts[c]]) for a, b, c in tris]).buffer(1e-4).buffer(-1e-4))
-    return V.multi(unary_union(out))
+    """The URL faces as shapely polygons, for tests and previews."""
+    return sketch_polys(url_sketch(p, hole, silhouette), tol)
