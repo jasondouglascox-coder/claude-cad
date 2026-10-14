@@ -50,10 +50,18 @@ def slice_report(src: Path, dst: Path | None = None) -> dict:
     src = Path(src).resolve()
     dst = Path(dst or src.with_suffix(".sliced.3mf")).resolve()
     _run(["--slice", "1", "--export-3mf", str(dst), str(src)])
-    info = ET.fromstring(zipfile.ZipFile(dst).read("Metadata/slice_info.config"))
+    return parse_slice_info(zipfile.ZipFile(dst).read("Metadata/slice_info.config"))
+
+
+def parse_slice_info(xml: bytes | str) -> dict:
+    """Metadata/slice_info.config -> {"grams", "layers"}. A filament set that prints in several bands lists
+    them all in one element, comma separated: layer_ranges="0 2,14 15"."""
+    info = ET.fromstring(xml)
     grams = {int(f.get("id")): float(f.get("used_g")) for f in info.iter("filament")}
     layers = []
     for el in info.iter("layer_filament_list"):
-        lo, hi = (int(v) for v in el.get("layer_ranges").split())
-        layers.append((tuple(int(i) + 1 for i in el.get("filament_list").split()), lo, hi))  # file is 0-based
+        fils = tuple(int(i) + 1 for i in el.get("filament_list").split())  # file is 0-based
+        for rng in el.get("layer_ranges").split(","):
+            lo, hi = (int(v) for v in rng.split())
+            layers.append((fils, lo, hi))
     return {"grams": grams, "layers": sorted(layers, key=lambda r: r[1])}
