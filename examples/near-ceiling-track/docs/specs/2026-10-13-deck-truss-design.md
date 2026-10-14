@@ -135,3 +135,17 @@ plates and packing, and the bus cradle.
   derail-catch check. `Params.printer` hands the bed size to cadkit. The viewer's network setting is now
   `CADKIT_VIEWER_HOST` (was `HOTRAIN_VIEWER_HOST`).
 - No geometry changed; the full suite passes as before.
+
+## Amendments (2026-10-14): real Code 100 rail profile
+
+- The rail is **Walthers 948-10000** (Code 100 nickel silver, 36", pkg 17). Walthers doesn't publish its profile, so
+  params now use the NMRA RP-15.1 Code 100 nominals instead of guesses: base 0.090" (2.286 mm, was 2.2), head
+  0.045" (1.143 mm, was 1.1), base edge 0.018" (0.457 mm) with its top rising 15°, head depth 0.023". Measure the
+  real rail with calipers when it arrives and update these.
+- Effect: groove 2.486 mm (0.1 mm play per side); rail centers 17.743 mm apart (was 17.7).
+- **The lip check is now a test.** With the base's real edge and slope, the base slides under the 0.6 mm-high lip
+  with 0.089 mm to spare (room for a slightly drooping printed overhang), and the 0.3 mm lip still overlaps the base
+  by 0.1 mm with the rail pushed hard against the gauge-side shoulder. One side only stays: a lip on the gauge side
+  would sit 1.54 mm below the railhead, inside the 1.6 mm deep-flange limit.
+- The fit coupon's three groove samples now give 0.05 / 0.1 / 0.15 mm play per side against the real base. If the
+  rail won't go under the lips on any of them, raise `shoulder_h` to 0.8.

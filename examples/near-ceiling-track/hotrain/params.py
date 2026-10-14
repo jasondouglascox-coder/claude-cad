@@ -8,11 +8,15 @@ INCH = 25.4
 
 @dataclass(frozen=True)
 class Params:
-    # track (NMRA HO, Code 100)
+    # track (NMRA HO). Rail: Walthers 948-10000 Code 100 nickel silver; Walthers doesn't publish its profile, so
+    # these are NMRA RP-15.1 nominals for Code 100. Check with calipers when it arrives.
     gauge: float = 16.6
-    rail_height: float = 2.54
-    rail_base_w: float = 2.2
-    rail_head_w: float = 1.1
+    rail_height: float = 0.100 * INCH  # A
+    rail_base_w: float = 0.090 * INCH  # B
+    rail_head_w: float = 0.045 * INCH  # C
+    rail_base_edge: float = 0.018 * INCH  # D: base thickness at its edge
+    rail_head_depth: float = 0.023 * INCH  # H
+    rail_base_slope: float = 15.0  # degrees: base top rises from the edge toward the web
     track_offset: float = 1.75 * INCH  # wall to track centerline (room for the corner bowstrings)
     car_half_w: float = 20.0  # widest HO car body half-width, for wall clearance
     car_sill_h: float = 12.0  # car body underside above the rail top (~3.5 scale ft), for the tip check

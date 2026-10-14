@@ -1,3 +1,4 @@
+import math
 from dataclasses import replace
 
 import pytest
@@ -32,6 +33,18 @@ def test_ladder_gauge(p):
     centres = [(a + b) / 2 for a, b in grooves]
     assert widths == pytest.approx([p.groove_w] * 2, abs=0.01)
     assert centres[1] - centres[0] == pytest.approx(p.rail_ctc, abs=0.01)
+
+
+def test_rail_base_slides_under_the_lip_and_stays_caught():
+    """The real Code 100 base (NMRA RP-15.1: edge rail_base_edge thick, top sloping up rail_base_slope degrees)
+    goes under the outside lip with room for a drooping printed overhang, and the lip still overlaps the base edge
+    when the rail sits hard against the gauge-side shoulder."""
+    play = (P.groove_w - P.rail_base_w) / 2  # per side, rail centered
+    reach = P.spike_lip_overhang - play  # lip over the base edge, rail centered
+    thick = P.rail_base_edge + reach * math.tan(math.radians(P.rail_base_slope))  # base thickness under the lip tip
+    assert P.shoulder_h - thick >= 0.05, "base won't slide under the lip"
+    assert P.spike_lip_overhang - 2 * play >= 0.1 - 1e-9, "rail can slip out from under the lip"
+    assert play >= 0.05, "groove too tight for the real base"
 
 
 def test_flangeway_clear_for_deep_vintage_flanges():
