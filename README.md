@@ -1,19 +1,22 @@
 # Grover & Pals keychain
 
-4-color multi-material keychain traced from `art/logo.svg`, QR to groverandpals.com on the back.
+Four-color keychain of the brand logo (`art/logo.svg`), 50 mm wide, with a QR code and the URL on the back.
+Design spec: `docs/specs/2026-10-14-keychain-v2.md`. v1 (hand-sketched cat) is kept in `archive/v1/`.
 
 ```bash
-uv run python -m grover.build all      # STEP, STLs, 3MF, previews -> out/
-uv run pytest -q                        # ~3 min
+uv sync
+uv run python -m grover.build            # out/step, out/plates/grover_keychain.3mf, out/preview
+uv run pytest -q -n 4 -m "not slow"      # ~3 min; the slow test runs the plate through Bambu Studio's CLI
 ```
 
-## Printing (Bambu A1 + AMS lite)
-1. Bambu Studio: select all four `out/stl/grover_*.stl` and import together; answer **Yes** to
-   "load as a single object with multiple parts".
-2. Assign filaments per part: orange, yellow, white, brown.
-3. The model is already in print orientation: QR side down on the bed. Smooth/textured PEI both work;
-   smooth plate gives the glossiest QR.
-4. 0.2 mm layers (all Z steps are multiples of 0.2), 0.4 nozzle, 4 wall loops (hole strength),
-   no supports, Arachne walls (default).
+## How it is built
+The logo's raster is classified into its palette; the dark line work is split into thick marks (kept as drawn)
+and thin strokes (re-drawn 0.5 mm wide); fills are cleaned to nozzle-printable widths; everything is vectorized
+and stacked into print bands (see the spec's table). Every dimension is in `grover/params.py`.
 
-Tunables live in `grover/params.py` (size, zone heights, outline width, hole, QR module size).
+## Printing (Bambu A1 + AMS lite, 0.2 mm layers, 0.4 nozzle)
+1. File → Open Project: `out/plates/grover_keychain.3mf`. It opens with a filament per body: orange 1, yellow 2,
+   white 3, brown 4 (change the slots in `params.py` if yours differ).
+2. The back (QR + URL) is on the plate; textured PEI gives a matte finish that scans well.
+3. No supports. "Flush into object's infill" hides most purge in the brown body.
+4. Expect about 14 filament changes: 3 on the back inlay, 3 in the base band, 6 in the face band, 2 on top.

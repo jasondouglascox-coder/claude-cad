@@ -1,94 +1,111 @@
-"""Every dimension of the keychain. Origin = ring center, +Y up (front view), mm."""
-
+"""Every dimension of the keychain in one place (mm). Origin = ring center, +Y up in the front view."""
 from dataclasses import dataclass
+from pathlib import Path
+
+from cadkit import Printer
+
+ROOT = Path(__file__).resolve().parent.parent
+ART = ROOT / "art" / "logo.svg"
+FONT = "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf"
 
 
 @dataclass(frozen=True)
 class Params:
-    url: str = "https://groverandpals.com"
+    qr_text: str = "HTTPS://GROVERANDPALS.COM"  # upper case: alphanumeric mode fits the smallest QR
+    url: str = "groverandpals.com"
 
-    # Colors (RGB 0-1) — Grover orange, banner yellow, white, site dark brown #3E2F27
-    yellow: tuple = (0.965, 0.855, 0.110)
-    orange: tuple = (0.910, 0.537, 0.169)
-    white: tuple = (1.0, 1.0, 1.0)
-    brown: tuple = (0.243, 0.184, 0.153)
+    # filaments: AMS slot per color, and display colors (RGB 0-1)
+    filament: tuple = (("orange", 1), ("yellow", 2), ("white", 3), ("brown", 4))
+    rgb: tuple = (("orange", (0.91, 0.54, 0.17)), ("yellow", (0.965, 0.855, 0.11)),
+                  ("white", (1.0, 1.0, 1.0)), ("brown", (0.243, 0.184, 0.153)))
 
-    # Overall size: ribbon tip to tip
-    width: float = 50.0
-    figure_drop: float = 0.10  # Grover + ribbon sit this fraction of the ring diameter lower than the logo
-    tail_tuck: float = 1.5  # mm the tails extend under the ring
-    tail_in: float = 3.0  # mm each ribbon tail slides toward the middle
+    # size
+    width: float = 50.0  # ribbon tip to tip, sets the art scale
+    figure_drop: float = 2.0  # cat + ribbon moved down from the logo position
+    ear_clear: float = 1.5  # ear tips stay this far inside the ring's outer circle
 
-    # Keyring hole through the ring at 12 o'clock (replaces the top paw print)
-    hole_r: float = 1.75  # 3.5 mm: room for a lobster-clasp hook (~2 mm wire)
+    # keyring hole, replacing the top paw print
+    hole_d: float = 3.5
     hole_wall: float = 2.0  # plastic between the hole and the outer edge
-    hole_chamfer: float = 0.5  # 45 deg on both faces
+    hole_ring_w: float = 0.6  # brown ring around the hole, raised like a paw print
+    hole_chamfer: float = 0.4
 
-    # Linework
-    line_w: float = 0.5  # generated outline on the raised side of every relief step
-    detail_gap: float = 0.45  # letters / paw prints keep this much clear space from outlines
-    min_detail: float = 0.4  # mm, brown/white details thinner than this are dropped
-    min_detail_area: float = 0.25  # mm^2
-    eye_glint_min_r: float = 0.3
-    stroke_w: float = 0.45  # sketch lines inside Grover (paw tops, inner ears, mouth)
+    # ink and fills
+    line_w: float = 0.5  # every thin stroke is re-drawn this wide
+    ink_thick: float = 0.7  # marks at least this wide in the art keep their traced shape
+    ink_min_src: float = 0.12  # strokes thinner than this in the art are dropped (the cat's outline is ~0.25)
+    ink_min_len: float = 0.8  # mm, shorter stroke fragments (specks) are dropped
+    fill_min: float = 0.6  # fills narrower than this are dropped (ear tufts, fur wisps)
+    min_island: float = 0.4  # mm^2, smaller fill pieces are dropped
+    eye_glint_min_d: float = 0.6
+    paw_min_area: float = 5.0  # mm^2, white blobs touching the ribbon this big are the paws
+    paw_close: float = 0.7  # mm, gaps in the paw outline up to this wide don't join a paw to the chest
+    cat_min_area: float = 20.0  # mm^2, smaller cat-colored blobs are stray pixels, not the cat
+    letter_surround: float = 0.6  # a mark with this much ribbon around it is a letter
+    circle_w: float = 0.5  # drawn ring/disc circles
 
-    # Grover
-    ear_len: float = 4.0  # mm below the top of the head that counts as ear (tip sharpening)
-    ear_tip_trim: float = 1.6  # mm around each ear tip rebuilt from its straight edges
-    eye_clear: float = 0.6  # mm around each eye where sketch lines are dropped
+    # layers: 0.2 mm (0.16 looked no better and cost 5 more swaps; set first_layer for profiles that differ)
+    printer: Printer = Printer(layer=0.2)
+    back_layers: int = 3  # QR / URL inlay depth (0.6: white opaque over brown)
+    body_layers: int = 9  # back inlay + solid brown, to the top of the body (1.8)
+    base_layers: int = 3  # white/orange base band (to 2.4)
+    face_layers: int = 2  # ribbon, cat, ink (to 2.8)
+    top_layers: int = 2  # paws, eyes, nose, letters (to 3.2)
+    ring_ink_layers: int = 1  # ring circles, paw prints, hole ring above the base band (to 2.6)
 
-    # Fur patches (orange on Grover's white face)
-    patch_close: float = 0.5  # mm, fills white fur strokes inside orange
-    patch_open: float = 0.25  # mm, drops orange wisps
-    min_patch_area: float = 0.8  # mm^2
-    min_white_island: float = 1.5  # mm^2
+    # back: QR panel and URL text
+    qr_module: float = 0.9  # 2.25 nozzle widths; 1.0 left no room for the URL under the panel
+    qr_quiet: int = 2  # modules of white around the code
+    qr_corner: float = 1.5  # panel corner radius
+    qr_gap: float = 0.6  # panel clear of the hole ring
+    font: str = FONT
+    text_size: float = 3.4  # em; ~0.46 mm strokes in Arial Rounded MT Bold, fine on the first layer
+    text_gap: float = 0.8  # between the panel and the text
+    text_margin: float = 1.0  # text clear of the silhouette edge
 
-    # QR (back)
-    qr_error: str = "m"
-    qr_module: float = 0.85
-    qr_quiet: float = 1.5  # quiet zone, in modules
-    qr_y: float = 0.0  # panel center (ring center)
-    qr_corner: float = 1.5
-    qr_grow: float = 0.02  # makes diagonal-touching modules overlap (manifold mesh)
+    # vectorizing
+    vec_tol: float = 0.02  # mm, Douglas-Peucker
+    vec_smooth: float = 0.05  # mm, blur before contouring
 
-    # Z levels (multiples of the 0.2 mm layer height)
-    layer: float = 0.2
-    back_t: float = 0.4  # QR inlay depth from the bed: 2 layers (each QR layer costs ~3 color swaps)
-    core_top: float = 2.2
-    # three print layers: base (backdrop, ribbon flaps) / ring, ribbon, face / paws
-    zone_tops: tuple = (("disk", 2.8), ("tail", 2.8), ("ring", 3.6), ("banner", 3.6), ("cat", 3.6), ("paw", 4.2))
-
-    ring_sink: float = 0.4  # ring's orange sits this far below its outlines and paw prints
-    letter_raise: float = 0.4  # ribbon letters stand this far above the yellow
-    letter_smooth: float = 0.1  # mm round smoothing of the traced letter outlines
-    letter_tol: float = 0.01  # mm trace tolerance for letters (finer than vec_tol)
-    letter_blur: float = 0.08  # mm blur before tracing letters (melts pixel stair-steps)
-    eye_top: float = 3.8  # eyes just above the face (3.6), below the nose (paw height)
+    def z(self, layers: int) -> float:
+        """Top of layer `layers` (0 = the bed)."""
+        return 0.0 if layers == 0 else round(self.printer.first + (layers - 1) * self.printer.layer, 6)
 
     @property
-    def zone_top(self) -> dict:
-        return dict(self.zone_tops)
+    def z_back(self) -> float:
+        return self.z(self.back_layers)
 
-    # Tracing (art/logo.svg)
-    px_mm: float = 40.0  # working raster resolution (source art is ~62 px/mm at 50 mm)
-    mode_sigma: float = 0.03  # mm, smooths anti-aliased edges
-    zone_sigma: float = 0.04
-    fringe: float = 0.25  # mm, zone strips thinner than this are anti-aliasing, not art
-    line_reach: float = 0.5  # mm, linework joins the highest zone within this distance
-    min_zone_area: float = 1.0  # mm^2
+    @property
+    def z_body(self) -> float:
+        return self.z(self.body_layers)
 
-    # Vectorizing
-    vec_upsample: int = 2
-    vec_smooth: float = 0.03  # mm gaussian before contouring
-    vec_tol: float = 0.04  # mm Douglas-Peucker (keeps corners sharp)
-    zone_hole_fill: float = 3.0  # mm^2, smaller holes in a traced zone are misclassified art
-    zone_clean: float = 0.45  # mm mitred close/open on traced zone outlines
-    gap_close: float = 0.4  # mm, slivers between sketched and fitted shapes narrower than 2x are filled
-    underlap: float = 0.05  # lower zones extend under higher ones so nothing cracks open
+    @property
+    def z_base(self) -> float:
+        return self.z(self.body_layers + self.base_layers)
 
-    # Bambu A1
-    bed: float = 256.0
-    bed_margin: float = 5.0
+    @property
+    def z_ring_ink(self) -> float:
+        return self.z(self.body_layers + self.base_layers + self.ring_ink_layers)
+
+    @property
+    def z_face(self) -> float:
+        return self.z(self.body_layers + self.base_layers + self.face_layers)
+
+    @property
+    def z_top(self) -> float:
+        return self.z(self.body_layers + self.base_layers + self.face_layers + self.top_layers)
+
+    @property
+    def thickness(self) -> float:
+        return self.z_top
+
+    @property
+    def filaments(self) -> dict:
+        return dict(self.filament)
+
+    @property
+    def colors(self) -> dict:
+        return dict(self.rgb)
 
 
 P = Params()

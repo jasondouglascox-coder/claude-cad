@@ -1,23 +1,30 @@
 [project]
 name = "grover-keychain"
-version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.12"
+version = "2.0.0"
+description = "Grover & Pals four-color keychain: the brand logo as a relief, URL inlaid on the back"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "build123d==0.13.0",
-    "ezdxf>=1.4.4",
-    "scipy>=1.18.1",
+    "cadkit",
+    "numpy>=2",
+    "opencv-python-headless>=4.10",
+    "scikit-image>=0.24",
+    "scipy>=1.14",
     "segno>=1.6.6",
-    "shapely>=2.2.0",
+    "shapely>=2.0",
 ]
+
+[tool.uv.sources]
+cadkit = { path = "../../claude-cad/cadkit", editable = true }
 
 [dependency-groups]
 dev = [
-    "matplotlib>=3.11.2",
-    "opencv-python-headless>=5.0.0.93",
-    "pytest>=9.1.1",
+    "matplotlib>=3.9",
+    "pytest>=8",
+    "pytest-xdist>=3.8",
 ]
 
 [tool.pytest.ini_options]
+markers = ["slow: drives Bambu Studio's CLI; skipped when it isn't installed"]
 pythonpath = ["."]
 testpaths = ["tests"]

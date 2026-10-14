@@ -1,73 +1,79 @@
-"""Design polygons -> one fused solid per filament. Print orientation: back face (QR) on Z=0.
+"""2D regions -> one body per filament, in PRINT orientation: back on Z = 0, front relief up.
 
-Z stack:  0 .. back_t        QR panel (white) + modules (brown) inlaid; core elsewhere
-          back_t .. core_top core: yellow under the ribbon, orange elsewhere
-          core_top .. zone   each color patch rises to its zone's height
-                             (disk < ring < tails < ribbon < Grover)
-"""
-
+    0 .. z_back       back inlay: white QR panel (modules = brown body) and white URL, brown elsewhere
+    z_back .. z_body  solid brown
+    z_body .. z_base  base band: white under disc / cat / ribbon, orange ring
+    z_base .. z_face  face band: yellow ribbon, white cat + orange patches, brown ink; ring ink to z_ring_ink
+    z_face .. z_top   top band: white paws + glints, brown eyes, nose, letters, paw lines
+Every body may be several solids (brown ink columns stand on white and orange); the fused keychain is one."""
 from functools import lru_cache
 
-from build123d import Align, Color, Compound, Cone, Part, Pos
-from shapely.ops import unary_union
+from build123d import Align, Color, Compound, Cone, Cylinder, Part, Pos, extrude
+from shapely.geometry import Point
 
-from . import vector as V
-from .design import design
+from . import back as B
+from . import vec as V
 from .params import P, Params
+from .regions import band_regions, design
 
 COLORS = ("orange", "yellow", "white", "brown")
 
 
-def _unpinch(g, eps: float = 0.01):
-    return g.buffer(eps, join_style="mitre").buffer(-eps, join_style="mitre")
-
-
 def _fuse(solids: list) -> Part:
+    if not solids:
+        raise ValueError("nothing to fuse")
     out = solids[0] if len(solids) == 1 else solids[0].fuse(*solids[1:]).clean()
     return Part(out.solids())
+
+
+def hole_cutter(p: Params, hole: tuple) -> Part:
+    hx, hy, hr = hole
+    c = p.hole_chamfer
+    mn = (Align.CENTER, Align.CENTER, Align.MIN)
+    cut = Pos(hx, hy, -1) * Cylinder(hr, p.thickness + 2, align=mn)
+    cut += Pos(hx, hy, p.z_ring_ink - c) * Cone(hr, hr + c + 0.05, c + 0.05, align=mn)  # the hole ring's top
+    cut += Pos(hx, hy, -0.05) * Cone(hr + c + 0.05, hr, c + 0.05, align=mn)
+    return Part(cut.solids())
 
 
 @lru_cache(maxsize=2)
 def bodies(p: Params = P) -> dict[str, Part]:
     d = design(p)
-    panel, mods = V.qr_shapes(p)
-    panel_white = panel.difference(mods)
+    panel, mods = B.qr_shapes(p, d.hole)
+    url = B.url_sketch(p, d.hole, d.silhouette)
+    solids = {c: [] for c in COLORS}
 
-    solids: dict[str, list] = {c: [] for c in COLORS}
-    # Per color, stack one slab per layer band: footprint = every patch reaching at least that high.
-    # Pinches (patches touching at a single point) are closed first, so each mesh stays manifold.
-    tops = sorted({z for _, z, _ in d.pieces})
-    for c in COLORS:
-        mine = [(z, g) for f, z, g in d.pieces if f == c]
-        lo = p.core_top
-        for hi in tops:
-            foot = unary_union([g for z, g in mine if z >= hi - 1e-9])
-            if not foot.is_empty:
-                solids[c] += V.prisms(_unpinch(foot), lo, hi)
-            lo = hi
-    for f, g in d.core.items():
-        solids[f] += V.prisms(g.difference(panel), 0.0, p.back_t)
-        solids[f] += V.prisms(g, p.back_t, p.core_top)
-    solids["white"] += V.prisms(panel_white, 0.0, p.back_t)
-    solids["brown"] += V.prisms(mods, 0.0, p.back_t)
+    # back inlay and body
+    pockets = panel  # the URL pocket is cut with build123d below
+    solids["white"] += V.prisms(panel.difference(mods), 0, p.z_back)
+    body = _fuse(V.prisms(d.silhouette.difference(pockets), 0, p.z_back) + V.prisms(d.silhouette, p.z_back, p.z_body))
+    url_solid = Part(extrude(url, p.z_back).solids())
+    body = Part((body - url_solid).solids())
+    solids["brown"].append(body)
+    solids["white"].append(url_solid)
 
-    # chamfer both ends of the keyring hole so a clasp slides in instead of catching an edge
-    hx, hy, hr = d.hole
-    c_ = p.hole_chamfer
-    top = p.zone_top["ring"] - p.ring_sink
-    cutter = (Pos(hx, hy, top - c_) * Cone(hr, hr + c_ + 0.05, c_ + 0.05, align=(Align.CENTER, Align.CENTER, Align.MIN))
-              + Pos(hx, hy, -0.05) * Cone(hr + c_ + 0.05, hr, c_ + 0.05, align=(Align.CENTER, Align.CENTER, Align.MIN)))
+    # front bands
+    for color, lo, hi, g in band_regions(d):
+        if not g.is_empty:
+            solids[color] += V.prisms(g, getattr(p, lo), getattr(p, hi))
 
+    cutter = hole_cutter(p, d.hole)
     out = {}
     for c in COLORS:
-        body = _fuse(solids[c])
-        if body.bounding_box().max.Z > 0 and (body & cutter).volume > 1e-6:
-            body = Part((body - cutter).solids())
-        body.label = f"grover_{c}"
-        body.color = Color(*getattr(p, c))
-        out[c] = body
+        part = _fuse(solids[c])
+        if (part & cutter).volume > 1e-6:
+            part = Part((part - cutter).solids())
+        part.label = f"grover_{c}"
+        part.color = Color(*p.colors[c])
+        out[c] = part
     return out
 
 
-def assembly(p: Params = P) -> Compound:
+def keychain(p: Params = P) -> Compound:
+    """All four bodies, labeled and colored, as one print part."""
     return Compound(children=list(bodies(p).values()), label="grover_keychain")
+
+
+def fused(p: Params = P) -> Part:
+    """Every color fused: must be one solid."""
+    return _fuse(list(bodies(p).values()))

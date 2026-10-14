@@ -1,60 +1,79 @@
-"""CLI: uv run python -m grover.build [all|step|stl|3mf|preview]"""
-
+"""uv run python -m grover.build [all|step|3mf|preview] [--out out]"""
+import argparse
+import json
 import sys
 import time
 from pathlib import Path
 
-from build123d import Compound, Mesher, export_step, export_stl
+from build123d import export_step
 
+from cadkit import bambu3mf
+from cadkit.export import ISO, write_svg
+
+from . import back as B
 from . import render as R
-from .model import COLORS, assembly, bodies
-from .params import P
+from .model import COLORS, bodies, keychain
+from .params import P, Params
+from .regions import design
 
 OUT = Path(__file__).resolve().parent.parent / "out"
 
 
-def step():
-    (OUT / "step").mkdir(parents=True, exist_ok=True)
-    export_step(assembly(P), str(OUT / "step" / "grover_keychain.step"))
-
-
-def stl():
-    (OUT / "stl").mkdir(parents=True, exist_ok=True)
-    for c, body in bodies(P).items():
-        export_stl(body, str(OUT / "stl" / f"grover_{c}.stl"), tolerance=0.01, angular_tolerance=0.1)
-
-
-def three_mf(path: Path | None = None) -> Path:
-    path = path or OUT / "grover_keychain.3mf"
+def settings_file(p: Params, out: Path) -> Path:
+    """Bambu project settings from cadkit's A1 template, with this project's layer heights."""
+    cfg = json.loads(Path(bambu3mf.SETTINGS).read_text())
+    cfg["layer_height"] = str(p.printer.layer)
+    cfg["initial_layer_print_height"] = str(p.printer.first)
+    cfg["print_settings_id"] = f"{p.printer.layer:.2f}mm Optimal @BBL A1"
+    path = out / "bambu_settings.config"
     path.parent.mkdir(parents=True, exist_ok=True)
-    m = Mesher()
-    for c in COLORS:
-        m.add_shape(bodies(P)[c], linear_deflection=0.01, angular_deflection=0.1)
-    m.write(str(path))
+    path.write_text(json.dumps(cfg, indent=4))
     return path
 
 
-def preview():
-    (OUT / "preview").mkdir(parents=True, exist_ok=True)
+def step(out: Path):
+    (out / "step").mkdir(parents=True, exist_ok=True)
+    export_step(keychain(P), str(out / "step" / "grover_keychain.step"))
+
+
+def three_mf(out: Path) -> Path:
+    path = out / "plates" / "grover_keychain.3mf"
+    path.parent.mkdir(parents=True, exist_ok=True)
     b = bodies(P)
-    R.flat(b, str(OUT / "preview" / "front.png"))
-    R.flat(b, str(OUT / "preview" / "back.png"), up=False)
-    R.iso(b, str(OUT / "preview" / "iso.png"))
-    print("QR decodes to:", R.decode_qr(str(OUT / "preview" / "back.png")))
+    bambu3mf.write(path, [("grover_keychain", [(b[c].label, b[c], P.filaments[c]) for c in COLORS])],
+                   settings=settings_file(P, out))
+    return path
 
 
-TARGETS = {"step": step, "stl": stl, "3mf": three_mf, "preview": preview}
+def preview(out: Path):
+    d = design(P)
+    pv = out / "preview"
+    R.draw(R.front_layers(d), pv / "front.png", P, px_per_mm=20)
+    panel, mods = B.qr_shapes(P, d.hole)
+    R.draw([("brown", d.silhouette.difference(Point(*d.hole[:2]).buffer(d.hole[2]))),
+            ("white", panel.difference(mods)), ("white", B.url_polys(P, d.hole, d.silhouette))],
+           pv / "back.png", P, px_per_mm=20, mirror=True)
+    write_svg(keychain(P), pv / "iso.svg", ISO)
 
 
-def main(argv):
-    names = argv or ["all"]
-    if names == ["all"]:
-        names = list(TARGETS)
+from shapely.geometry import Point  # noqa: E402
+
+TARGETS = {"step": step, "3mf": three_mf, "preview": preview}
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(prog="grover.build")
+    ap.add_argument("targets", nargs="*", default=["all"])
+    ap.add_argument("--out", default=str(OUT))
+    a = ap.parse_args(argv)
+    out = Path(a.out)
+    names = list(TARGETS) if a.targets == ["all"] else a.targets
     for n in names:
         t = time.time()
-        TARGETS[n]()
+        TARGETS[n](out)
         print(f"{n}: {time.time() - t:.1f}s")
+    return 0
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    sys.exit(main())
