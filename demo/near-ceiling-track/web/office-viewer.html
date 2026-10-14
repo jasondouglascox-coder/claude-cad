@@ -1,0 +1,223 @@
+<title>Office Railway</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Overpass:wght@400;600&display=swap">
+<style>
+  /* Layout: one full-screen 3D stage; a slim control strip on top, a layer bar on the bottom. */
+  :root {
+    --bg: #eef1f0;          /* stage behind the room */
+    --panel: #ffffffe6;
+    --ink: #1d2626;
+    --muted: #5b6766;
+    --accent: #1f8a86;      /* deep version of the wall teal */
+    --line: #c9d3d2;
+    --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-body: "Overpass", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141a1a; --panel: #1d2525e6; --ink: #e7efee; --muted: #9db0ae; --accent: #6fd8d3; --line: #33403f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141a1a; --panel: #1d2525e6; --ink: #e7efee; --muted: #9db0ae; --accent: #6fd8d3; --line: #33403f;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); overflow: hidden; }
+  #stage { position: fixed; inset: 0; touch-action: none; }
+  .bar {
+    position: fixed; left: 0; right: 0; z-index: 2;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding-inline: 16px; background: var(--panel); backdrop-filter: blur(8px);
+    border-color: var(--line); border-style: solid; border-width: 0;
+  }
+  .top { top: 0; padding-block: calc(env(safe-area-inset-top, 0px) + 10px) 10px; border-bottom-width: 1px; }
+  .bottom { bottom: 0; padding-block: 10px calc(env(safe-area-inset-bottom, 0px) + 10px); border-top-width: 1px; }
+  h1 {
+    margin: 0 auto 0 0; font-family: var(--font-display); font-weight: 600; font-size: 1.35rem;
+    letter-spacing: 0.02em; text-wrap: balance;
+  }
+  h1 small { font-family: var(--font-body); font-weight: 400; font-size: 0.75rem; color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+  .group { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); align-self: center; margin-right: 2px; }
+  button, .chip {
+    font: 600 0.8rem/1 var(--font-body); color: var(--ink); background: transparent;
+    border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; cursor: pointer;
+  }
+  button:hover, .chip:hover { border-color: var(--accent); }
+  button:focus-visible, .chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; user-select: none; }
+  .chip input { margin: 0; accent-color: var(--accent); }
+  #status {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1;
+    font-size: 0.85rem; color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 14px; font-variant-numeric: tabular-nums; max-width: calc(100% - 32px);
+  }
+  @media (max-width: 520px) { h1 small { display: none; } }
+</style>
+
+<div id="stage" aria-label="3D view of the office railway. Drag to orbit, pinch or scroll to zoom, two fingers to pan."></div>
+
+<div class="bar top">
+  <h1>Office Railway <small>HO, 12" below the ceiling</small></h1>
+  <div class="group" role="group" aria-label="Camera views">
+    <button id="v-overview" data-view="overview" aria-pressed="true">Overview</button>
+    <button id="v-bridge" data-view="bridge">Bridge corner</button>
+    <button id="v-inside" data-view="inside">Inside corner</button>
+    <button id="v-below" data-view="below">From below</button>
+  </div>
+</div>
+
+<div class="bar bottom">
+  <span class="label">Show</span>
+  <div class="group" id="layers"></div>
+</div>
+
+<div id="status" role="status">Loading the office…</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+// Room frame in the files: meters, x to the right, y up, z toward the viewer (the back of the room is -z).
+let SECTIONS = []; // filled from models/manifest.json
+const VIEWS = {
+  overview: { pos: [1.65, 3.6, 3.9], target: [1.65, 2.0, -2.2] },
+  bridge:   { pos: [1.95, 1.75, -1.25], target: [2.85, 2.42, -2.85] },
+  inside:   { pos: [1.35, 1.75, -1.25], target: [0.45, 2.42, -2.85] },
+  below:    { pos: [1.65, 0.7, -1.4], target: [1.65, 2.42, -2.6] },
+};
+
+const stage = document.getElementById("stage");
+const status = document.getElementById("status");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.02, 60);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.screenSpacePanning = true;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9493, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(-2, 6, 4);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.6);
+fill.position.set(3, -2, -3);
+scene.add(fill);
+
+function setBackground() {
+  scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#eef1f0");
+}
+setBackground();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", setBackground);
+new MutationObserver(setBackground).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+let flight = null;
+function goTo(name, instant = false) {
+  const v = VIEWS[name];
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === name)));
+  const to = { pos: new THREE.Vector3(...v.pos), target: new THREE.Vector3(...v.target) };
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (instant || reduced) {
+    camera.position.copy(to.pos); controls.target.copy(to.target); controls.update(); flight = null; return;
+  }
+  flight = { from: { pos: camera.position.clone(), target: controls.target.clone() }, to, t0: performance.now(), ms: 900 };
+}
+document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => goTo(b.dataset.view)));
+controls.addEventListener("start", () => {
+  flight = null;
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", "false"));
+});
+goTo("overview", true);
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  renderer.domElement.style.width = "100%";
+  renderer.domElement.style.height = "100%";
+  camera.aspect = w / h;
+  camera.fov = w < h ? 72 : 50; // tall phone screens need a wider vertical view to see the room
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+resize();
+
+// Layer toggles and loading, driven by models/manifest.json
+const groups = {};
+const layers = document.getElementById("layers");
+const loader = new GLTFLoader();
+
+async function boot() {
+  try {
+    SECTIONS = await (await fetch("models/manifest.json")).json();
+  } catch (err) {
+    status.textContent = "Couldn't read the model list. Reload the page to try again.";
+    return;
+  }
+  for (const s of SECTIONS) {
+    const g = new THREE.Group();
+    g.name = s.id;
+    scene.add(g);
+    groups[s.id] = g;
+    const chip = document.createElement("label");
+    chip.className = "chip";
+    chip.innerHTML = `<input type="checkbox" id="layer-${s.id}" checked> ${s.label}`;
+    chip.querySelector("input").addEventListener("change", e => { g.visible = e.target.checked; });
+    layers.appendChild(chip);
+  }
+  // small files first so the corners and walls appear quickly on a phone
+  const jobs = SECTIONS.flatMap(s => s.files.map(f => ({ ...f, section: s })));
+  const totalMB = jobs.reduce((a, j) => a + j.mb, 0);
+  const got = new Map(jobs.map(j => [j.path, 0]));
+  const show = () => {
+    const done = jobs.reduce((a, j) => a + got.get(j.path) * j.mb, 0);
+    status.textContent = `Loading the office\u2026 ${Math.round(done)} of ${Math.round(totalMB)} MB`;
+  };
+  show();
+  let loaded = 0;
+  for (const j of [...jobs].sort((a, b) => a.mb - b.mb)) {
+    loader.load(j.path, gltf => {
+      gltf.scene.traverse(o => {
+        if (o.isMesh && o.material) { o.material.side = THREE.DoubleSide; o.material.metalness = 0.05; o.material.roughness = 0.75; }
+      });
+      groups[j.section.id].add(gltf.scene);
+      got.set(j.path, 1);
+      loaded += 1;
+      show();
+      if (loaded === jobs.length) status.hidden = true;
+    }, e => {
+      if (e.total) { got.set(j.path, e.loaded / e.total); show(); }
+    }, err => {
+      status.textContent = `Couldn't load ${j.section.label}. Reload the page to try again.`;
+      console.error(err);
+    });
+  }
+}
+boot();
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  if (flight) {
+    const k = Math.min(1, (now - flight.t0) / flight.ms);
+    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    camera.position.lerpVectors(flight.from.pos, flight.to.pos, e);
+    controls.target.lerpVectors(flight.from.target, flight.to.target, e);
+    if (k === 1) flight = null;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+</script>
