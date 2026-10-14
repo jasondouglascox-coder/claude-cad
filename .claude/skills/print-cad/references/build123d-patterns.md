@@ -1,12 +1,13 @@
 # build123d patterns and traps (build123d 0.13.0, Python 3.12)
 
-Everything here was verified while building `demo/near-ceiling-track`. When in doubt, spike it in a scratch script first. A 10-line probe is cheaper than a wrong plan.
+Everything here was verified while building `examples/near-ceiling-track`. When in doubt, spike it in a scratch script first. A 10-line probe is cheaper than a wrong plan. Helpers that already exist in `cadkit` are named; use them instead of copying the snippets.
 
 ## Setup
 
 ```bash
-uv init --python 3.12 && uv python pin 3.12 && uv add build123d==0.13.0 && uv add --dev pytest
+uv init --python 3.12 && uv python pin 3.12 && uv add build123d==0.13.0 && uv add --dev pytest pytest-xdist
 # pyproject: [tool.pytest.ini_options] pythonpath = ["."]  testpaths = ["tests"]
+# cadkit:    dependencies += ["cadkit"]; [tool.uv.sources] cadkit = { path = "../../cadkit", editable = true }
 ```
 
 ## 2D profile → part (algebra mode)
@@ -14,10 +15,10 @@ uv init --python 3.12 && uv python pin 3.12 && uv add build123d==0.13.0 && uv ad
 ```python
 from build123d import Align, Bezier, Face, Line, Wire, Polygon, Pos, Rot, Rectangle, Sketch, extrude
 
-def rect(u0, u1, v0, v1):  # corner-to-corner rectangle
+def rect(u0, u1, v0, v1):  # corner-to-corner rectangle (cadkit.shapes.rect)
     return Pos(u0, v0) * Rectangle(u1 - u0, v1 - v0, align=(Align.MIN, Align.MIN))
 
-def poly(*pts):  # ALWAYS use this for non-rectangles: forces counter-clockwise
+def poly(*pts):  # ALWAYS use this for non-rectangles: forces counter-clockwise (cadkit.shapes.poly)
     area = sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1]))
     return Polygon(*(pts if area > 0 else pts[::-1]), align=None)
 
@@ -31,7 +32,7 @@ part = extrude(prof, thickness)                              # print orientation
 
 Curved band (e.g. an arch rib): Bezier lower edge, the same curve shifted up by the thickness for the upper edge, closed with Lines, then `Face(Wire([...]))`. For a constant-thickness band, shift **every** control point by the thickness (shifting only the middle one by 2× made the crown 1.5 mm too thick).
 
-Offsetting a profile for clearance: `offset(sketch, c, kind=Kind.INTERSECTION)` keeps sharp corners.
+Offsetting a profile for clearance: `offset(sketch, c, kind=Kind.INTERSECTION)` keeps sharp corners (`cadkit.shapes.grow`).
 
 ## Swept / curved 3D
 
@@ -50,20 +51,12 @@ Offsetting a profile for clearance: `offset(sketch, c, kind=Kind.INTERSECTION)` 
 
 ## Checks
 
-```python
-def printable_problems(part, p):
-    probs = []
-    if not part.is_valid: probs.append("invalid solid")
-    if len(part.solids()) != 1: probs.append("multiple solids")
-    bb = part.bounding_box()
-    if abs(bb.min.Z) > 1e-6: probs.append("not on bed")
-    if bb.min.X < -1e-6 or bb.min.Y < -1e-6: probs.append("negative X/Y")
-    if bb.max.X > p.bed - p.bed_margin or bb.max.Y > p.bed - p.bed_margin: probs.append("too big")
-    return probs
-```
+`cadkit.checks`: `printable_problems(part, printer)` (one valid solid, flat on Z = 0, inside the bed),
+`open_edges(part)` (watertight mesh), `off_layer_z(part, printer)` (Z levels on layers), `unsupported(upper, lower)`
+(two colors), `downward_faces(part)` (bridges and overhangs to review).
 
 - Measure features with probes: `(part & Pos(...) * Box(0.2, L, 0.2, align=MIN)).solids()`, then compare the pieces' bounding boxes (gauge between shoulders, slot widths).
-- Clash finder: bbox-overlap prefilter, then `(a & b).volume > 1e-3`. Exclude pairs that overlap by construction (e.g. consecutive wire segments).
+- Clash finder (`cadkit.clash.find_clashes`): bbox-overlap prefilter, then `(a & b).volume > 1e-3`. Exclude pairs that overlap by construction (e.g. consecutive wire segments).
 - Envelopes: a moving car is a `Box` at each step along the path; wires are boxes between hook points; cables are `Cylinder(..., align=(CENTER, CENTER, MIN))`. Don't combine `align=None` with `.moved()`, which shifted a cable twice and made its test vacuous.
 
 ## Export
@@ -73,7 +66,7 @@ from build123d import Color, Compound, ExportSVG, LineType, Mesher, export_step,
 part.label = "bracket"                 # becomes the STEP PRODUCT name (Onshape part name)
 part.color = Color(0.16, 0.52, 0.52)   # written as COLOUR_RGB
 export_step(Compound(children=[...], label="run"), "out/step/run.step")   # nested Compounds = assembly tree
-m = Mesher(); m.add_shape(part); m.write("x.3mf")                          # for Bambu Studio
+m = Mesher(); m.add_shape(part); m.write("x.3mf")   # plain 3MF: Bambu opens it all on filament 1; use cadkit.bambu3mf
 visible, hidden = shape.project_to_viewport(origin, viewport_up=up, look_at=center)
 exp = ExportSVG(scale=800/span); exp.add_layer("v"); exp.add_layer("h", line_color=(0.63,)*3, line_type=LineType.ISO_DOT)
 exp.add_shape(visible, layer="v"); exp.add_shape(hidden, layer="h"); exp.write("p.svg")   # then: rsvg-convert -b white -w 1400 p.svg -o p.png
@@ -85,7 +78,11 @@ exp.add_shape(visible, layer="v"); exp.add_shape(hidden, layer="h"); exp.write("
 
 ## Plate packing
 
-MaxRects best-short-side-fit: items inflated by a 3 mm gap, both rotations tried, free rectangles split and pruned. Nest awkward pairs first (two arch halves head-to-tail, found by binary-searching the lift with `distance_to >= gap`). Dedupe kits with a geometry key (relative tie/tab positions, lengths) and print quantities. Write each plate as STEP + 3MF.
+`cadkit.plates.pack(items, printer)`: MaxRects best-short-side-fit, items inflated by a 3 mm gap, both rotations
+tried, free rectangles split and pruned; two-color parts on their own plates. Nest awkward pairs first (two arch
+halves head-to-tail, found by binary-searching the lift with `distance_to >= gap`) and pass them as one Compound.
+Dedupe kits with a geometry key (relative tie/tab positions, lengths) and print quantities.
+`cadkit.export.write_plates` writes each plate as STEP + Bambu project 3MF + `plates.csv`.
 
 ## Web (glTF) export
 
@@ -95,29 +92,12 @@ export_gltf(compound, "x.glb", binary=True, linear_deflection=0.5, angular_defle
 ```
 Coarse deflection (0.5 mm / 0.5 rad) keeps a whole viaduct section around 6–13 MB; the tiny tie-plate boxes dominate size. To host on a claude.ai Artifact, convert to self-contained glTF JSON: read the GLB's JSON chunk and BIN chunk, then set `buffers[0].uri = "data:application/octet-stream;base64,..."`. GLTFLoader loads it from a `.json` URL.
 
-## Watertight-mesh check (catches the edge-to-edge trap before the slicer does)
-
-```python
-import numpy as np
-from collections import Counter
-def non_manifold_edges(shape, tol=1e-4):
-    bad = 0
-    for s in shape.solids():
-        verts, tris = s.tessellate(0.05, 0.2)
-        V = np.round(np.array([(v.X, v.Y, v.Z) for v in verts]) / tol).astype(np.int64)
-        _, idx = np.unique(V, axis=0, return_inverse=True); idx = idx.ravel()
-        edges = Counter(tuple(sorted((int(idx[a]), int(idx[b])))) for t in tris for a, b in ((t[0], t[1]), (t[1], t[2]), (t[2], t[0])))
-        bad += sum(1 for n in edges.values() if n != 2)
-    return bad
-```
-
 ## Two-color (AMS) parts
 
 - Model the part as two bodies split by height (`wood` up to Z, `steel` above), so the print has one color change.
-- **3MF:** write both bodies as ONE object with two parts. `Mesher.add_shape` makes one build item per shape, so
-  remove those items (`model.GetBuildItems()` / `RemoveBuildItem`), add a `ComponentsObject` holding both meshes,
-  and add one build item for it. Otherwise the slicer drops the upper body onto the bed.
-- **STEP:** fuse the bodies into one solid (`a + b`; build123d 0.13 doesn't merge coplanar faces, so each face stays
+- **3MF:** both bodies are ONE object with two parts, or the slicer drops the upper body onto the bed, and each part
+  needs its filament in Bambu's project format. `cadkit.bambu3mf` does both; see `printing.md`.
+- **STEP** (`cadkit.paint`): fuse the bodies into one solid (`a + b`; build123d 0.13 doesn't merge coplanar faces, so each face stays
   on one side of the seam). Color each face by testing a point on it (the centroid of its first tessellation triangle)
   with `solid.is_inside(pt, tol)`; ON counts as inside. build123d only colors whole shapes, so add face colors to
   the XCAF document from `_create_xde()`: walk the shape labels with `TDF_ChildIterator(shape_tool.BaseLabel())`,

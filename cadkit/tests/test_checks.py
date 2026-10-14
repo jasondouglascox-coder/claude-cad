@@ -1,0 +1,51 @@
+import pytest
+from build123d import Box, Pos
+
+from cadkit import A1, Printer
+from cadkit.checks import downward_faces, off_layer_z, open_edges, printable_problems, unsupported
+from cadkit.clash import find_clashes
+from cadkit.shapes import bowtie, dovetail, poly, rect
+from build123d import extrude
+from conftest import box
+
+
+def test_printable_box_and_each_problem():
+    assert printable_problems(box(0, 0, 0, 20, 20, 3)) == []
+    assert "not on the bed" in printable_problems(box(0, 0, 1, 20, 20, 3))[0]
+    assert "exceeds" in printable_problems(box(0, 0, 0, A1.usable + 1, 20, 3))[0]
+    assert "2 separate solids" in printable_problems(box(0, 0, 0, 5, 5, 3) + box(10, 0, 0, 5, 5, 3))[0]
+    assert printable_problems(box(0, 0, 0, 300, 20, 3), Printer(bed=350)) == []
+
+
+def test_clockwise_points_still_extrude_up():
+    part = extrude(poly((0, 0), (0, 10), (10, 10), (10, 0)), 2)  # clockwise
+    assert part.bounding_box().min.Z == pytest.approx(0) and len(part.solids()) == 1
+
+
+def test_joint_shapes_grow_by_clearance():
+    assert bowtie(10, 6, 3, 0.2).area > bowtie(10, 6, 3).area
+    assert dovetail(0, 0, 3, 5, 4, 0.1).area > dovetail(0, 0, 3, 5, 4).area
+    assert rect(0, 4, 0, 2).area == pytest.approx(8)
+
+
+def test_watertight_and_layer_levels():
+    assert open_edges(box(0, 0, 0, 10, 10, 2.4)) == 0
+    assert off_layer_z(box(0, 0, 0, 10, 10, 2.4)) == []
+    assert off_layer_z(box(0, 0, 0, 10, 10, 2.3)) == [2.3]
+
+
+def test_upper_color_must_rest_on_lower():
+    lower = box(0, 0, 0, 10, 10, 2)
+    assert unsupported(box(2, 2, 2, 4, 4, 1), lower) == pytest.approx(0, abs=1e-9)
+    assert unsupported(box(8, 2, 2, 4, 4, 1), lower) == pytest.approx(2 * 4 * 0.1)  # 2 mm hangs past the edge
+
+
+def test_downward_faces_find_bridges():
+    bridge = box(0, 0, 0, 2, 5, 3) + box(8, 0, 0, 2, 5, 3) + box(0, 0, 3, 10, 5, 1)
+    assert downward_faces(bridge) == [(3.0, 30.0)]
+
+
+def test_clashes_count_overlap_not_touching():
+    a, b, c = box(0, 0, 0, 10, 10, 10), box(10, 0, 0, 10, 10, 10), box(5, 5, 5, 10, 10, 10)
+    assert find_clashes([("a", a), ("b", b)]) == []
+    assert [x[:2] for x in find_clashes([("a", a), ("c", c)])] == [("a", "c")]
