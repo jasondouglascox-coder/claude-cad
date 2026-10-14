@@ -3,11 +3,14 @@ import math
 
 import numpy as np
 import pytest
+import shapely
 from shapely.geometry import Point
-from shapely.ops import unary_union
+from shapely.ops import substring, unary_union
 
 from grover import art as A
 from grover import back as B
+from grover import ears as E
+from grover import vec as V
 from grover.params import P
 from grover.regions import band_regions, design
 
@@ -24,6 +27,21 @@ def _opened(g, w):
 def test_ear_tips_clear_the_ring_circle(d):
     assert d.figure_top <= d.R - P.circle_w - P.ear_clear
     assert d.figure_top > d.r  # the ears still reach past the backdrop disc, as in the logo
+
+
+def test_ear_outlines_are_clean_arches(d):
+    """Each ear's outer edge runs half a line outside its drawn arch: no bumps left over from the tracing."""
+    figure = unary_union([d.ribbon, d.cat_white, d.cat_orange, d.face_ink]).buffer(0.02).buffer(-0.02)
+    edge = max(V.multi(figure).geoms, key=lambda g: g.area).exterior
+    arches = [arch for arch, _ in E.curves(P)]
+    assert len(arches) == 2
+    for arch in arches:
+        mid = substring(arch, 0.6, arch.length - 0.6)  # the ends join the traced outline
+        near = edge.intersection(mid.buffer(P.line_w / 2 + 0.3, cap_style="flat"))
+        pts = shapely.get_coordinates(shapely.segmentize(near, 0.05))
+        assert len(pts) * 0.05 > 0.9 * mid.length  # the edge runs the whole arch
+        off = np.array([arch.distance(Point(q)) for q in pts]) - P.line_w / 2
+        assert np.abs(off).max() < 0.05, f"edge {off.min():+.2f}..{off.max():+.2f} mm off the arch"
 
 
 def test_every_brown_mark_is_at_least_a_line_wide(d):

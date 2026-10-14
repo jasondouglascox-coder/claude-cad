@@ -14,6 +14,7 @@ from shapely.geometry import MultiPolygon, Point
 from shapely.ops import unary_union
 
 from . import art as A
+from . import ears as E
 from . import ink as I
 from . import vec as V
 from .params import P, Params
@@ -196,6 +197,9 @@ def design(p: Params = P) -> Design:
     cat_mask, ribbon_mask, fig_ink_s = (_shift(m, dy) for m in (cat, ribbon, fig_ink))
     cls_s = _shift(cls, dy)
     thick, thin, kept = I.split(fig_ink_s, px, p)
+    ears = E.masks(p, art, cls.shape)  # the ears' drawn strokes replace the traced ones; no fill beyond their arches
+    thick, thin = thick & ~ears.erase, (thin & ~ears.erase) | ears.ink
+    cat_mask = cat_mask & ~ears.outside
     pink = cls_s == C["pink"]
     iris = cls_s == C["iris"]
 
@@ -274,6 +278,7 @@ def design(p: Params = P) -> Design:
     # pass 1: find the paws with every stroke in place and untrimmed (the arm's top edge doubles as a whisker,
     # and the trimmed stroke ends would widen the wrist gap)
     _, thin_full, _ = I.split(fig_ink_s, px, dataclasses.replace(p, spur=0.0))
+    thin_full = (thin_full & ~ears.erase) | ears.ink
     lab0, _, _ = labels(thick | thin_full | ext_ink)
     paws0 = find_paws(lab0)
 

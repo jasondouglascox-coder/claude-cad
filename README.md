@@ -11,7 +11,8 @@ uv run pytest -q -n 4 -m "not slow"      # ~3 min; the slow test runs the plate 
 
 ## How it is built
 The logo's raster is classified into its palette; the dark line work is split into thick marks (kept as drawn)
-and thin strokes (re-drawn 0.5 mm wide); fills are cleaned to nozzle-printable widths; everything is vectorized
+and thin strokes (re-drawn 0.5 mm wide); the ears' outlines are drawn as smooth curves through points in
+`params.py`; fills are cleaned to nozzle-printable widths; everything is vectorized
 and stacked into print bands (see the spec's table). Every dimension is in `grover/params.py`.
 
 ## Printing (Bambu A1 + AMS lite, 0.2 mm layers, 0.4 nozzle)

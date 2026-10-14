@@ -55,6 +55,25 @@ class Params:
     letter_surround: float = 0.6  # a mark with this much ribbon around it is a letter
     circle_w: float = 0.5  # drawn ring/disc circles
 
+    # ears, drawn rather than traced (the traced outline had bumps where the art's fur and spurs met it): each ear's
+    # outer arch, clockwise round the head from where it leaves the head's outline to where it rejoins it, and its
+    # inner line, from the arch (its first point snaps onto it) down into the face; smooth curves through these
+    # points, (x, y) mm in the logo's frame (before figure_drop)
+    ear_arches: tuple = (
+        ((-7.55, 6.65), (-7.84, 7.57), (-8.07, 8.51), (-8.27, 9.45), (-8.44, 10.39), (-8.58, 11.34), (-8.68, 12.30),
+         (-8.74, 13.26), (-8.54, 14.20), (-7.80, 14.73), (-6.91, 14.42), (-6.07, 13.94), (-5.28, 13.40),
+         (-4.56, 12.76), (-3.90, 12.05), (-3.23, 11.37), (-2.44, 10.84), (-1.50, 10.67)),
+        ((2.50, 10.57), (3.10, 10.58), (3.71, 10.77), (4.22, 11.14), (4.68, 11.57), (5.12, 12.02), (5.58, 12.45),
+         (6.06, 12.86), (6.55, 13.26), (7.05, 13.64), (7.57, 14.00), (8.11, 14.33), (8.62, 14.69), (9.17, 14.98),
+         (9.63, 14.61), (9.83, 14.01), (9.91, 13.39), (9.93, 12.76), (9.95, 12.13), (9.95, 11.50), (9.93, 10.87),
+         (9.86, 10.24), (9.76, 9.62), (9.64, 9.00), (9.47, 8.40), (9.24, 7.81), (9.15, 7.20), (9.06, 6.60)),
+    )
+    ear_lines: tuple = (
+        ((-7.11, 14.47), (-5.83, 13.01), (-4.64, 11.49), (-3.54, 9.89), (-2.55, 8.25)),
+        ((8.08, 14.38), (7.40, 13.25), (6.67, 12.16), (5.97, 11.04), (5.36, 9.88), (4.90, 8.65)),
+    )
+    ear_erase: tuple = (0.6, 0.45, 0.32)  # mm of traced ink erased outside an arch, inside it, round an inner line
+
     # layers: 0.2 mm (0.16 looked no better and cost 5 more swaps; set first_layer for profiles that differ)
     printer: Printer = Printer(layer=0.2)
     back_layers: int = 3  # QR / URL inlay depth (0.6: white opaque over brown)
