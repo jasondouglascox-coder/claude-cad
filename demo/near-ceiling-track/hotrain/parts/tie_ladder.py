@@ -3,8 +3,10 @@ At each bay's mid is a solder gap for feeders, which solder to the OUTSIDE of th
 stay clear for deep vintage flanges): over the gap, each runner is notched from the rail groove's outer
 edge outward, and the gap ties keep only their center part between the rails. The runners' inner parts
 stay continuous and carry the rail. On the room side the gap ties keep a short end stub (held by a low,
-set-back bar on top, flush with the tie tops) so the tie line still reads from the room."""
-from build123d import Align, Compound, Cylinder, Location, Part, Pos, Rot, Sketch, extrude
+set-back bar on top, flush with the tie tops) so the tie line still reads from the room. In the gap's first
+opening a feeder groove runs straight across under both rails, over a thin floor, so the room rail's feeder
+ducks under both rails to the wall side and the rest of the gap is free to bend the wire and solder."""
+from build123d import Align, Box, Compound, Cylinder, Location, Part, Pos, Rot, Sketch, extrude
 
 from hotrain import layout as L
 from hotrain.joints import jigsaw, rect
@@ -47,12 +49,6 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
             s = 1 if y > 0 else -1
             a, b = y + s * g, y + s * (p.runner_w / 2 + 0.01)
             cuts.append(rect(nx0, nx1, min(a, b), max(a, b)))
-        # room rail: a passage under the rail through the rest of the runner, between two gap ties, so its feeder
-        # goes inward and drops hidden between the panels (the wall rail's feeder drops behind the wall panel)
-        gx = sorted(t.x for t in gaps)
-        if len(gx) >= 2:
-            xn, yr, fw = (gx[0] + gx[1]) / 2, max(p.rail_ys), p.solder_feed_w / 2
-            cuts.append(rect(xn - fw, xn + fw, yr - p.runner_w / 2 - 0.01, yr + g + 0.01))
     tl, tw = (p.tab_len + p.fit_slide) / 2, (p.panel_t + p.fit_slide) / 2
     for x in tab_xs:
         if x_start + tl < x < x_end - tl:
@@ -64,6 +60,11 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
     if female_start:
         cuts += [jigsaw(p, x_start, y, p.fit_snap) for y in p.rail_ys]
     wood = extrude((Sketch() + base) - cuts, p.tie_h)
+    if gaps:  # feeder groove across both runners, between the full tie and the first gap tie, over a floor
+        pb = min(abs(a.x - b.x) for a, b in zip(ties, ties[1:]))
+        xn, yw = min(t.x for t in gaps) - pb / 2, max(p.rail_ys) + p.runner_w / 2 + 0.01
+        wood -= Pos(xn, 0, p.solder_feed_floor) * Box(p.solder_feed_w, 2 * yw, p.tie_h,
+                                                      align=(Align.CENTER, Align.CENTER, Align.MIN))
     if bars:  # on top, flush with the tie tops: hidden from below, reads as a guard timber from above
         wood += Pos(0, 0, p.tie_h - p.solder_bar_h) * extrude(Sketch() + bars, p.solder_bar_h)
     for x0, x1 in rod_spans:  # a corner's rod tails reach under the run's end ties: same shallow grooves

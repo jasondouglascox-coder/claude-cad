@@ -43,8 +43,11 @@ Common to both:
   The ladders print in **two colors with one change**: brown up to the tie tops, gray tie plates above.
 - **Solder gap:** at each bay's mid, the plain ties between two handrail posts are left out beside the rails. That
   gives an iron access to the **outside** of each rail.
+  - A **feeder groove** runs straight across under both rails in the gap's first opening, next to the full tie. The
+    rest of the gap is clear for bending the wire and soldering. A 0.8 mm floor under the groove keeps the ladder
+    in one piece.
   - The wall rail's feeder drops behind the wall-side panel.
-  - The room rail's feeder passes under the rail and drops hidden between the panels.
+  - The room rail's feeder ducks under both rails through the groove and drops on the wall side too, to the bus.
   - On the room side, fake tie ends keep the tie line unbroken.
 - **Handrail:** on the room side. It's also the derail catch: a test tips a 60 ft car and requires the railing to
   stop it within 25°. On deck truss runs it's a short single-bar walkway railing.

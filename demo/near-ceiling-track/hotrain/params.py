@@ -30,7 +30,8 @@ class Params:
     spike_lip_overhang: float = 0.3
     spike_lip_t: float = 0.4
     long_tie_every: int = 4  # handrail post spacing in ties; bays hold a multiple of this
-    solder_feed_w: float = 1.6  # room rail: passage under the rail through the runner, so its feeder drops between the panels
+    solder_feed_w: float = 1.6  # feeder groove straight across under both rails, in the gap's first opening
+    solder_feed_floor: float = 0.8  # floor under the feeder groove: keeps both runners, and so the ladder, in one piece
     solder_gap: bool = True  # solder gap at each bay's mid: the plain ties between the two handrail posts nearest mid
     solder_room_stub: float = 2.8  # room side keeps this much of each left-out tie's end, so it still reads from the room
     solder_bar_h: float = 1.0  # bar on top of the room-side tie ends (flush with the tie tops) that holds the stubs

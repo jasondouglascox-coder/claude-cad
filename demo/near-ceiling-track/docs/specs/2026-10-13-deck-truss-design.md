@@ -89,3 +89,16 @@ plates and packing, and the bus cradle.
   - Not fixed: a 0.98 mm wall in the corner rod anchor between the latch relief and the rod bore. It prints with two perimeters.
 - **Plates.** Two-color parts never share a plate with single-color parts, so each plate has at most one color change
   (AMS lite swaps are slow). `plates.all_in_one` packs a short run (the starter bay) onto the fewest plates.
+
+## Amendments (2026-10-14): feeder groove under both rails
+
+- **The room rail's feeder now goes all the way to the wall side**, where the bus is. A groove runs straight across
+  under **both** rails (it was a passage under the room rail only, dropping between the panels).
+- **It sits in the gap's first opening**, between the full tie at the gap's low-x end and the first gap tie (it was
+  one opening further in). The wire comes up at the end of the gap, and the rest of the gap is free to bend it along
+  the rail and solder.
+- **The groove has a floor** (`solder_feed_floor` 0.8 mm, 1.6 mm deep, `solder_feed_w` 1.6 wide). With full-depth
+  cuts in both runners, the only thing joining the ladder across the groove would be the 1 mm bar over the room-side
+  stubs. The floor keeps each runner, and so the ladder, in one piece.
+- Tests: the groove is clear from the wall-side tie ends to the room-side stubs, with its floor intact, for bays
+  from 8" to the 480 mm max. In the run assembly a 22 AWG wire in the groove touches no part, for both run styles.

@@ -80,3 +80,19 @@ def test_bus_wires_run_clear_through_whole_run():
     bus = Pos(x0, y0, P.bus_floor) * Box(x1 - x0, 5.0, 2.4, align=(Align.MIN, Align.MIN, Align.MIN))
     items = assembly.placed_parts(P, bays) + [("bus", bus)]
     assert [c for c in assembly.find_clashes(items) if "bus" in c[:2]] == []
+
+
+@pytest.mark.parametrize("style", ["arch", "deck_truss"])
+@pytest.mark.parametrize("b", [16 * INCH, P.max_bay_len])
+def test_feeder_path_clear_under_both_rails(style, b):
+    """A 22 AWG feeder in the groove, from the room rail's notch under both rails and out past the wall-side
+    tie ends, touches no part of the run."""
+    from build123d import Align, Box, Pos
+    p = replace(P, run_style=style)
+    gap = [t.x for t in L.ties(p, [b]) if t.gap]
+    xn, w = min(gap) - L.bay_pitch(p, b) / 2, p.solder_feed_w - 0.2
+    y1 = p.tie_l / 2 - p.solder_room_stub - 0.2
+    wire = Pos(xn - w / 2, -p.tie_l / 2 - 1, p.solder_feed_floor + 0.05) * Box(
+        w, y1 + p.tie_l / 2 + 1, p.tie_h - p.solder_feed_floor - 0.1, align=(Align.MIN, Align.MIN, Align.MIN))
+    items = assembly.placed_parts(p, [b]) + [("feeder", wire)]
+    assert [c for c in assembly.find_clashes(items) if "feeder" in c[:2]] == []

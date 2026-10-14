@@ -97,13 +97,36 @@ def test_notch_reaches_the_outside_of_each_rail(b):
 @pytest.mark.parametrize("b", [16 * INCH, 76 * 5.5])
 def test_runner_inner_part_continuous_and_center_ties_back(b):
     lad, x0, x1, gap = _gap_frame(P, b)
-    for y in P.rail_ys:  # the inner part of each runner spans the gap (room side: cut once for the feeder passage)
+    for y in P.rail_ys:  # the inner part of each runner spans the gap: cut once by the feeder groove, whole under it
         yi = y - (1 if y > 0 else -1) * (P.runner_w / 2 - 0.5)
-        probe = Pos(x0 - 1, yi - 0.1, P.tie_h / 2) * Box(x1 - x0 + 2, 0.2, 0.2, align=(Align.MIN, Align.MIN, Align.MIN))
-        assert len((lad & probe).solids()) == (2 if y > 0 else 1)
+        for z, n in ((P.tie_h - 0.3, 2), (P.solder_feed_floor / 2, 1)):
+            probe = Pos(x0 - 1, yi - 0.1, z - 0.1) * Box(x1 - x0 + 2, 0.2, 0.2, align=(Align.MIN, Align.MIN, Align.MIN))
+            assert len((lad & probe).solids()) == n
     for x in gap:  # the gap ties are back between the rails
         mid = Pos(x - 0.5, -2, 0.2) * Box(1.0, 4, P.tie_h - 0.4, align=(Align.MIN, Align.MIN, Align.MIN))
         assert (lad & mid).volume == pytest.approx(mid.volume, rel=1e-3)
+
+
+@pytest.mark.parametrize("b", [P.min_bay_len, 16 * INCH, 76 * 5.5, P.max_bay_len])
+def test_feeder_groove_runs_across_both_rails_in_the_gaps_first_opening(b):
+    """One groove straight across under both rails, between the full tie at the gap's start and the first gap tie,
+    so the room rail's feeder ducks under both rails to the wall side and the rest of the gap is free to solder.
+    A floor under it keeps the ladder in one piece."""
+    lad, x0, _, gap = _gap_frame(P, b)
+    assert printable_problems(Pos(-lad.bounding_box().min.X, -lad.bounding_box().min.Y, 0) * lad) == []  # one piece
+    pb, hw, fw = L.bay_pitch(P, b), P.tie_w / 2, P.solder_feed_w / 2
+    xn = min(gap) - pb / 2
+    assert min(gap) - pb + hw < xn - fw and xn + fw < min(gap) - hw  # fits between the two ties
+    assert xn - fw >= x0  # inside the notched stretch
+    y_room = P.tie_l / 2 - P.solder_room_stub - 0.2  # room side: up to the fake tie ends
+    clear = Pos(xn - fw + 0.05, -P.tie_l / 2 - 1, P.solder_feed_floor + 0.05) * Box(
+        2 * fw - 0.1, y_room + P.tie_l / 2 + 1, P.tie_h, align=(Align.MIN, Align.MIN, Align.MIN))
+    assert (lad & clear).volume < 1e-6
+    for y in P.rail_ys:  # floor under the runner's inner part (the outer part is notched away over the gap)
+        y0 = y - P.runner_w / 2 if y > 0 else y - P.groove_w / 2
+        floor = Pos(xn - fw + 0.05, y0 + 0.3, 0.05) * Box(
+            2 * fw - 0.1, P.groove_w / 2 + P.runner_w / 2 - 0.6, P.solder_feed_floor - 0.1, align=(Align.MIN, Align.MIN, Align.MIN))
+        assert (lad & floor).volume == pytest.approx(floor.volume, rel=1e-3)
 
 
 def test_room_side_fake_tie_ends_are_attached():
@@ -142,18 +165,3 @@ def test_ladder_two_colors_one_change(k):
     assert wood.volume + steel.volume == pytest.approx(whole.volume, rel=1e-4)
     assert wood.bounding_box().max.Z <= steel.bounding_box().min.Z + 1e-6
     assert wood.bounding_box().max.Z == pytest.approx(P.tie_h, abs=1e-6)
-
-
-def test_room_feeder_passes_under_the_rail_to_the_center():
-    """Between two gap ties, the room-side runner has a passage under the rail, so the room rail's feeder can go
-    inward and drop between the panels; the ladder stays one piece."""
-    b = 16 * INCH
-    seg = _seg_with(P, [b], b / 2)
-    raw = tie_ladder.make(P, [b], seg)
-    assert printable_problems(raw) == []
-    lad = Pos(seg.x_start, -P.tie_l / 2, 0) * raw
-    gx = sorted(t.x for t in L.ties(P, [b]) if t.gap)
-    xn, yr = (gx[0] + gx[1]) / 2, max(P.rail_ys)
-    y0, y1 = yr - P.runner_w / 2 - 0.5, yr + P.groove_w / 2 + 0.5
-    passage = Pos(xn - 0.5, y0, 0.1) * Box(1.0, y1 - y0, P.tie_h - 0.2, align=(Align.MIN, Align.MIN, Align.MIN))
-    assert (lad & passage).volume < 1e-6

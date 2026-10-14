@@ -78,7 +78,8 @@ A whole-room file takes a few minutes to translate.
 6. **Rail:** press it into the tie plates (the outer lips catch the rail base).
 7. **Feeders:** solder at the mid-bay gaps, to the **outside** of the rail.
    - Wall rail: the feeder drops behind the wall-side panel.
-   - Room rail: the feeder goes through the passage under the rail and drops between the panels.
+   - Room rail: thread the feeder through the groove under both rails (the gap's first opening), solder it along
+     the rest of the gap, and drop it on the wall side with the wall rail's feeder.
 
 Corner spans: bend and fit the two rods, set the anchors, deep brackets and floor beams, lay each deck on the rods,
 then glue its trusses on. Hang the bridge corner from the ceiling cleat with braided line. Details are in
