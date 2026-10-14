@@ -53,7 +53,7 @@ class Params:
 
     # Z levels (multiples of the 0.2 mm layer height)
     layer: float = 0.2
-    back_t: float = 0.8  # QR inlay depth from the bed
+    back_t: float = 0.4  # QR inlay depth from the bed: 2 layers (each QR layer costs ~3 color swaps)
     core_top: float = 2.2
     # three print layers: base (backdrop, ribbon flaps) / ring, ribbon, face / paws
     zone_tops: tuple = (("disk", 2.8), ("tail", 2.8), ("ring", 3.6), ("banner", 3.6), ("cat", 3.6), ("paw", 4.2))
