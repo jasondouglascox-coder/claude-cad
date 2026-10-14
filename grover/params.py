@@ -16,6 +16,7 @@ class Params:
 
     # filaments: AMS slot per color, and display colors (RGB 0-1)
     filament: tuple = (("orange", 1), ("yellow", 2), ("white", 3), ("brown", 4))
+    filament_type: str = "PLA"  # the same type in every slot; the plate's profile is built from it
     rgb: tuple = (("orange", (0.91, 0.54, 0.17)), ("yellow", (0.965, 0.855, 0.11)),
                   ("white", (1.0, 1.0, 1.0)), ("brown", (0.243, 0.184, 0.153)))
 

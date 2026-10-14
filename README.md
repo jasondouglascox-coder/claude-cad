@@ -20,3 +20,5 @@ and stacked into print bands (see the spec's table). Every dimension is in `grov
 2. The back (QR + URL) is on the plate; textured PEI gives a matte finish that scans well.
 3. No supports. "Flush into object's infill" hides most purge in the brown body.
 4. Expect about 14 filament changes: 3 on the back inlay, 3 in the base band, 6 in the face band, 2 on top.
+   Bambu Studio's estimate: 13.7 g, about 54 min of printing plus the changes. The plate's profiles are all
+   `filament_type` (PLA) from `params.py`; pick your own presets in the slicer if they differ.

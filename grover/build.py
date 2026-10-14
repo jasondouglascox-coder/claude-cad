@@ -5,7 +5,7 @@ import sys
 import time
 from pathlib import Path
 
-from build123d import export_step
+from build123d import Pos, export_step
 
 from cadkit import bambu3mf
 from cadkit.export import ISO, write_svg
@@ -24,7 +24,16 @@ def settings_file(p: Params, out: Path) -> Path:
     cfg = json.loads(Path(bambu3mf.SETTINGS).read_text())
     cfg["layer_height"] = str(p.printer.layer)
     cfg["initial_layer_print_height"] = str(p.printer.first)
-    cfg["print_settings_id"] = f"{p.printer.layer:.2f}mm Optimal @BBL A1"
+    # one filament type in all four slots (the template mixes PETG and PLA, which the slicer refuses in one
+    # object): every per-filament list takes the value of the slot that already holds p.filament_type
+    ref = cfg["filament_type"].index(p.filament_type)
+    n = len(cfg["filament_type"])
+    for k, v in cfg.items():  # per-filament lists follow the template's PETG, PETG, PLA, PLA pattern
+        if isinstance(v, list) and len(v) == n and v[0] == v[1] and v[2] == v[3] and k != "filament_colour":
+            cfg[k] = [v[ref]] * n
+    cfg["filament_colour"] = [""] * len(cfg["filament_type"])
+    for c, slot in p.filament:
+        cfg["filament_colour"][slot - 1] = "#%02X%02X%02X" % tuple(int(round(x * 255)) for x in p.colors[c])
     path = out / "bambu_settings.config"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(cfg, indent=4))
@@ -40,8 +49,14 @@ def three_mf(out: Path) -> Path:
     path = out / "plates" / "grover_keychain.3mf"
     path.parent.mkdir(parents=True, exist_ok=True)
     b = bodies(P)
-    bambu3mf.write(path, [("grover_keychain", [(b[c].label, b[c], P.filaments[c]) for c in COLORS])],
-                   settings=settings_file(P, out))
+    bb = keychain(P).bounding_box()  # the model is centered on the ring; the plate wants it inside the bed
+    on_bed = Pos(P.printer.bed / 2 - bb.center().X, P.printer.bed / 2 - bb.center().Y, 0)
+    parts = []
+    for c in COLORS:
+        placed = on_bed * b[c]
+        placed.label = b[c].label
+        parts.append((placed.label, placed, P.filaments[c]))
+    bambu3mf.write(path, [("grover_keychain", parts)], settings=settings_file(P, out))
     return path
 
 

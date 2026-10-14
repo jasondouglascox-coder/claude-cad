@@ -10,6 +10,8 @@ def test_build_writes_a_colored_bambu_plate(tmp_path):
     assert build.main(["3mf", "--out", str(tmp_path)]) == 0
     got = {n: parts for n, _, parts in bambu3mf.read_filaments(tmp_path / "plates" / "grover_keychain.3mf")}
     assert got["grover_keychain"] == {f"grover_{c}": f for c, f in P.filament}
+    for v, _ in bambu3mf.read_meshes(tmp_path / "plates" / "grover_keychain.3mf").values():
+        assert v[:, :2].min() >= P.printer.margin / 2 and v[:, :2].max() <= P.printer.bed - P.printer.margin / 2
     cfg = (tmp_path / "bambu_settings.config").read_text()
     assert f'"layer_height": "{P.printer.layer}"' in cfg
 
