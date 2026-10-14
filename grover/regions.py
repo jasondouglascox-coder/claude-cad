@@ -118,16 +118,22 @@ def _open_counters(m: np.ndarray, yellow: np.ndarray, min_d_px: float) -> np.nda
 
 
 def _stamp_around(stamp: np.ndarray, art: A.Art, radius: float, step_deg: float, scale: float = 1.0) -> list:
-    """Copies of an upright mark placed every step_deg around the ring at `radius`, each pointing outward, skipping
-    12 o'clock (the hole). The copies are what print: the logo's prints sit at uneven radii."""
+    """Copies of a paw print placed every step_deg around the ring at `radius`, skipping 12 o'clock (the hole), each
+    turned so its palm faces the center and its toes point out. The copies are what print: the logo's prints sit
+    at uneven radii and angles."""
     ys, xs = np.where(stamp)
     sx, sy = xs.mean(), ys.mean()
+    pads = sorted(V.components(stamp), key=lambda c: -c.sum())  # the palm is the biggest pad
+    py, px_ = np.where(pads[0])
+    toes = np.array([[np.where(t)[1].mean(), np.where(t)[0].mean()] for t in pads[1:]]).mean(axis=0)
+    heading = np.degrees(np.arctan2(-(toes[1] - py.mean()), toes[0] - px_.mean()))  # palm -> toes, y up
     out = []
     src = stamp.astype(np.float32)
     ang = step_deg
     while ang < 360 - 1e-6:
         tx, ty = art.to_px(radius * np.cos(np.radians(90 + ang)), radius * np.sin(np.radians(90 + ang)))
-        m = cv2.getRotationMatrix2D((float(sx), float(sy)), -ang, scale)  # image y points down: clockwise = +angle
+        turn = (90 + ang) - heading  # counter-clockwise as seen, which is +angle for cv2 on an image
+        m = cv2.getRotationMatrix2D((float(sx), float(sy)), turn, scale)
         m[:, 2] += (tx - sx, ty - sy)
         out.append(cv2.warpAffine(src, m, (stamp.shape[1], stamp.shape[0]), flags=cv2.INTER_LINEAR) > 0.5)
         ang += step_deg

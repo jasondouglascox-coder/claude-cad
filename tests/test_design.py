@@ -44,6 +44,25 @@ def test_ear_outlines_are_clean_arches(d):
         assert np.abs(off).max() < 0.05, f"edge {off.min():+.2f}..{off.max():+.2f} mm off the arch"
 
 
+def test_ring_paw_prints_point_their_toes_outward(d):
+    """Each print in the ring: palm toward the center, toes away from it, centered on its angle."""
+    art = A.load(P)
+    X, Y = art.mm_grid()
+    prints = V.components(V.dilated(d.masks["paws_ring"], 0.6 * art.px_mm), int(art.px_mm ** 2))
+    assert len(prints) >= 4
+    for c in prints:
+        pads = sorted(V.components(d.masks["paws_ring"] & c, 10), key=lambda q: -q.sum())
+        assert len(pads) == 5  # palm + four toes
+        palm = np.array([X[pads[0]].mean(), Y[pads[0]].mean()])
+        toes = np.mean([[X[t].mean(), Y[t].mean()] for t in pads[1:]], axis=0)
+        out = palm / np.linalg.norm(palm)
+        v = (toes - palm) / np.linalg.norm(toes - palm)
+        assert v @ out > 0.97, f"print at {np.degrees(np.arctan2(*out[::-1])):.0f} deg points {v}"
+        centre = np.array([X[c & d.masks["paws_ring"]].mean(), Y[c & d.masks["paws_ring"]].mean()])
+        ang = np.degrees(np.arctan2(centre[1], centre[0])) - 90
+        assert abs((ang + 180) % P.paw_print_step - P.paw_print_step / 2) > P.paw_print_step / 2 - 1.0
+
+
 def _raised(d):
     """Everything above the base band: the face band and the ring's ink."""
     return unary_union([d.ribbon, d.cat_white, d.cat_orange, d.face_ink, d.ring_ink])
