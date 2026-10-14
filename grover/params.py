@@ -41,7 +41,7 @@ class Params:
     sliver: float = 0.4  # mm, fill slivers narrower than this (a nozzle width) join their neighbours
     pad_gap: float = 0.4  # mm, each ring paw print's pads back off until this much orange fits between them
     paw_print_scale: float = 1.25  # the logo's prints are small for a 5.8 mm ring
-    eye_glint_min_d: float = 0.8  # one glint per eye, big enough to print as a dot
+    eye_glint_min_d: float = 0.6  # glints big enough to print as dots (1.5 nozzle widths)
     spur: float = 0.35  # mm, skeleton branches shorter than this are spurs, not strokes
     whisker_zone: tuple = (0.0, 0.0, 0.0, 0.0)  # (dx min, dx max, dy min, dy max from the nose) to drop whiskers; empty keeps them
     letter_clear: float = 0.35  # mm, a raised letter keeps this far from the ribbon's outline
@@ -73,6 +73,22 @@ class Params:
         ((8.08, 14.38), (7.40, 13.25), (6.67, 12.16), (5.97, 11.04), (5.36, 9.88), (4.90, 8.65)),
     )
     ear_erase: tuple = (0.6, 0.45, 0.32)  # mm of traced ink erased outside an arch, inside it, round an inner line
+
+    # eyes, drawn: per eye a smooth outline from its inner corner (where it comes to a point) round through these
+    # points and back; the iris circle (x, y, r: brown, the rest inside the line_w rim is the white crescent); two
+    # white glints (x, y, r). Fitted to the logo (the iris arc to the inner edge of its olive band), glints moved
+    # until a nozzle of brown separates them from each other, the crescent and the rim. Logo frame, mm.
+    eye_shapes: tuple = (
+        ((-0.23, 4.05), (-0.72, 4.91), (-1.53, 5.48), (-2.53, 5.66), (-3.53, 5.41), (-4.22, 4.71), (-4.33, 3.76),
+         (-3.80, 2.88), (-2.92, 2.39), (-1.94, 2.34), (-0.90, 2.51)),
+        ((4.22, 2.58), (5.27, 2.52), (6.22, 2.69), (6.99, 3.31), (7.37, 4.25), (7.09, 5.14), (6.29, 5.70),
+         (5.28, 5.81), (4.35, 5.50), (3.64, 4.85), (3.27, 3.93)),
+    )
+    eye_corners: tuple = ((-0.15, 2.60), (3.35, 2.72))
+    eye_irises: tuple = ((-0.58, 4.21, 2.43), (3.17, 4.19, 2.68))
+    eye_glints: tuple = (((-1.80, 4.60, 0.40), (-2.10, 3.50, 0.30)), ((4.80, 4.70, 0.40), (5.00, 3.58, 0.30)))
+    eye_tip_r: float = 0.08  # mm, the pointed inner corner is rounded this much
+    eye_erase: float = 0.4  # mm round an eye's outline where the traced ink goes
 
     # layers: 0.2 mm (0.16 looked no better and cost 5 more swaps; set first_layer for profiles that differ)
     printer: Printer = Printer(layer=0.2)

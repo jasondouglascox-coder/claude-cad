@@ -15,6 +15,7 @@ from shapely.ops import unary_union
 
 from . import art as A
 from . import ears as E
+from . import eyes as EY
 from . import ink as I
 from . import vec as V
 from .params import P, Params
@@ -34,7 +35,7 @@ class Design:
     cat_orange: MultiPolygon
     face_ink: MultiPolygon  # face band, brown, up to z_face
     ring_ink: MultiPolygon  # brown on the ring, up to z_ring_ink
-    top_white: MultiPolygon  # paws, glints
+    top_white: MultiPolygon  # paws, eye crescents and glints
     top_brown: MultiPolygon  # eyes, nose, letters, paw lines
     paws: MultiPolygon = None  # the two paw footprints (their lines included)
     eyes: list = field(default_factory=list)  # (x, y, r)
@@ -59,19 +60,6 @@ def _sweep_down(mask: np.ndarray, dy_px: int, step: int = 4) -> np.ndarray:
     for d in range(step, dy_px + 1, step):
         out |= _shift(mask, d)
     return out | _shift(mask, dy_px)
-
-
-def _fit_circle(mask: np.ndarray, art: A.Art) -> tuple:
-    ys, xs = np.where(mask)
-    (cx, cy), r = cv2.minEnclosingCircle(np.column_stack([xs, ys]).astype(np.float32))
-    x, y = art.to_mm(cx, cy)
-    return float(x), float(y), float(r / art.px_mm)
-
-
-def _disc(shape, art: A.Art, x: float, y: float, r: float) -> np.ndarray:
-    yy, xx = np.ogrid[:shape[0], :shape[1]]
-    ex, ey = art.to_px(x, y)
-    return (xx - ex) ** 2 + (yy - ey) ** 2 <= (r * art.px_mm) ** 2
 
 
 def _big(mask: np.ndarray, min_px: float) -> np.ndarray:
@@ -230,23 +218,12 @@ def design(p: Params = P) -> Design:
             best, nose = y, c
     nose = V.closed(nose | (V.dilated(nose, 0.15 * px) & thick), 0.1 * px)
 
-    # eyes: round dark/iris blobs inside the cat, the two largest; one glint each (the biggest white spot)
-    eye_src = V.opened((cls_s == C["ink"]) | iris, 0.3 * px) & V.eroded(cat_mask | fig_ink_s, 0.2 * px)
-    eyes, eye_mask, glints = [], np.zeros_like(pink), np.zeros_like(pink)
-    white_cls = np.isin(cls_s, [C["cat_white"], C["cat_white2"]])
-    for c in sorted(V.components(eye_src, int(2.0 * px * px)), key=lambda c: -c.sum()):
-        if len(eyes) == 2:
-            break
-        x, y, r = _fit_circle(c, art)
-        if r > 3.0 or c.sum() < 0.5 * np.pi * (r * px) ** 2:
-            continue
-        eyes.append((x, y, r))
-        disc = _disc(cls.shape, art, x, y, r)
-        eye_mask |= disc
-        spots = sorted(V.components(white_cls & V.eroded(disc, 0.25 * px), int(0.05 * px * px)), key=lambda g: -g.sum())
-        for g in spots[:1]:
-            gx, gy, gr = _fit_circle(g, art)
-            glints |= _disc(cls.shape, art, gx, gy, min(max(gr, p.eye_glint_min_d / 2), 0.35 * r))
+    # eyes: drawn (eyes.py) in place of the traced ones; brown in the face band under them, their colors on top
+    eye_shapes = EY.shapes(p)
+    eye_mask = E.raster(unary_union([e.outer for e in eye_shapes]), art, cls.shape)
+    eye_zone = E.raster(unary_union([e.outer.buffer(p.eye_erase) for e in eye_shapes]), art, cls.shape)
+    thick, thin = thick & ~eye_zone, thin & ~eye_zone
+    eyes = [(e.outer.centroid.x, e.outer.centroid.y, float(np.sqrt(e.outer.area / np.pi))) for e in eye_shapes]
 
     # the ribbon's folds ended at the ring before the drop; sweep them down so they still touch it
     under_ring = _sweep_down(D <= art.R, dy) & (D > art.R)
@@ -264,6 +241,10 @@ def design(p: Params = P) -> Design:
 
     white_src = np.isin(cls_s, [C[n] for n in ("cat_white", "cat_white2", "cat_tan", "cat_tan2", "cat_tan3",
                                                 "pink_light")]) | (pink & ~nose)
+    # round the drawn eyes, what was the traced eye's ink is face white (orange fur stays orange)
+    orange_src = np.isin(cls_s, [C[n] for n in ("cat_orange", "cat_orange2", "ear")])
+    cat_mask = cat_mask | (eye_zone & ~eye_mask)
+    white_src = white_src | (eye_zone & ~eye_mask & ~orange_src)
 
     def labels(ink_print):
         """Face-band label map: ribbon / cat white / cat orange / ink, gap-free inside the figure."""
@@ -337,9 +318,9 @@ def design(p: Params = P) -> Design:
     letters = _open_counters(letters, cls_s == C["ribbon"], p.counter_min_d * px)
     glyph_zone = V.dilated(ndi.binary_fill_holes(letters), 0.3 * px)
     letters &= ~V.dilated((lab == BROWN) & ~glyph_zone, p.letter_clear * px)  # a letter never touches the ribbon's outline
-    top_brown = (eye_mask & ~glints) | nose | letters | paw_ink
+    top_brown = nose | letters | paw_ink  # the eyes join as vectors
     top_brown = _big(top_brown, p.min_island * px * px)
-    top_white = (paws & ~paw_ink) | glints
+    top_white = paws & ~paw_ink
     face = lab.copy()
     face_brown = V.opened((lab == BROWN) & ~glyph_zone & ~paw_ink, r_line) | eye_mask | nose  # yellow under a glyph
     face[(lab == BROWN) & ~face_brown] = EMPTY
@@ -374,10 +355,16 @@ def design(p: Params = P) -> Design:
         face_g.append(_minus(poly(face == k), *face_g))
     figure_g = V.multi(unary_union(face_g).buffer(p.seam).buffer(-p.seam))
     face_ink_g, cat_w_g, cat_o_g, ribbon_g = _tile(face_g, figure_g, p.seam)
+    # under each eye the face band is the eye's own outline, not its traced copy: their edges coincide
+    eye_all = unary_union([e.outer for e in eye_shapes])
+    clear = 3 * p.seam  # the traced eye's leftovers round the drawn one go to the fills beside it
+    face_ink_g = V.multi(unary_union([_minus(face_ink_g, eye_all.buffer(clear)), eye_all]))
+    cat_w_g, cat_o_g, ribbon_g = _tile([_minus(g, eye_all) for g in (cat_w_g, cat_o_g, ribbon_g)],
+                                       figure_g.difference(face_ink_g), clear + p.seam)
     silhouette_g = V.multi(unary_union([Point(0, 0).buffer(art.R, quad_segs=256), figure_g]))
     ring_ink_g = _minus(poly(ring_ink).intersection(silhouette_g), figure_g)
-    top_brown_g = poly(top_brown)
-    top_white_g = _minus(poly(top_white), top_brown_g)
+    top_brown_g = V.multi(unary_union([_minus(poly(top_brown), eye_all), *(e.brown for e in eye_shapes)]))
+    top_white_g = V.multi(unary_union([_minus(poly(top_white), top_brown_g, eye_all), *(e.white for e in eye_shapes)]))
     # the base band's white/orange seam is never seen: it runs under the disc circle and tucked under the figure
     base_white_g = V.multi(unary_union([Point(0, 0).buffer(art.r + p.circle_w / 2, quad_segs=256),
                                         *(q for q in V.multi(figure_g.buffer(-p.base_tuck)).geoms
@@ -392,7 +379,7 @@ def design(p: Params = P) -> Design:
         eyes=eyes, figure_top=fig_top, R=art.R, r=art.r,
         masks=dict(ink=ink, fig_ink=fig_ink_s, thick=thick, thin=thin, figure=figure, face=face, lab=lab,
                    face_ink=face_ink, ring_ink=ring_ink, top_white=top_white, top_brown=top_brown,
-                   letters=letters, paws=paws, paw_ink=paw_ink, nose=nose, eye_mask=eye_mask, glints=glints,
+                   letters=letters, paws=paws, paw_ink=paw_ink, nose=nose, eye_mask=eye_mask,
                    paws_ring=paws_ring),
     )
     # the hole's brown ring sits on the orange base like a paw print

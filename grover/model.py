@@ -4,7 +4,7 @@
     z_back .. z_body  solid brown
     z_body .. z_base  base band: white under disc / cat / ribbon, orange ring
     z_base .. z_face  face band: yellow ribbon, white cat + orange patches, brown ink; ring ink to z_ring_ink
-    z_face .. z_top   top band: white paws + glints, brown eyes, nose, letters, paw lines
+    z_face .. z_top   top band: white paws, eye crescents + glints, brown eyes, nose, letters, paw lines
 Every body may be several solids (brown ink columns stand on white and orange); the fused keychain is one."""
 from functools import lru_cache
 

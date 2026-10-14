@@ -41,7 +41,7 @@ def curves(p: Params = P) -> list[tuple[LineString, LineString]]:
     return out
 
 
-def _raster(g, art: A.Art, shape) -> np.ndarray:
+def raster(g, art: A.Art, shape) -> np.ndarray:
     m = np.zeros(shape, np.uint8)
     for poly in V.multi(g).geoms:
         for ring, val in [(poly.exterior, 1)] + [(r, 0) for r in poly.interiors]:
@@ -64,4 +64,4 @@ def masks(p: Params, art: A.Art, shape) -> Ears:
         ink += [arch.buffer(p.line_w / 2), inner.buffer(p.line_w / 2)]
         outside.append(arch.buffer(out, single_sided=True))
         erase += [outside[-1], arch.buffer(-inn, single_sided=True), inner.buffer(line)]
-    return Ears(*(_raster(unary_union(g), art, shape) for g in (ink, erase, outside)))
+    return Ears(*(raster(unary_union(g), art, shape) for g in (ink, erase, outside)))

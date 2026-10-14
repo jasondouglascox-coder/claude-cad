@@ -10,6 +10,7 @@ from shapely.ops import substring, unary_union
 from grover import art as A
 from grover import back as B
 from grover import ears as E
+from grover import eyes as EY
 from grover import vec as V
 from grover.params import P
 from grover.regions import band_regions, design
@@ -42,6 +43,27 @@ def test_ear_outlines_are_clean_arches(d):
         assert len(pts) * 0.05 > 0.9 * mid.length  # the edge runs the whole arch
         off = np.array([arch.distance(Point(q)) for q in pts]) - P.line_w / 2
         assert np.abs(off).max() < 0.05, f"edge {off.min():+.2f}..{off.max():+.2f} mm off the arch"
+
+
+def test_eyes_are_their_drawn_shapes_with_a_white_crescent_and_two_glints(d):
+    """Each eye prints as its smooth drawn outline: brown rim and iris, a white crescent and two white glints, the
+    glints a nozzle width apart and off the rim."""
+    top = unary_union([d.top_brown, d.top_white])
+    eyes = EY.shapes(P)
+    assert len(eyes) == 2
+    for eye in eyes:
+        unit = top.intersection(eye.outer.buffer(0.3))
+        assert unit.symmetric_difference(eye.outer).area < 0.01 * eye.outer.area
+        white = sorted(V.multi(d.top_white.intersection(eye.outer)).geoms, key=lambda g: -g.area)
+        assert len(white) == 3  # crescent + two glints
+        crescent, *glints = white
+        assert _opened(crescent, P.printer.nozzle).area > 0.8 * crescent.area
+        assert glints[0].distance(glints[1]) >= P.printer.nozzle
+        for g in glints:
+            assert g.distance(crescent) >= P.printer.nozzle and g.distance(eye.outer.exterior) >= P.line_w
+            assert g.area >= math.pi * (P.eye_glint_min_d / 2) ** 2 * 0.95
+        assert _opened(d.top_brown.intersection(eye.outer.buffer(0.01)), P.line_w - 0.06).area > \
+            0.97 * d.top_brown.intersection(eye.outer.buffer(0.01)).area  # the rim is a line wide
 
 
 def test_ring_paw_prints_point_their_toes_outward(d):
