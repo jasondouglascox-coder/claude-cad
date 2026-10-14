@@ -2,6 +2,7 @@
 
 The back is printed against the plate, so everything here is mirrored (x -> -x) to read correctly from behind.
 Dark QR modules are the brown body itself; only the white panel (minus the modules) is an inlay."""
+import copy
 from functools import lru_cache
 
 import numpy as np
@@ -60,10 +61,12 @@ def url_y(p: Params, hole: tuple, silhouette, glyphs) -> float:
 
 
 def sketch_polys(sk: Sketch, tol: float = 0.02) -> MultiPolygon:
-    """A sketch's faces as shapely polygons (tessellated)."""
+    """A sketch's faces as shapely polygons (tessellated). Each face is meshed as a copy: a mesh left on the cached
+    URL faces would be reused by later meshes of the solids built from them, at another tolerance, leaving open
+    edges."""
     out = []
     for f in sk.faces():
-        v, tris = f.tessellate(tol, 0.2)
+        v, tris = copy.deepcopy(f).tessellate(tol, 0.2)
         pts = [(q.X, q.Y) for q in v]
         out.append(unary_union([Polygon([pts[a], pts[b], pts[c]]) for a, b, c in tris]).buffer(1e-4).buffer(-1e-4))
     return V.multi(unary_union(out))
