@@ -8,15 +8,17 @@ Amendments that record every change of mind. Wall measurements are in `docs/meas
 
 - Vintage **DC** HO trains (not DCC), **Code 100** nickel-silver rail (kept over Code 83 for deep vintage flanges),
   single track. Rail top 12" below a 108" ceiling.
-- The track runs along the walls of an office, 1.75" out from the wall:
-  1. Down the long right wall (170" measured; `room.py` still uses 168"), past a double French door near the back.
+- The track runs in a closed loop along the walls of an office, 1.75" out from the wall:
+  1. Down the long right wall (170"), past a double French door near the back.
   2. A **bridge corner** across the mouth of a 43.75" alcove onto a bump-out.
-  3. Along the 83" wall.
-  4. An **inside corner**.
-  5. Down the left wall.
+  3. Along the 82.5" back wall.
+  4. An **inside corner** at the back-left, then down the left wall.
+  5. An inside corner at the front-left, then along the front wall.
+  6. An inside corner at the front-right, back onto the right wall.
 
-  `hotrain/room.py` models the whole office: teal walls, white doors.
-- Closing the loop along the front wall (two more inside corners plus a run) is the next step. See Open items.
+  `hotrain/room.py` models the whole office: teal walls, white doors. The front wall is left out of the render.
+- The room isn't square: the front wall is 3/8" shorter than the back wall plus the alcove. The model is drawn
+  square, and the straight runs take up the difference (see `docs/measurements.md`).
 
 ## Straight runs
 
@@ -86,8 +88,6 @@ Common to both:
 
 ## Open items
 
-- **Close the loop** along the front wall: two inside corners plus a run, wall-mounted, with the front wall left
-  out of the render. The front wall's measurements are in `docs/measurements.md`.
 - **Real bracket positions:**
   - Replace the placeholder `BAYS` with real stud and drywall-anchor positions.
   - Split ~24" stud gaps with an extra bracket on drywall anchors.

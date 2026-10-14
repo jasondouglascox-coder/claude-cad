@@ -224,6 +224,10 @@ def main(argv: list[str] | None = None) -> int:
     out, p, bays = Path(a.out), params_from_args(a), L.BAYS
     L.validate_bays(p, bays)
     out.mkdir(parents=True, exist_ok=True)
+    if a.command in ("room", "glb", "web") or (a.command, a.target) == ("show", "room"):
+        from hotrain import room
+        for note in room.misfit_notes():
+            print(note)
     if a.command == "check":
         clashes = assembly.find_clashes(assembly.placed_parts(p, bays))
         for na, nb, v in clashes:

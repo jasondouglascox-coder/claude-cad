@@ -1,10 +1,10 @@
-"""The office as built: walls, doors, three viaduct runs, the bridge corner and an inside corner, placed
-in room coordinates for one review STEP.
+"""The office as built: walls, doors and the closed loop of track (four viaduct runs, the bridge corner and
+three inside corners), placed in room coordinates for one review STEP.
 
-Room frame (mm): x to the right, y toward the back, z up from the floor; the open front edge is y = 0.
-Measured in inches (see Room), converted here. The track runs: down the right wall toward the back,
-the bridge corner across the alcove mouth, along the 83" wall to the left, the inside corner, and back
-down the left wall toward the front.
+Room frame (mm): x to the right, y toward the back, z up from the floor; the front wall's face is y = 0 and
+is left out of the render. Measured in inches (see Room), converted here. The loop runs counterclockwise
+from above: down the right wall toward the back, the bridge corner across the alcove mouth, along the back
+wall to the left, then inside corners at the back-left, front-left and front-right with a run along each wall.
 """
 import math
 from dataclasses import dataclass
@@ -32,23 +32,39 @@ ALUMINUM = hex_color("#e2e4e8")
 
 @dataclass(frozen=True)
 class Room:
-    """All in inches, as measured."""
-    right_len: float = 168.0  # right wall, front to back
+    """All in inches, as measured. The model is square: the front and left walls are derived from the others,
+    and their own measurements only feed misfit()."""
+    right_len: float = 170.0  # right wall (the long one, French doors), front to back
     alcove_w: float = 43.75  # back wall of the alcove (= alcove width, right wall to the short wall)
-    alcove_depth: float = 43.75  # short wall, from the back wall toward the front
-    back_len: float = 83.0  # wall running left from the bump-out corner
+    alcove_depth: float = 43.75  # short wall, from the alcove's back wall toward the front
+    back_len: float = 82.5  # back wall, running left from the bump-out corner
+    front_len: float = 125.875  # measured; the model uses back_len + alcove_w
+    left_len: float = 126.375  # measured; the model uses right_len - alcove_depth
     door_h: float = 84.0  # 7 ft doors
     above_door: float = 24.0
     rail_below_ceiling: float = 12.0
     french_from_back: tuple = (2.0, 65.0)  # double French door on the right wall, measured from the back wall
-    door_from_short: float = 5.0  # door on the 83" wall, from its right (short-wall) end
+    door_from_short: float = 5.0  # door on the back wall, from its right (short-wall) end
     door_w: float = 35.0
     wall_t: float = 4.0
-    end_gap: float = 1.0  # free run ends stop this far from the front edge
 
     @property
     def ceiling(self) -> float:
         return self.door_h + self.above_door
+
+    def misfit(self) -> dict:
+        """Model minus measured length (inches) of the two derived walls. Nonzero means the room isn't square
+        (the front wall is 3/8" short, confirmed by three readings) or a reading is off."""
+        return {"front": self.back_len + self.alcove_w - self.front_len,
+                "left": self.right_len - self.alcove_depth - self.left_len}
+
+
+MISFIT_TOL = 0.125  # inches: a tape reading's tolerance
+
+
+def misfit_notes(r: Room = Room()) -> list[str]:
+    return [f"note: the room isn't square; the real {wall} wall is {abs(d):.3f}\" {'shorter' if d > 0 else 'longer'} "
+            f"than the square model (docs/measurements.md)" for wall, d in r.misfit().items() if abs(d) > MISFIT_TOL]
 
 
 @dataclass(frozen=True)
@@ -69,36 +85,37 @@ def _equal_bays(p: Params, total: float) -> tuple:
     return tuple([total / n] * n)
 
 
+def corner(s: Section) -> CL.Corner:
+    return CL.bridge_corner() if s.kind == "bridge" else CL.inside_corner()
+
+
+def _inside_loc(p: Params, x: float, y: float, z: float, heading: float) -> Location:
+    """Inside corner placed by the room (x, y) where its two walls meet and the heading it is entered on."""
+    reach = CL.curve_start_x(p, CL.inside_corner()) + p.curve_r + p.track_offset  # walls' corner, from P0
+    return Pos(x, y, z) * Rot(0, 0, heading) * Pos(-reach, p.track_offset, 0)
+
+
 def sections(p: Params = P, r: Room = Room()) -> list[Section]:
+    """The loop in running order: each corner, then the run to the next corner. Every corner turns left."""
     o = p.track_offset
     xr = _mm(r.alcove_w + r.back_len)  # right wall face
-    yb = _mm(r.right_len - r.alcove_depth)  # 83" wall face
+    yb = _mm(r.right_len - r.alcove_depth)  # back wall face
     z_t = _mm(r.ceiling - r.rail_below_ceiling) - p.rail_top  # tie underside
-    bridge, inside = CL.bridge_corner(), CL.inside_corner()
-    x1b, x1i = CL.curve_start_x(p, bridge), CL.curve_start_x(p, inside)
-
-    # bridge corner: enters heading +y along the right wall, leaves heading -x along the 83" wall
-    y_p0 = (yb - o) - (x1b + p.curve_r)
-    loc_bridge = Pos(xr - o, y_p0, z_t) * Rot(0, 0, 90)
-    # inside corner: enters heading -x along the 83" wall, leaves heading -y along the left wall
-    x_p0_in = x1i + p.curve_r + o
-    loc_inside = Pos(x_p0_in, yb - o, z_t) * Rot(0, 0, 180)
-
+    y_p0 = (yb - o) - (CL.curve_start_x(p, CL.bridge_corner()) + p.curve_r)
+    corners = [  # (corner, run after it, heading in, corner frame -> room)
+        (Section("bridge_corner", "bridge", Pos(xr - o, y_p0, z_t) * Rot(0, 0, 90)), "back_viaduct", 90),
+        (Section("back_left_corner", "inside", _inside_loc(p, 0, yb, z_t, 180)), "left_viaduct", 180),
+        (Section("front_left_corner", "inside", _inside_loc(p, 0, 0, z_t, -90)), "front_viaduct", -90),
+        (Section("front_right_corner", "inside", _inside_loc(p, xr, 0, z_t, 0)), "right_viaduct", 0),
+    ]
     out = []
-    y_s = _mm(r.end_gap) + p.pier_w / 2
-    out.append(Section("right_viaduct", "run", Pos(xr - o, y_s, z_t) * Rot(0, 0, 90),
-                       _equal_bays(p, y_p0 - y_s), (L.FREE, L.CORNER)))
-    out.append(Section("bridge_corner", "bridge", loc_bridge))
-    pn = CL.portals(p, bridge)[-1]
-    x_back0 = (loc_bridge * Pos(pn.x, pn.y, 0)).position.X
-    out.append(Section("back_viaduct", "run", Pos(x_back0, yb - o, z_t) * Rot(0, 0, 180),
-                       _equal_bays(p, x_back0 - x_p0_in), (L.CORNER, L.CORNER)))
-    out.append(Section("inside_corner", "inside", loc_inside))
-    pn = CL.portals(p, inside)[-1]
-    y_left0 = (loc_inside * Pos(pn.x, pn.y, 0)).position.Y
-    y_e = _mm(r.end_gap) + p.pier_w / 2
-    out.append(Section("left_viaduct", "run", Pos(o, y_left0, z_t) * Rot(0, 0, -90),
-                       _equal_bays(p, y_left0 - y_e), (L.CORNER, L.FREE)))
+    for (c, run, heading), (nxt, _, _) in zip(corners, corners[1:] + corners[:1]):
+        pn = CL.portals(p, corner(c))[-1]
+        a, b = (c.loc * Pos(pn.x, pn.y, 0)).position, nxt.loc.position  # next corner's P0 is its origin
+        ln = math.dist((a.X, a.Y), (b.X, b.Y))
+        out.append(c)
+        out.append(Section(run, "run", Pos(a.X, a.Y, z_t) * Rot(0, 0, heading + 90), _equal_bays(p, ln),
+                           (L.CORNER, L.CORNER)))
     return out
 
 
@@ -108,8 +125,7 @@ def track_ends(p: Params, s: Section) -> tuple:
         a, b = 0.0, sum(s.bays)
         pa, pb = s.loc * Pos(a, 0, 0), s.loc * Pos(b, 0, 0)
     else:
-        c = CL.bridge_corner() if s.kind == "bridge" else CL.inside_corner()
-        ps = CL.portals(p, c)
+        ps = CL.portals(p, corner(s))
         pa, pb = s.loc * Pos(ps[0].x, ps[0].y, 0), s.loc * Pos(ps[-1].x, ps[-1].y, 0)
     return (pa.position.X, pa.position.Y), (pb.position.X, pb.position.Y)
 
@@ -136,7 +152,7 @@ def rails(p: Params, s: Section) -> list[Part]:
             lo, hi = L.run_extent(p, list(s.bays), s.ends)
             out.append(s.loc * _straight_rail(p, u, lo, hi))
             continue
-        c = CL.bridge_corner() if s.kind == "bridge" else CL.inside_corner()
+        c = corner(s)
         x1, r = CL.curve_start_x(p, c), p.curve_r
         parts = [_straight_rail(p, u, 0.0, x1)]
         arc = revolve(Plane.XZ * (Pos(r - u, 0) * _rail_face(p)), Axis.Z, 90)
@@ -155,19 +171,19 @@ def _box(x0, x1, y0, y1, z0, z1) -> Part:
 def walls(r: Room = Room()) -> list[tuple[str, Part, Color]]:
     t = r.wall_t
     xr, yback = r.alcove_w + r.back_len, r.right_len
-    yb, xs = yback - r.alcove_depth, r.back_len  # 83" wall face; short wall face
+    yb, xs = yback - r.alcove_depth, r.back_len  # back wall face; short wall face
     h = r.ceiling
     f0, f1 = yback - r.french_from_back[1], yback - r.french_from_back[0]
     d1 = xs - r.door_from_short
     d0 = d1 - r.door_w
     mm = lambda *v: [_mm(a) for a in v]
     right = _box(*mm(xr, xr + t, 0, yback + t, 0, h)) - _box(*mm(xr - 1, xr + t + 1, f0, f1, 0, r.door_h))
-    back83 = _box(*mm(-t, xs, yb, yb + t, 0, h)) - _box(*mm(d0, d1, yb - 1, yb + t + 1, 0, r.door_h))
+    back = _box(*mm(-t, xs, yb, yb + t, 0, h)) - _box(*mm(d0, d1, yb - 1, yb + t + 1, 0, r.door_h))
     out = [
         ("wall_right", right, TEAL),
         ("wall_alcove_back", _box(*mm(xs - t, xr + t, yback, yback + t, 0, h)), TEAL),
         ("wall_alcove_short", _box(*mm(xs - t, xs, yb, yback, 0, h)), TEAL),
-        ("wall_83in", back83, TEAL),
+        ("wall_back", back, TEAL),
         ("wall_left", _box(*mm(-t, 0, 0, yb + t, 0, h)), TEAL),
     ]
     # doors, set back 1" into their openings; the French door is two leaves
@@ -178,6 +194,12 @@ def walls(r: Room = Room()) -> list[tuple[str, Part, Color]]:
         ("door", _box(*mm(d0, d1, yb + 1, yb + 2.75, 0, r.door_h)), WHITE),
     ]
     return out
+
+
+def front_wall(r: Room = Room()) -> Part:
+    """For clash checks only: the front wall stays out of the render."""
+    t, xr = r.wall_t, r.alcove_w + r.back_len
+    return _box(*[_mm(v) for v in (-t, xr + t, -t, 0, 0, r.ceiling)])
 
 
 def _color_for(name: str) -> Color:
@@ -197,7 +219,7 @@ def section_parts(p: Params, s: Section) -> list[tuple[str, Part]]:
     if s.kind == "run":
         items = assembly.placed_parts(p, list(s.bays), s.ends)
     else:
-        c = CL.bridge_corner() if s.kind == "bridge" else CL.inside_corner()
+        c = corner(s)
         items = CA.placed_parts(p, c) + CA.cables(p, c)
     return [(n, s.loc * part) for n, part in items]
 
@@ -300,9 +322,12 @@ def glb_to_json(glb_path, json_path) -> None:
     Path(json_path).write_text(json.dumps(doc, separators=(",", ":")))
 
 
-LABELS = {"room": "Walls & doors", "bridge_corner": "Bridge corner", "inside_corner": "Inside corner",
-          "back_viaduct": "83\u2033 wall run", "right_viaduct": "Right wall run", "left_viaduct": "Left wall run"}
-LOAD_ORDER = ["room", "bridge_corner", "inside_corner", "back_viaduct", "right_viaduct", "left_viaduct"]
+LABELS = {"room": "Walls & doors", "bridge_corner": "Bridge corner", "back_left_corner": "Back-left corner",
+          "front_left_corner": "Front-left corner", "front_right_corner": "Front-right corner",
+          "back_viaduct": "Back wall run", "right_viaduct": "Right wall run", "left_viaduct": "Left wall run",
+          "front_viaduct": "Front wall run"}
+LOAD_ORDER = ["room", "bridge_corner", "back_left_corner", "front_left_corner", "front_right_corner",
+              "back_viaduct", "right_viaduct", "left_viaduct", "front_viaduct"]
 
 
 def build_web(p: Params, out) -> "Path":
