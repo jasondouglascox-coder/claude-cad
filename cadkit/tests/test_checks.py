@@ -49,3 +49,13 @@ def test_clashes_count_overlap_not_touching():
     a, b, c = box(0, 0, 0, 10, 10, 10), box(10, 0, 0, 10, 10, 10), box(5, 5, 5, 10, 10, 10)
     assert find_clashes([("a", a), ("b", b)]) == []
     assert [x[:2] for x in find_clashes([("a", a), ("c", c)])] == [("a", "c")]
+
+
+def test_layer_levels_honor_a_thicker_first_layer():
+    """Bambu's 0.16 mm profiles print a 0.2 mm first layer: boundaries are 0, 0.2, 0.36, 0.52, ..."""
+    fine = Printer(layer=0.16, first_layer=0.2)
+    assert fine.first == 0.2 and A1.first == A1.layer
+    assert off_layer_z(box(0, 0, 0, 10, 10, 0.52), fine) == []
+    assert off_layer_z(box(0, 0, 0, 10, 10, 0.48), fine) == [0.48]
+    assert off_layer_z(box(0, 0, 0.2, 10, 10, 0.32), fine) == []  # 0.2 and 0.52 are boundaries
+    assert off_layer_z(box(0, 0, 0.16, 10, 10, 0.2), fine) == [0.16]  # inside the first layer

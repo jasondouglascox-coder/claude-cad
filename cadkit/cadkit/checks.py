@@ -49,7 +49,7 @@ def off_layer_z(shape: Shape, printer: Printer = A1) -> list[float]:
         n = f.normal_at()
         if abs(abs(n.Z) - 1) < 1e-9:
             z = f.center().Z
-            if abs(z / printer.layer - round(z / printer.layer)) > 1e-6:
+            if not printer.on_layer(z):
                 out.add(round(z, 4))
     return sorted(out)
 
