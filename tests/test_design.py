@@ -44,6 +44,28 @@ def test_ear_outlines_are_clean_arches(d):
         assert np.abs(off).max() < 0.05, f"edge {off.min():+.2f}..{off.max():+.2f} mm off the arch"
 
 
+def _raised(d):
+    """Everything above the base band: the face band and the ring's ink."""
+    return unary_union([d.ribbon, d.cat_white, d.cat_orange, d.face_ink, d.ring_ink])
+
+
+def test_neighbouring_colors_touch(d):
+    """Raised regions meet without gaps: a gap would show the band below as a thin line between two colors."""
+    raised = _raised(d)
+    gaps = raised.buffer(0.03).buffer(-0.03).difference(raised)
+    assert gaps.area < 0.05, f"{gaps.area:.2f} mm^2 of gaps"
+
+
+def test_the_base_shows_only_as_the_ring_and_the_disc(d):
+    """Where nothing is raised over it, the base band is the orange ring or the white disc: no white rim round the
+    figure, and no ledge sticking out past the face band beyond the ring."""
+    seen = unary_union([d.base_white, d.base_orange]).difference(_raised(d))
+    white_seen = d.base_white.intersection(seen).difference(Point(0, 0).buffer(d.r + 0.05, quad_segs=256))
+    assert white_seen.area < 0.01, f"{white_seen.area:.2f} mm^2 of white base seen outside the disc"
+    ledge = seen.difference(Point(0, 0).buffer(d.R, quad_segs=256))
+    assert ledge.area < 0.01, f"{ledge.area:.2f} mm^2 of base seen beyond the ring"
+
+
 def test_every_brown_mark_is_at_least_a_line_wide(d):
     for name in ("face_ink", "ring_ink", "top_brown"):
         g = getattr(d, name)

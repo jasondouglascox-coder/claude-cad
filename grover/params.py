@@ -97,6 +97,8 @@ class Params:
     # vectorizing
     vec_tol: float = 0.02  # mm, Douglas-Peucker
     vec_smooth: float = 0.05  # mm, blur before contouring
+    seam: float = 0.05  # mm, gaps up to this wide between neighbouring colors (each traced on its own) are closed
+    base_tuck: float = 0.1  # mm, the base band's white/orange seam stays this far under the face band's edge
 
     def z(self, layers: int) -> float:
         """Top of layer `layers` (0 = the bed)."""

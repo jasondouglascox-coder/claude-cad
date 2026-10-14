@@ -156,6 +156,19 @@ def _minus(g, *higher, sliver: float = 0.02):
     return V.multi(unary_union([q for q in V.multi(out).geoms if q.area >= sliver]))
 
 
+def _tile(regions: list, outline, reach: float, dust: float = 0.02) -> list:
+    """Disjoint regions, in priority order, grown into the gaps between them so that together they tile `outline`:
+    each takes what's left of the gaps within `reach` of it (bits that only meet it at a corner are dropped as dust)."""
+    gaps = outline.difference(unary_union(regions))
+    out = []
+    for g in regions:
+        take = gaps.intersection(g.buffer(reach))
+        gaps = gaps.difference(take)
+        grown = V.multi(unary_union([g, *V.multi(take).geoms]))
+        out.append(V.multi(unary_union([q for q in grown.geoms if q.area >= dust])))
+    return out
+
+
 # ---- the design -----------------------------------------------------------------------------------------------
 
 @lru_cache(maxsize=2)
@@ -330,37 +343,42 @@ def design(p: Params = P) -> Design:
     face = _drop_islands(_fill_nearest(face, figure), figure, p.min_island * px * px)
     face_ink = face == BROWN
 
-    # --- base band and ring
+    # --- ring ink: the circles and paw prints run on under the figure's edge (and the outer circle past the ring);
+    # the vectors below cut them exactly where the figure and the silhouette end
     hole_r = p.hole_d / 2
     hole = (0.0, art.R - p.hole_wall - hole_r, hole_r)
-    silhouette_m = (D <= art.R) | figure
-    base_white = ((D <= art.r + p.circle_w) | V.dilated(figure, 0.1 * px)) & silhouette_m
-    base_orange = silhouette_m & ~base_white
-    outer_circle = silhouette_m & (D > art.R - p.circle_w)
+    outer_circle = (D > art.R - p.circle_w) & (D <= art.R + 0.1)
     disc_circle = (D > art.r) & (D <= art.r + p.circle_w)
     paws_ring = np.zeros_like(ink)
     ribbon_zone = V.dilated(ribbon_mask | (ink_print & ~V.dilated(cat_fill, 0.3 * px)), 0.8 * px)
     for m in prints:  # a print the ribbon would cut is left out altogether (an ear tip over one is the logo's look)
         if not (m & ribbon_zone).any():
             paws_ring |= m
-    ring_ink = (outer_circle | disc_circle | paws_ring) & ~V.dilated(figure, 0.05 * px)
+    ring_ink = (outer_circle | disc_circle | paws_ring) & ~V.eroded(figure, 0.1 * px)
 
     def poly(m):
         return V.mask_polys(m, art.to_mm, px, p.vec_smooth, p.vec_tol) if m.any() else MultiPolygon()
 
-    # vectorize, then make each band's regions exactly disjoint (higher priority wins; the contours of
-    # neighbouring masks differ by up to vec_tol, which would otherwise leave hairline overlaps)
-    face_ink_g = poly(face_ink)
-    cat_w_g = _minus(poly(face == WHITE), face_ink_g)
-    cat_o_g = _minus(poly(face == ORANGE), face_ink_g, cat_w_g)
-    ribbon_g = _minus(poly(face == YELLOW), face_ink_g, cat_w_g, cat_o_g)
-    ring_ink_g = _minus(poly(ring_ink), face_ink_g, cat_w_g, cat_o_g, ribbon_g)
+    # vectorize. Every edge seen from above is shared exactly by the colors on either side: neighbouring contours,
+    # traced on their own, differ by up to vec_tol, and a gap shows the band below as a thin line between two
+    # colors. In the face band higher priority wins the overlaps and the gaps go to a neighbour; the ring ink, the
+    # silhouette and the base band are cut by the figure's own outline.
+    face_g = [poly(face_ink)]
+    for k in (WHITE, ORANGE, YELLOW):
+        face_g.append(_minus(poly(face == k), *face_g))
+    figure_g = V.multi(unary_union(face_g).buffer(p.seam).buffer(-p.seam))
+    face_ink_g, cat_w_g, cat_o_g, ribbon_g = _tile(face_g, figure_g, p.seam)
+    silhouette_g = V.multi(unary_union([Point(0, 0).buffer(art.R, quad_segs=256), figure_g]))
+    ring_ink_g = _minus(poly(ring_ink).intersection(silhouette_g), figure_g)
     top_brown_g = poly(top_brown)
     top_white_g = _minus(poly(top_white), top_brown_g)
-    base_white_g = poly(base_white)
-    base_orange_g = _minus(poly(base_orange), base_white_g)
+    # the base band's white/orange seam is never seen: it runs under the disc circle and tucked under the figure
+    base_white_g = V.multi(unary_union([Point(0, 0).buffer(art.r + p.circle_w / 2, quad_segs=256),
+                                        *(q for q in V.multi(figure_g.buffer(-p.base_tuck)).geoms
+                                          if q.area >= p.min_island)]))
+    base_orange_g = _minus(silhouette_g, base_white_g)
     d = Design(
-        silhouette=poly(silhouette_m), hole=hole,
+        silhouette=silhouette_g, hole=hole,
         base_white=base_white_g, base_orange=base_orange_g,
         ribbon=ribbon_g, cat_white=cat_w_g, cat_orange=cat_o_g,
         face_ink=face_ink_g, ring_ink=ring_ink_g,
@@ -369,7 +387,7 @@ def design(p: Params = P) -> Design:
         masks=dict(ink=ink, fig_ink=fig_ink_s, thick=thick, thin=thin, figure=figure, face=face, lab=lab,
                    face_ink=face_ink, ring_ink=ring_ink, top_white=top_white, top_brown=top_brown,
                    letters=letters, paws=paws, paw_ink=paw_ink, nose=nose, eye_mask=eye_mask, glints=glints,
-                   base_white=base_white, base_orange=base_orange, paws_ring=paws_ring),
+                   paws_ring=paws_ring),
     )
     # the hole's brown ring sits on the orange base like a paw print
     hx, hy, hr = hole
