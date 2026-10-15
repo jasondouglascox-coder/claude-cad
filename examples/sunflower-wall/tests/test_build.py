@@ -13,10 +13,11 @@ def plans():
 
 def test_nine_prints_on_three_plate_designs(plans):
     got = {pl.name: (pl.qty, sorted(n.split("#")[0] for n, _ in pl.items)) for pl in plans}
-    assert got == {"back_quarter": (4, ["back_quarter", "pin", "pin"]),
+    assert got == {"back_quarter": (4, ["back_quarter", "pin", "pin", "pin"]),
                    "front_quarter": (4, ["front_quarter"]),
                    "seed_head": (1, ["center"])}
     assert sum(pl.qty for pl in plans) == 9
+    assert 4 * sum(n.startswith("pin") for n, _ in plans[0].items) == 12  # 8 needed, 4 spare
 
 
 def test_filament_per_part_matches_the_ams():
@@ -37,7 +38,7 @@ def test_plates_open_colored_with_the_users_filaments(out):
     got = {name: parts for name, _, parts in bambu3mf.read_filaments(out / "plates" / "seed_head.3mf")}
     assert got["center"] == {"center_black": P.slot_center, "center_brown": P.slot_seeds}
     back = bambu3mf.read_filaments(out / "plates" / "back_quarter.3mf")
-    assert sorted(f for _, f, _ in back) == [P.slot_petals] * 3
+    assert sorted(f for _, f, _ in back) == [P.slot_petals] * 4
     import json, zipfile
     proj = json.loads(zipfile.ZipFile(out / "plates" / "back_quarter.3mf").read("Metadata/project_settings.config"))
     assert proj["filament_colour"] == [c for _, c in P.filaments]

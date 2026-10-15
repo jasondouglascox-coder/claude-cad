@@ -27,3 +27,8 @@ def test_pin_length_head_and_barbs(snap):
     assert barb[0].min.X == pytest.approx(cx - P.pin_w / 2 - P.pin_barb, abs=0.02)
     assert len(at(y["tip"] - P.pin_slot_len + 0.5)) == 2  # the split runs this far down
     assert len(at(y["head"] / 2)) == 1
+    # the split ends in a half-round, not a square corner that concentrates the bending
+    root = y["tip"] - P.pin_slot_len
+    gap = lambda yy: (lambda b: b[1].min.X - b[0].max.X)(at(yy))
+    assert gap(root + 0.15) < P.pin_slot_w / 2  # narrows toward the root
+    assert gap(root + P.pin_slot_w / 2 + 0.1) == pytest.approx(P.pin_slot_w, abs=0.01)

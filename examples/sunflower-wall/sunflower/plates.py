@@ -1,4 +1,4 @@
-"""What to print: three plate designs (back quarter + 2 pins x4, front quarter x4, seed head x1)."""
+"""What to print: three plate designs (back quarter + 3 pins x4: 8 needed, 4 spare; front quarter x4, seed head x1)."""
 from cadkit.plates import Plate, pack
 from sunflower.params import Params
 from sunflower.parts import center, pin, quarter
@@ -12,7 +12,7 @@ def filament_for(p: Params):
 
 def plans(p: Params) -> list[Plate]:
     snap = pin.make(p)
-    kits = [("back_quarter", 4, [("back_quarter", quarter.make(p, "back")), ("pin#1", snap), ("pin#2", snap)]),
+    kits = [("back_quarter", 4, [("back_quarter", quarter.make(p, "back")), ("pin#1", snap), ("pin#2", snap), ("pin#3", snap)]),
             ("front_quarter", 4, [("front_quarter", quarter.make(p, "front"))]),
             ("seed_head", 1, [("center", center.make(p))])]
     out = []

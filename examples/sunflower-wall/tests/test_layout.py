@@ -59,6 +59,11 @@ def test_front_petals_stay_under_the_seed_head_and_its_bevel():
         assert layout.midrib(P.front, r) < ceiling
 
 
+def test_seed_tips_print():
+    tan = math.tan(math.radians(P.seed_taper))
+    assert min(d - 2 * h * tan for _, _, d, h in layout.seeds(P)) >= 2 * P.printer.nozzle
+
+
 def test_seeds_stay_on_the_head_and_never_touch():
     s = layout.seeds(P)
     assert len(s) > 1000
@@ -70,9 +75,15 @@ def test_seeds_stay_on_the_head_and_never_touch():
         for x2, y2, d2, _ in pts[i + 1:]:
             if x2 - x > 4:
                 break
-            assert math.hypot(x2 - x, y2 - y) > (d + d2) / 2
+            assert math.hypot(x2 - x, y2 - y) - (d + d2) / 2 >= P.printer.nozzle  # a gap one line wide
 
 
-def test_pin_barbs_clear_the_throat():
+def test_pin_barbs_clear_the_throat_with_play_for_three_stacked_prints():
     y = layout.pin_y(P)
-    assert y["barb"] > P.back_t + P.front_t + P.throat
+    assert y["barb"] - (P.back_t + P.front_t + P.throat) >= 0.25
+
+
+def test_pin_arms_bend_well_inside_what_pla_takes():
+    """Squeezing through the slot bends each arm as a cantilever from the end of the split: keep it under 2%."""
+    assert layout.pin_strain(P) < 0.02
+    assert layout.pin_strain(Params(pin_slot_len=7.0)) > 0.03  # the first design: it would have cracked

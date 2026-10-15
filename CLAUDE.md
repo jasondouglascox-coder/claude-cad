@@ -12,7 +12,7 @@
 - `examples/near-ceiling-track/`: the HO railroad (package `hotrain`). It has its own `CLAUDE.md`; read it when
   working there.
 - `examples/sunflower-wall/`: a 400 mm wall sunflower (package `sunflower`): lofted arched petals in quarters, a
-  1,275-seed head, snap pins.
+  Fibonacci seed head of ~1,200 cones, snap pins.
 
 ## Commands
 

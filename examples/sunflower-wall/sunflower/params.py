@@ -30,8 +30,8 @@ class Params:
     center_r: float = 90.0  # top rim radius
     center_rb: float = 80.0  # bottom radius: a 45-degree bevel up to the rim lets petals rise out from under it
     center_t: float = 10.0  # black body; seeds sit on top
-    seed_c: float = 2.45  # Vogel spacing: seed i at r = c * sqrt(i), angle i * golden angle
-    seed_zones: tuple = ((14.0, 1.8), (68.0, 3.8), (999.0, 2.6))  # (out to radius, seed diameter)
+    seed_c: float = 2.55  # Vogel spacing: seed i at r = c * sqrt(i), angle i * golden angle
+    seed_zones: tuple = ((14.0, 2.2), (68.0, 3.8), (999.0, 2.6))  # (out to radius, seed diameter)
     seed_h: tuple = (2.4, 1.6)  # seed height at the middle and at the rim (a gentle dome)
     seed_taper: float = 14.0  # degrees
     seed_edge: float = 2.5  # bare black rim
@@ -45,8 +45,9 @@ class Params:
     pin_barb: float = 0.5  # barb overhang each side
     pin_tip: float = 2.4  # barb to tip
     pin_slot_w: float = 1.6  # split between the barb arms
-    pin_slot_len: float = 7.0
+    pin_slot_len: float = 10.0  # long arms bend gently (layout.pin_strain)
     throat: float = 1.2  # seed head floor the barbs snap over
+    pin_play: float = 0.3  # barb clearance above the throat: three stacked prints add up
     fit: float = 0.2  # total slide clearance in slots (from examples/fit-coupon)
 
     # keyhole (in each back quarter's hub, on its bisector)

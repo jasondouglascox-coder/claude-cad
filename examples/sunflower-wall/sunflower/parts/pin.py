@@ -1,6 +1,6 @@
 """Snap pin, printed flat (the arms flex along the layers). Profile in XY with its length along +Y: head at y = 0
 (against the wall), shank through both hubs, split arrow tip whose barbs snap over the seed head's throat."""
-from build123d import Location, Part, Pos, Rot, extrude
+from build123d import Circle, Location, Part, Pos, Rot, extrude
 
 from cadkit.shapes import poly, rect
 from sunflower import layout
@@ -15,7 +15,8 @@ def make(p: Params) -> Part:
     right = [(hl, 0), (hl, y["head"]), (w, y["head"]), (w, y["barb"]), (w + p.pin_barb, y["barb"]),
              (w - TIP_NARROW, y["tip"])]
     prof = poly(*(right + [(-x, yy) for x, yy in reversed(right)]))
-    prof = prof - rect(-p.pin_slot_w / 2, p.pin_slot_w / 2, y["tip"] - p.pin_slot_len, y["tip"] + 1)
+    y0 = y["tip"] - p.pin_slot_len + p.pin_slot_w / 2  # split ends in a half-round: no corner to crack from
+    prof = prof - rect(-p.pin_slot_w / 2, p.pin_slot_w / 2, y0, y["tip"] + 1) - Pos(0, y0) * Circle(p.pin_slot_w / 2)
     part = Part((Pos(hl, 0, 0) * extrude(prof, p.pin_t)).solids())
     part.label = "pin"
     return part

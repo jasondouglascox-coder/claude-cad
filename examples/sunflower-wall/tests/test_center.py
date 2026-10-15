@@ -22,7 +22,7 @@ def test_seeds_start_on_the_body_one_color_change(head):
     body, seeds = head.children
     assert seeds.bounding_box().min.Z == pytest.approx(P.center_t)
     # every seed stands on the body's top: one whole disk at center_t (no socket breaks through), and the seeds
-    # stay inside it (test_layout). cadkit.checks.unsupported proves the same but takes minutes on 1,300 seeds.
+    # stay inside it (test_layout). cadkit.checks.unsupported proves the same but takes minutes on ~1,200 seeds.
     tops = [f for f in body.faces() if f.normal_at().Z > 1 - 1e-9 and f.center().Z == pytest.approx(P.center_t)]
     assert len(tops) == 1 and tops[0].area == pytest.approx(math.pi * P.center_r ** 2, rel=1e-6)
     sample = Compound(children=seeds.solids()[::50])

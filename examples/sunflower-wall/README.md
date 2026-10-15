@@ -7,7 +7,7 @@ rings of yellow petals that arch back. Bambu A1 + AMS lite, 0.20 mm Standard, PL
 
 | Plate | Prints | Contents | Filament |
 |---|---|---|---|
-| `back_quarter.3mf` | 4 | back petal quarter + 2 snap pins | yellow (2) |
+| `back_quarter.3mf` | 4 | back petal quarter + 3 snap pins (8 needed, 4 spare) | yellow (2) |
 | `front_quarter.3mf` | 4 | front petal quarter | yellow (2) |
 | `seed_head.3mf` | 1 | seed head | black (3), then brown (4): one color change |
 
@@ -17,11 +17,15 @@ open already colored: File → Open Project.
 ## Assembly
 
 1. Lay the seed head face down on a towel.
-2. Set the 4 front quarters (no keyhole) on it, hub to hub; their pin slots line up with the sockets.
+2. Set the 4 front quarters (no keyhole) on it, flat side up, hub to hub; their pin slots line up with the sockets.
 3. Set the 4 back quarters on top, turned so their slots line up too (the seams land between petals).
 4. Push a pin through each of the 8 slots, barbs first, until it clicks and its head sits flush.
 5. Hang it on a pan-head screw (#8 / M4, head ≤ 8.5 mm × 3 mm) through the keyhole of whichever back quarter is
-   at the top: head in the round hole, then let it drop.
+   at the top: head in the round hole, then let it drop. Leave the underside of the screw head 1.6–3 mm off the
+   wall so the flower sits flat against it.
+
+The petal tops arch, so 0.2 mm layers show as faint contour lines; the petal plates also slice fine at 0.12 mm
+for smoother tops (the 1.6 mm pin-head recess isn't a 0.12 multiple, so the heads may sit ~0.1 mm proud: harmless).
 
 ## Commands
 

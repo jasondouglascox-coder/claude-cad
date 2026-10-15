@@ -6,7 +6,7 @@ that arch back). Printer: Bambu A1 + AMS lite, 0.4 nozzle, 0.20 mm Standard, PLA
 ## Goal
 A 400 mm (~16") wall sunflower that prints without supports, assembles without glue, and shows no seams.
 
-## Pieces (9 prints + 8 pins)
+## Pieces (9 prints, 12 pins)
 - **Back petal ring**, 4 identical quarters (yellow). 16 petals; each quarter owns 4 petals and a 90° wedge of a
   hub disk (`hub_r`, `back_t` thick) that sits under everything.
 - **Front petal ring**, 4 identical quarters (yellow). 16 petals centered over the back ring's gaps; hub wedge
@@ -14,7 +14,7 @@ A 400 mm (~16") wall sunflower that prints without supports, assembles without g
 - **Seed head**, one piece (black + brown, one color change): a disk 180 mm across with a 45° bevel underneath,
   black up to `center_t`, then brown seeds (cones) in Vogel's Fibonacci spiral: small in the middle (dark eye),
   big in the body, smaller at the rim (darker ring).
-- **Snap pins** x8 (yellow), printed flat so the barbs flex along the layers.
+- **Snap pins** x8 + 4 spare (yellow), printed flat so the barbs flex along the layers.
 
 ## Hiding the seams
 - Back quarter boundaries run through back-petal gaps; a front petal sits over each one.
@@ -48,3 +48,8 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
 - 2026-10-15: First concept (seams following petal edges through a split seed head, 4 colors stacked by height,
   orange flames) replaced after the user asked for a one-piece clip-in center, arching petals, and up to 9
   prints, and sent a real sunflower photo: big dark center, plain yellow petals.
+- 2026-10-15: Pre-print review fixes. Pin arms bent 4% squeezing through the slots (PLA cracks around 3-4%): split
+  lengthened 7 → 10 mm with a half-round end, now 1.5% (`layout.pin_strain`, tested < 2%). Barb play over the
+  throat 0.1 → 0.3 mm (`pin_play`), since three stacked prints add up. Three pins per back plate: 12, so 4 spare.
+  Eye seeds 1.8 → 2.2 mm so their tops print, and Vogel spacing 2.45 → 2.55 so seeds keep a one-line gap
+  (1,177 seeds).

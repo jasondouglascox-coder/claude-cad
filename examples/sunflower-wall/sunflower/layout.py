@@ -83,5 +83,15 @@ def seeds(p: Params) -> list[tuple[float, float, float, float]]:
 
 def pin_y(p: Params) -> dict:
     """Pin profile stations along its length (y = 0 at the head's underside = the wall)."""
-    barb = p.back_t + p.front_t + p.throat + p.fit / 2
+    barb = p.back_t + p.front_t + p.throat + p.pin_play
     return {"head": p.pin_head, "barb": barb, "tip": barb + p.pin_tip}
+
+
+def pin_strain(p: Params) -> float:
+    """Peak bending strain in a barb arm squeezed through a slot: a cantilever from the end of the split to the
+    barb, deflected by the barb's overhang past the slot wall. eps = 3 * deflection * arm width / (2 * length^2)."""
+    y = pin_y(p)
+    arm = (p.pin_w - p.pin_slot_w) / 2
+    length = y["barb"] - (y["tip"] - p.pin_slot_len)
+    deflection = p.pin_barb - p.fit / 2
+    return 3 * deflection * arm / (2 * length ** 2)
