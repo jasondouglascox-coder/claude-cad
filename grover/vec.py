@@ -104,7 +104,14 @@ def prisms(polys, z0: float, z1: float, cleaned: bool = False) -> list:
     out = []
     for g in (multi(polys) if cleaned else clean(polys)).geoms:
         pr = Pos(0, 0, z0) * extrude(face(g), z1 - z0)
-        if not pr.is_valid:
-            raise ValueError(f"invalid prism at {g.representative_point()} z={z0}..{z1}")
+        if not pr.is_valid:  # a borderline face (near-coincident vertices): once more on a 0.1 micron grid, then OCC's fix
+            for q in multi(shapely.set_precision(g, 1e-4).buffer(0)).geoms:
+                pr = Pos(0, 0, z0) * extrude(face(q), z1 - z0)
+                if not pr.is_valid:
+                    pr = pr.fix()
+                if not pr.is_valid:
+                    raise ValueError(f"invalid prism at {g.representative_point()} z={z0}..{z1}")
+                out.append(pr)
+            continue
         out.append(pr)
     return out

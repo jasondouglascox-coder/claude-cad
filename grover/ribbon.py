@@ -68,48 +68,80 @@ def register(target) -> Ribbon:
     return Ribbon(place(front, v), [place(t, v) for t in tails], [place(f, v) for f in folds])
 
 
-def wing(tail: Polygon, side: int, r_ring: float, slide: float) -> Polygon:
-    """A tail slid `slide` toward the middle, its straight lower edge carried on until it meets the ring, and the
-    band filled up to the ring (v1's wing): no orange shows between the banner, the back band and the ring."""
-    t = translate(tail, -side * slide, 0)
-    pts = np.array(t.exterior.segmentize(0.1).coords)
-    tip = pts[pts[:, 1].argmin()]  # the swallowtail's lowest point
-    d = (tip[0] - pts[:, 0]) * side  # distance in from the tip
-    sel = pts[(d > 1.0) & (d < 6.0)]
-    bins = np.round(sel[:, 0] / 0.2)
-    low = np.array([sel[bins == q][sel[bins == q][:, 1].argmin()] for q in np.unique(bins)])
-    a, b = np.polyfit(low[:, 0], low[:, 1], 1)  # the lower edge, y = a x + b
-    A, B, C = 1 + a * a, 2 * a * b, b * b - r_ring * r_ring
-    disc = B * B - 4 * A * C
-    if disc <= 0:
-        return t
-    x_hit = min(((-B + q * np.sqrt(disc)) / (2 * A) for q in (1, -1)), key=lambda x: abs(x - tip[0]))
-    x_far, x_near = x_hit - side * 1.0, tip[0] - side * 2.5  # (it overlaps the tail: one band)
-    patch = Polygon([(x_near, a * x_near + b), (x_far, a * x_far + b), (x_far, 0.0), (x_near, 0.0)])
-    patch = patch.difference(Point(0, 0).buffer(r_ring, quad_segs=128))
-    below = Polygon([(x_near, a * x_near + b), (x_far, a * x_far + b), (x_far, -100), (x_near, -100)])
-    band = unary_union([t.difference(below), patch])
-    return band.buffer(1.0, join_style="mitre").buffer(-1.0, join_style="mitre")  # no notch where they join
+def v_notch(tail: Polygon, side: int, out: float, depth: float) -> Polygon:
+    """The swallowtail's end as a uniform V: straight arms from the upper prong's tip and the lower tip (moved `out`
+    outward) to a point `depth` in from the middle of the line between them."""
+    c = np.array(tail.simplify(0.01).exterior.coords)[:-1]
+    top = c[(c[:, 0] * side).argmax()]  # the upper prong's tip
+    low = c[c[:, 1].argmin()] + (side * out, 0)  # the lower tip
+    d = low - top
+    n = np.array([-d[1], d[0]]) / np.hypot(*d)
+    n *= -np.sign(n[0] * side)  # in, away from the end
+    apex = (top + low) / 2 + n * depth
+    return unary_union([tail, Point(low)]).convex_hull.difference(Polygon([top, apex, low, low + n * -5, top + n * -5]))
 
 
 @dataclass
 class Drawn:
     region: object  # the whole ribbon, outline included
     yellow: object
-    brown: object  # outlines, line_w wide, inside each piece's edge (none along the ring: its circle is the edge)
+    brown: object  # outlines, line_w wide: round each piece, along each fold's crease (none along the ring)
 
 
-def drawn(r: Ribbon, r_ring: float, line_w: float, slide: float) -> Drawn:
-    backs = [wing(t, side, r_ring, slide) for t, side in zip(r.backs, (-1, 1))]
+def drawn(r: Ribbon, r_ring: float, line_w: float, slide: float, lift: float, fold_ring: float,
+          tail_out: float, notch_depth: float) -> Drawn:
+    """The banner in front; behind each end, the back band: its tail (slid in, lifted) below a straight crease from
+    the banner's lower corner to the ring, and above the crease the fold, which the banner and the ring close (the
+    logo's triangle). The crease meets the ring `fold_ring` below the banner, and the tail's lower edge runs to the
+    same point: tail, fold and ring meet there. The tail's end is a uniform V (v_notch). One line between neighbours: the
+    bands don't outline themselves against the banner or the ring, and the crease is a single line."""
     front = r.front
-    behind = unary_union(backs).difference(front)  # (the sketch's folds don't line up with the slid tails)
-    region = unary_union([front, behind])
     ring = Point(0, 0).buffer(r_ring, quad_segs=128)
-    yellow = [front.buffer(-line_w, join_style="mitre")]
-    for g in backs:  # no outline where a band meets the ring: the ring's own circle is that edge
-        yellow.append(unary_union([g, ring]).buffer(-line_w, join_style="mitre").intersection(g).difference(front))
-    yellow = V.multi(unary_union(yellow).intersection(region))
-    return Drawn(V.multi(region), yellow, V.multi(region.difference(yellow)))
+    fc = np.array(front.exterior.coords)
+    meets = shapely.get_coordinates(front.exterior.intersection(ring.exterior))
+    pieces, bands, creases = [], [], []
+    for tail, fold, side in zip(r.backs, sorted(r.folds, key=lambda f: f.centroid.x), (-1, 1)):
+        fp = np.array(fold.exterior.coords)
+        corner = fc[np.argmin(np.hypot(*(fc - fp[(fp[:, 0] * side).argmax()]).T))]  # banner's lower corner
+        p = meets[meets[:, 0] * side > 0]
+        p = p[p[:, 1].argmin()]  # where the banner's lower edge meets the ring
+        a = np.arctan2(p[1], p[0]) - side * fold_ring / r_ring
+        h = np.array([np.cos(a), np.sin(a)]) * r_ring  # crease, tail and fold meet the ring here
+        t = v_notch(translate(tail, -side * slide, lift), side, tail_out, notch_depth)
+        tp = np.array(t.exterior.coords)
+        bottom = tp[tp[:, 1] < tp[:, 1].min() + 1e-6]
+        low = bottom[(bottom[:, 0] * side).argmax()]  # the tail's lower tip
+        on = h + (h - corner) / np.hypot(*(h - corner)) * 3.0  # (carried on into the ring)
+        under = h + (h - low) / np.hypot(*(h - low)) * 3.0
+        above = Polygon([corner, on, on + (0, 20), corner + (0, 20)])
+        below = Polygon([low, under, under - (0, 20), low - (0, 20)])
+        gap = above.difference(ring).difference(front)
+        near = Point(corner + 0.9 * (h - corner) + (0, 0.02))
+        fold_piece = min(getattr(gap, "geoms", [gap]), key=lambda g: g.distance(near))
+        whole = unary_union([t, Polygon([low, h, corner])]).difference(below).difference(ring).difference(front)
+        body = whole.difference(above)  # the tail (and the upper prong)
+        band = unary_union([fold_piece, body])
+        pieces += [fold_piece, body]
+        bands.append(band)
+        # the crease starts flush with the banner's outer edge (a square end would leave a step against it)
+        fs = np.array(front.simplify(0.01).exterior.coords)[:-1]
+        k = np.argmin(np.hypot(*(fs - corner).T))
+        e = max((fs[k - 1], fs[(k + 1) % len(fs)]), key=lambda v: v[1]) - fs[k]  # up the banner's outer edge
+        e = e / np.hypot(*e)
+        n = np.array([-e[1], e[0]]) * np.sign(np.dot([-e[1], e[0]], h - corner))  # toward the ring
+        inside = Polygon([corner + e * 20, corner - e * 20, corner - e * 20 + n * 20, corner + e * 20 + n * 20])
+        start = corner - (h - corner) / np.hypot(*(h - corner)) * 3.0
+        creases.append((LineString([start, on]), inside, band))
+    behind = unary_union(pieces)
+    region = unary_union([front, behind])
+    brown = [front.difference(front.buffer(-line_w, join_style="mitre"))]
+    for g in bands:  # no outline of its own against the ring or the banner: their edges are that line
+        cover = unary_union([g, ring.buffer(0.01), front.buffer(0.01)])  # (grown: no hairline gap left to outline)
+        brown.append(g.difference(cover.buffer(-line_w, join_style="mitre", mitre_limit=1.5)))
+    brown += [c.buffer(line_w / 2, cap_style="flat").intersection(inside).intersection(band)
+              for c, inside, band in creases]
+    brown = V.multi(unary_union(brown).intersection(region))
+    return Drawn(V.multi(region), V.multi(region.difference(brown)), brown)
 
 
 @lru_cache(maxsize=2)
@@ -131,4 +163,4 @@ def shapes(p) -> Drawn:
     r = register(target)
     dy = E.drop(p, art)
     r = Ribbon(translate(r.front, 0, -dy), [translate(t, 0, -dy) for t in r.backs], [translate(f, 0, -dy) for f in r.folds])
-    return drawn(r, art.R, p.line_w, p.ribbon_slide)
+    return drawn(r, art.R, p.line_w, p.ribbon_slide, p.ribbon_lift, p.fold_ring, p.tail_out, p.notch_depth)

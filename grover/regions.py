@@ -147,6 +147,15 @@ def _minus(g, *higher, sliver: float = 0.02):
     return V.multi(unary_union([q for q in V.multi(out).geoms if q.area >= sliver]))
 
 
+def _difference(a, b):
+    """a - b, retried on a 1e-5 mm grid when GEOS can't node two edges that nearly touch."""
+    try:
+        return a.difference(b)
+    except shapely.errors.GEOSException:
+        a, b = (shapely.make_valid(shapely.set_precision(g, 1e-5)) for g in (a, b))
+        return a.difference(b)
+
+
 def _tile(regions: list, outline, reach: float, dust: float = 0.02) -> list:
     """Disjoint regions, in priority order, grown into the gaps between them so that together they tile `outline`:
     each takes what's left of the gaps within `reach` of it (bits that only meet it at a corner are dropped as dust)."""
@@ -376,15 +385,17 @@ def design(p: Params = P) -> Design:
         cat_o_g = V.multi(unary_union([cat_o_g, tongue]))
     # fill narrower than a nozzle between brown lines (wedges where lines meet, flecks) can't print cleanly: it goes
     # to the brown, and so does any fill piece too small to print (the white under a paw doesn't count: it's covered)
-    fills = unary_union([cat_w_g.difference(paw_all), cat_o_g, ribbon_g]).buffer(0)
-    narrow = [fills.difference(fills.buffer(-p.printer.nozzle / 2).buffer(p.printer.nozzle / 2))]
-    kept = []
-    for g in (cat_w_g, cat_o_g, ribbon_g):
-        g = V.multi(g.difference(narrow[0]))
-        narrow += [q for q in g.geoms if q.area < p.min_island]
-        kept.append(V.multi(unary_union([q for q in g.geoms if q.area >= p.min_island])))
-    cat_w_g, cat_o_g, ribbon_g = kept
-    face_ink_g = V.multi(unary_union([face_ink_g, *narrow]).difference(unary_union(kept)))  # never over a fill
+    for _ in range(2):  # (twice: an opening leaves a little more at the sharpest corners the first time)
+        fills = unary_union([cat_w_g.difference(paw_all), cat_o_g, ribbon_g]).buffer(0)
+        opened = fills.buffer(-p.printer.nozzle / 2).buffer(p.printer.nozzle / 2)
+        narrow = [_difference(fills, opened)]
+        kept = []
+        for g in (cat_w_g, cat_o_g, ribbon_g):
+            g = V.multi(g.difference(narrow[0]))
+            narrow += [q for q in g.geoms if q.area < p.min_island]
+            kept.append(V.multi(unary_union([q for q in g.geoms if q.area >= p.min_island])))
+        cat_w_g, cat_o_g, ribbon_g = kept
+        face_ink_g = V.multi(unary_union([face_ink_g, *narrow]).difference(unary_union(kept)))  # never over a fill
     silhouette_g = V.multi(unary_union([Point(0, 0).buffer(art.R, quad_segs=256), figure_g]))
     ring_ink_g = _minus(poly(ring_ink).intersection(silhouette_g), figure_g)
     raised = unary_union([eye_all, paw_all])

@@ -24,6 +24,10 @@ class Params:
     width: float = 50.0  # the logo's ribbon tip to tip: sets the art scale (the tails then slide in, ribbon_slide)
     figure_drop: float = 2.0  # cat + ribbon moved down from the logo position
     ribbon_slide: float = 3.0  # mm each ribbon tail slides in toward the middle (v1's look)
+    ribbon_lift: float = 1.5  # mm each ribbon tail moves up
+    tail_out: float = 1.0  # mm each tail's lower tip moves out
+    notch_depth: float = 2.0  # mm the V between the tail's two tips reaches in, square to the line between them
+    fold_ring: float = 2.4  # mm along the ring from where the banner meets it down to where the crease does
     ear_clear: float = 1.5  # ear tips stay this far inside the ring's outer circle
 
     # keyring hole, replacing the top paw print
@@ -104,9 +108,8 @@ class Params:
                    (2.45, 1.95), (2.85, 1.65), (2.85, 1.20), (2.55, 0.65), (2.20, 0.25))
     mouth: tuple = (
         ((1.86, 0.25), (1.82, -0.60), (1.76, -1.30)),  # philtrum
-        ((1.76, -1.30), (1.20, -1.78), (0.40, -2.00), (-0.50, -1.95), (-1.40, -1.65), (-2.20, -1.10), (-2.65, -0.50),
-         (-2.75, 0.00)),  # left lip, up into the muzzle
-        ((1.76, -1.30), (2.40, -1.72), (3.30, -1.98), (4.30, -1.97), (4.90, -1.80), (5.30, -1.55)),  # right lip, a smile ending short of the whiskers
+        ((1.76, -1.30), (1.20, -1.78), (0.40, -2.00), (-0.50, -1.95), (-1.40, -1.65), (-1.95, -1.33)),  # left lip, to the lowest whisker
+        ((1.76, -1.30), (2.40, -1.72), (3.30, -1.98), (4.30, -1.97), (4.88, -1.82)),  # right lip, to the lowest whisker
         ((0.40, -2.00), (0.50, -2.55), (0.95, -2.95), (1.70, -3.12), (2.45, -3.00), (2.95, -2.60), (3.20, -1.98)),  # mouth
     )
     whiskers: tuple = (  # the top ones from beside the nose, the lower pair a side fanning from a root in the
@@ -115,10 +118,10 @@ class Params:
         ((-1.00, -0.75), (-2.00, -0.66), (-2.78, -0.57), (-3.50, -0.50), (-4.50, -0.55), (-5.30, -0.68)),
         ((-1.00, -0.75), (-1.60, -1.10), (-2.15, -1.62), (-2.85, -1.95), (-3.50, -2.27)),
         ((3.85, -0.45), (5.50, 0.35), (7.50, 0.88), (9.50, 1.15), (11.50, 1.20), (12.10, 1.15)),
-        ((4.35, -1.05), (5.20, -0.78), (6.20, -0.55), (8.00, -0.30), (9.50, -0.25), (10.70, -0.32), (11.85, -0.50)),
-        ((4.35, -1.05), (4.75, -1.55), (5.10, -2.05), (5.50, -2.50)),
+        ((4.60, -1.10), (5.30, -0.80), (6.20, -0.55), (8.00, -0.30), (9.50, -0.25), (10.70, -0.32), (11.85, -0.50)),
+        ((4.60, -1.10), (4.85, -1.60), (5.10, -2.05), (5.50, -2.50)),
     )
-    tongue: str = "white"  # inside the mouth: "white", "orange", or "none" (no opening, just the smile)
+    tongue: str = "none"  # inside the mouth: "white", "orange", or "none" (no opening, just the smile)
     muzzle_zone: tuple = ((-3.30, -2.90), (5.40, -2.90), (5.40, -1.30), (6.10, -1.30), (6.10, 2.20),
                           (-3.30, 2.20))  # traced ink in here goes (it stops short of the right paw)
     muzzle_unlines: tuple = (  # traced lines that go though nothing is drawn on them (where a whisker was moved)
