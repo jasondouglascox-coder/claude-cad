@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 from scipy.interpolate import make_interp_spline
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 from . import art as A
@@ -60,8 +60,24 @@ class Ears:
 def masks(p: Params, art: A.Art, shape) -> Ears:
     out, inn, line = p.ear_erase
     ink, erase, outside = [], [], []
+    dy = drop(p, art)
+    sides = [curve([(x, y - dy) for x, y in pts]) for pts in p.head_sides]
     for arch, inner in curves(p):  # clockwise round the head, so the outside is on the arch's left
         ink += [arch.buffer(p.line_w / 2), inner.buffer(p.line_w / 2)]
         outside.append(arch.buffer(out, single_sided=True))
         erase += [outside[-1], arch.buffer(-inn, single_sided=True), inner.buffer(line)]
+    for side, (width, stop) in zip(sides, p.side_outside):  # the head's sides: drawn the same way (no inner line).
+        ink.append(side.buffer(p.line_w / 2))  # Beyond a side is backdrop, `width` wide, down to `stop` (below that
+        # the shoulder is beside it); with no stop it carries on past the end at the paw, so the backdrop meets the
+        # paw's rim with no fur wedge
+        c = list(side.coords)
+        low = 0 if c[0][1] < c[-1][1] else -1
+        a, b = np.array(c[low]), np.array(c[1 if low == 0 else -2])
+        tip = tuple(a + (a - b) / np.linalg.norm(a - b) * 1.0)
+        longer = LineString([tip, *c] if low == 0 else [*c, tip])
+        band = longer.buffer(width, single_sided=True)
+        if stop is not None:
+            band = band.intersection(Polygon([(-99, stop - dy), (99, stop - dy), (99, 99), (-99, 99)]))
+        outside.append(band)
+        erase += [side.buffer(out, single_sided=True), side.buffer(-inn, single_sided=True)]
     return Ears(*(raster(unary_union(g), art, shape) for g in (ink, erase, outside)))

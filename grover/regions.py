@@ -84,15 +84,17 @@ def _drop_islands(lab: np.ndarray, inside: np.ndarray, min_px: float) -> np.ndar
     return _fill_nearest(out, inside)
 
 
-def _open_counters(m: np.ndarray, yellow: np.ndarray, min_d_px: float) -> np.ndarray:
+def _open_counters(m: np.ndarray, yellow: np.ndarray, min_d_px: float, min_area_px: float) -> np.ndarray:
     """A letter's counter (a hole in the mark, or yellow the classifier's smoothing swallowed inside it) narrower
     than min_d becomes a round hole of that diameter: a nozzle can't leave a thinner one open, and the G, & and A
-    have to read."""
+    have to read. A pinhole smaller than min_area is a speck in the art (inside each R), not a counter: filled."""
     inside = ndi.binary_fill_holes(m)
     holes = (inside & ~m) | (V.eroded(inside, min_d_px / 3) & yellow)  # edge pixels aren't counters
     out = m.copy()
     for c in V.components(holes, int(0.3 * (min_d_px / 2) ** 2)):
-        if not V.opened(c, min_d_px / 2).any():  # too narrow somewhere
+        if c.sum() < min_area_px:
+            out |= c
+        elif not V.opened(c, min_d_px / 2).any():  # too narrow somewhere
             ys, xs = np.where(c)
             (cx, cy), r = cv2.minEnclosingCircle(np.column_stack([xs, ys]).astype(np.float32))
             yy, xx = np.ogrid[:m.shape[0], :m.shape[1]]
@@ -230,8 +232,15 @@ def design(p: Params = P) -> Design:
         inset = 0.15 * (x1 - x0)  # the corners, where the body's outline meets the paw, keep their lines
         above.append(w.outer.buffer(p.paw_top_clear).difference(w.outer).intersection(
             box(x0 + inset, y1 - p.paw_top_depth, x1 - inset, y1 + 1)))
-    paw_top = E.raster(unary_union(above), art, cls.shape)
-    thick, thin = thick & ~paw_mask & ~paw_top, thin & ~paw_mask & ~paw_top
+    paw_top = E.raster(unary_union(above), art, cls.shape) & ~ears.outside  # (beyond a drawn outline: backdrop)
+    paw_ring = E.raster(unary_union([w.outer.buffer(p.paw_clear) for w in paw_shapes]), art, cls.shape)
+    old_figure = ndi.binary_fill_holes(V.closed(cat_mask | fig_ink_s, 0.1 * px)) & ~ears.outside
+    beside = old_figure & ~paw_mask
+    strip = paw_ring & beside & ~V.opened(beside, p.paw_clear * 0.8 * px)  # too thin to keep beside a paw
+    cat_mask = cat_mask & ~strip
+    paw_fur = paw_ring & beside & ~strip  # round a paw, inside the cat: white fur where lines were
+    thick = thick & ~paw_ring & ~paw_top
+    thin = (thin & ~paw_ring & ~paw_top) | ears.ink | muzzle_ink  # the drawn lines stay (the sides end on a rim)
     eyes = [(e.outer.centroid.x, e.outer.centroid.y, float(np.sqrt(e.outer.area / np.pi))) for e in eye_shapes]
 
     # the ribbon: drawn (ribbon.py), v1's sketch registered onto the logo's ribbon. It replaces the traced one, fill
@@ -248,8 +257,8 @@ def design(p: Params = P) -> Design:
                                                 "pink_light")]) | (pink & ~nose)
     # round the drawn eyes, what was the traced eye's ink is face white (orange fur stays orange)
     orange_src = np.isin(cls_s, [C[n] for n in ("cat_orange", "cat_orange2", "ear")])
-    cat_mask = cat_mask | (eye_zone & ~eye_mask) | (muzzle_box & ~nose) | paw_mask | paw_top
-    white_src = white_src | ((eye_zone & ~eye_mask) | (muzzle_box & ~nose)) & ~orange_src | paw_mask | paw_top
+    cat_mask = cat_mask | (eye_zone & ~eye_mask) | (muzzle_box & ~nose) | paw_mask | paw_top | paw_fur
+    white_src = white_src | ((eye_zone & ~eye_mask) | (muzzle_box & ~nose)) & ~orange_src | paw_mask | paw_top | paw_fur
 
     def labels(ink_print):
         """Face-band label map: ribbon / cat white / cat orange / ink, gap-free inside the figure."""
@@ -300,7 +309,7 @@ def design(p: Params = P) -> Design:
     r_line = (p.line_w - 0.05) / 2 * px
     paw_ink = V.opened(paw_ink, r_line)
     letters = V.opened(letters, r_line)
-    letters = _open_counters(letters, cls_s == C["ribbon"], p.counter_min_d * px)
+    letters = _open_counters(letters, cls_s == C["ribbon"], p.counter_min_d * px, p.counter_min_area * px * px)
     glyph_zone = V.dilated(ndi.binary_fill_holes(letters), 0.3 * px)
     letters &= ~V.dilated((lab == BROWN) & ~glyph_zone, p.letter_clear * px)  # a letter never touches the ribbon's outline
     top_brown = letters | paw_ink  # the eyes and nose join as vectors

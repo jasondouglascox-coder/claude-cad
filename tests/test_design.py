@@ -4,7 +4,7 @@ import math
 import numpy as np
 import pytest
 import shapely
-from shapely.geometry import Point
+from shapely.geometry import Point, Polygon
 from shapely.ops import substring, unary_union
 
 from grover import art as A
@@ -104,6 +104,13 @@ def test_ring_paw_prints_keep_their_pads_apart(d):
     for x, y in [(np.cos(np.radians(a)) * (d.r + d.R) / 2, np.sin(np.radians(a)) * (d.r + d.R) / 2) for a in (0, 180)]:
         pads = [g for g in d.ring_ink.geoms if g.distance(Point(x, y)) < 2.0]
         assert len(pads) == 5, f"print at ({x:.1f}, {y:.1f}) has {len(pads)} pieces"
+
+
+def test_letters_have_no_pinholes(d):
+    """The only holes in the raised letters are their real counters (O, R, &, P, A), none a speck from the art."""
+    ribbon = d.ribbon.buffer(0.5)
+    holes = [Polygon(r) for g in d.top_brown.geoms if ribbon.contains(g.representative_point()) for r in g.interiors]
+    assert holes and all(h.area >= 0.4 for h in holes), sorted(round(h.area, 3) for h in holes)
 
 
 def test_ring_paw_prints_point_their_toes_outward(d):

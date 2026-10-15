@@ -48,6 +48,7 @@ class Params:
     whisker_zone: tuple = (0.0, 0.0, 0.0, 0.0)  # (dx min, dx max, dy min, dy max from the nose) to drop whiskers; empty keeps them
     letter_clear: float = 0.35  # mm, a raised letter keeps this far from the ribbon's outline
     counter_min_d: float = 0.55  # mm, a letter's counter opens to at least this (one yellow extrusion)
+    counter_min_area: float = 0.1  # mm^2, holes in a letter smaller than this are specks in the art: filled
     letter_smooth: float = 0.1  # mm, bumps on the traced letters smaller than this are smoothed away
     paw_print_step: float = 45.0  # degrees between ring paw prints (the 12 o'clock one is the hole)
     paw_min_area: float = 5.0  # mm^2, white blobs touching the ribbon between these sizes are the paws
@@ -74,6 +75,14 @@ class Params:
         ((-7.11, 14.47), (-5.83, 13.01), (-4.64, 11.49), (-3.54, 9.89), (-2.55, 8.25)),
         ((8.08, 14.38), (7.40, 13.25), (6.67, 12.16), (5.97, 11.04), (5.36, 9.88), (4.90, 8.65)),
     )
+    # the head's sides, drawn like the ears: from where each meets a paw up round to an ear (clockwise round the
+    # head), ending on the paw's rim (the arm lines beside the paws go: each paw's rim is its outline)
+    head_sides: tuple = (
+        ((-8.20, -1.10), (-8.43, -0.50), (-8.81, 0.50), (-9.02, 1.50), (-9.07, 2.50), (-8.97, 3.50), (-8.70, 4.50), (-8.25, 5.50), (-7.55, 6.65)),
+        ((9.06, 6.60), (9.49, 5.50), (9.88, 4.50), (10.22, 3.50), (10.40, 2.50), (10.38, 1.50), (10.11, 0.50), (9.72, -0.50), (9.40, -1.40)),
+    )
+    side_outside: tuple = ((1.2, None), (0.6, -0.30))  # per side: mm beyond it that's backdrop, down to y
+    # (logo frame; None: on to the paw). On the right the shoulder is beside the cheek below the whiskers
     ear_erase: tuple = (0.6, 0.45, 0.32)  # mm of traced ink erased outside an arch, inside it, round an inner line
 
     # eyes, drawn: per eye a smooth outline from its inner corner (where it comes to a point) round through these
@@ -106,7 +115,7 @@ class Params:
         ((-1.00, -0.75), (-2.00, -0.66), (-2.78, -0.57), (-3.50, -0.50), (-4.50, -0.55), (-5.30, -0.68)),
         ((-1.00, -0.75), (-1.60, -1.10), (-2.15, -1.62), (-2.85, -1.95), (-3.50, -2.27)),
         ((3.85, -0.45), (5.50, 0.35), (7.50, 0.88), (9.50, 1.15), (11.50, 1.20), (12.10, 1.15)),
-        ((4.35, -1.05), (5.20, -0.80), (5.95, -0.62), (8.00, -0.35), (9.50, -0.40), (10.50, -0.50), (11.75, -0.85)),
+        ((4.35, -1.05), (5.20, -0.78), (6.20, -0.55), (8.00, -0.30), (9.50, -0.25), (10.70, -0.32), (11.85, -0.50)),
         ((4.35, -1.05), (4.75, -1.55), (5.10, -2.05), (5.50, -2.50)),
     )
     tongue: str = "white"  # inside the mouth: "white", "orange", or "none" (no opening, just the smile)
@@ -129,6 +138,7 @@ class Params:
         (((7.80, -4.73), (7.95, -3.90), (8.15, -2.95)), ((9.66, -4.95), (9.87, -4.10), (10.13, -3.15))),
     )
     paw_top_clear: float = 0.45  # mm over a paw's top that's plain white (traced lines and shading go)
+    paw_clear: float = 0.9  # mm all round a paw where traced lines go (its rim is its outline)
     paw_top_depth: float = 0.8  # mm down from a paw's top that counts as its top (its sides keep their lines)
     eye_tip_r: float = 0.08  # mm, the pointed inner corner is rounded this much
     eye_erase: float = 0.4  # mm round an eye's outline where the traced ink goes
