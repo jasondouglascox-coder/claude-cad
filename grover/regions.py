@@ -386,6 +386,7 @@ def design(p: Params = P) -> Design:
     seen = silhouette_g.difference(unary_union([figure_g, ring_ink_g]))
     specks = [q for q in V.multi(seen).geoms if q.area < p.min_island]
     wedges = seen.difference(seen.buffer(-p.base_sliver / 2).buffer(p.base_sliver / 2))
+    wedges = wedges.intersection(figure_g.buffer(0.5))  # against the cat; the ring prints' pad gaps stay open
     ring_ink_g = _minus(V.multi(unary_union([ring_ink_g, *specks, wedges])))  # _minus drops the dust
     thin_white = top_white_g.difference(top_white_g.buffer(-p.printer.nozzle / 2).buffer(p.printer.nozzle / 2))
     top_brown_g = _minus(V.multi(unary_union([top_brown_g, thin_white])))

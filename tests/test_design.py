@@ -97,6 +97,13 @@ def test_paws_are_their_drawn_outlines_with_toe_lines(d):
         assert d.face_ink.buffer(0.03).contains(paw.outer.difference(paw.outer.buffer(-P.line_w)))  # brown under its rim
 
 
+def test_ring_paw_prints_keep_their_pads_apart(d):
+    """Every whole print in the ring is five separate brown pads: nothing bridges them."""
+    for x, y in [(np.cos(np.radians(a)) * (d.r + d.R) / 2, np.sin(np.radians(a)) * (d.r + d.R) / 2) for a in (0, 180)]:
+        pads = [g for g in d.ring_ink.geoms if g.distance(Point(x, y)) < 2.0]
+        assert len(pads) == 5, f"print at ({x:.1f}, {y:.1f}) has {len(pads)} pieces"
+
+
 def test_ring_paw_prints_point_their_toes_outward(d):
     """Each print in the ring: palm toward the center, toes away from it, centered on its angle."""
     art = A.load(P)
@@ -125,12 +132,14 @@ def test_no_fill_narrower_than_a_nozzle_in_the_face(d):
 
 
 def test_no_pockets_or_slivers_of_backdrop_or_raised_white(d):
-    """The base band seen between raised regions has no pocket smaller than a printable island and nothing narrower
-    than 0.3 mm (the paw prints' 0.4 mm pad gaps stay); the raised white has nothing narrower than a nozzle."""
+    """The base band seen between raised regions has no pocket smaller than a printable island and, against the
+    cat, nothing narrower than 0.3 mm (the ring prints' pad gaps stay open); the raised white has nothing narrower
+    than a nozzle."""
     seen = d.silhouette.difference(_raised(d))
     pockets = [g for g in V.multi(seen).geoms if 0.001 < g.area < P.min_island]  # under 0.001: float dust on seams
     assert not pockets, [(round(g.centroid.x, 1), round(g.centroid.y, 1), round(g.area, 3)) for g in pockets[:5]]
-    assert seen.difference(_opened(seen, 0.3)).area < 0.05
+    face = unary_union([d.ribbon, d.cat_white, d.cat_orange, d.face_ink])
+    assert seen.difference(_opened(seen, 0.3)).intersection(face.buffer(0.5)).area < 0.05  # against the cat
     assert d.top_white.difference(_opened(d.top_white, P.printer.nozzle)).area < 0.02
 
 
