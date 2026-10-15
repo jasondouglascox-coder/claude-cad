@@ -70,7 +70,8 @@ the background.
    - model moving things as swept envelopes (e.g. the longest car on the tightest curve);
    - model installed hardware (rods, wires, screws, cables) as solids, and the paths they need (a wire through a
      groove) as solids that must touch nothing.
-6. **Look at it.** Render previews (`cadkit.export.write_svg` → `rsvg-convert` → PNG) or the viewer, and look before
+6. **Look at it.** Render previews (`cadkit.render.render`: shaded, colored PNG, `cadkit[render]` extra; or
+   `cadkit.export.write_svg` → `rsvg-convert` → PNG for hidden lines) or the viewer, and look before
    saying a part is right. Eyes catch things tests don't: a stray tip poking out of a corner passed every test.
 7. **Check what the slicer sees.** When plate or 3MF code changes, run the plates through Bambu Studio's CLI
    (`cadkit.bambu.roundtrip`, `slice_report`): same filament per part, same geometry per object, one color change
