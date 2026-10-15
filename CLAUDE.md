@@ -11,6 +11,8 @@
 - `examples/fit-coupon/`: the smallest complete project; the template for new ones.
 - `examples/near-ceiling-track/`: the HO railroad (package `hotrain`). It has its own `CLAUDE.md`; read it when
   working there.
+- `examples/sunflower-wall/`: a 400 mm wall sunflower (package `sunflower`): lofted arched petals in quarters, a
+  1,275-seed head, snap pins.
 
 ## Commands
 
@@ -20,6 +22,7 @@ Each project runs from its own folder:
 cd cadkit && uv sync && uv run pytest -n 4                       # ~10 s; includes a live Bambu Studio check if installed
 cd examples/fit-coupon && uv sync && uv run pytest               # ~1 min
 cd examples/near-ceiling-track && uv run pytest -n 6 -m "not slow"   # ~4 min; full suite ~25 min, run it in the background
+cd examples/sunflower-wall && uv run pytest -n 6 -m "not slow"       # ~2 min; slow tests slice every plate in Bambu
 ```
 
 ## Rules
