@@ -34,9 +34,10 @@ def write_svg(shape: Shape, path: Path, view: tuple = TOP) -> None:
 
 
 def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for: Callable[[str], int],
-                 preview_dir: Path | None = None) -> None:
+                 preview_dir: Path | None = None, settings: Path = bambu3mf.SETTINGS) -> None:
     """Each plate as STEP (painted) + Bambu Studio project 3MF + an optional SVG, and csv_path listing what to print
-    and how many. filament_for(body label) -> filament number; two-color parts are one object with a part per color
+    and how many. settings: Bambu project settings (bambu3mf.write_settings for your filaments).
+    filament_for(body label) -> filament number; two-color parts are one object with a part per color
     body, so the upper color can't drop onto the bed."""
     folder.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -54,7 +55,7 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
             else:
                 for body in (s.children if isinstance(s, Compound) and s.children else [s]):
                     objects.append((s.label, [(s.label, body, filament_for(s.label))]))
-        bambu3mf.write(folder / f"{pl.name}.3mf", objects)
+        bambu3mf.write(folder / f"{pl.name}.3mf", objects, settings)
         if preview_dir is not None:
             write_svg(comp, preview_dir / f"plate_{pl.name}.svg", TOP)
         counts = {}

@@ -70,3 +70,43 @@ def test_bambu_studio_reads_it_back_and_slices_one_color_change(tmp_path, two_co
     report = bambu.slice_report(_write(tmp_path, [("deck", two_color())], "deck"), tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (1,)]  # brown up to the seam, then gray: one change
     assert report["layers"][0][2] == round(2.4 / 0.2) - 1
+
+
+PLA4 = [("PLA", "#E8862A"), ("PLA", "#F5C518"), ("PLA", "#161616"), ("PLA", "#5A3A1E")]
+
+
+def test_filament_settings_set_type_and_color_per_slot(tmp_path):
+    """Any filament set from the template: each slot copies a template slot of that type, then takes its color."""
+    path = bambu3mf.write_settings(tmp_path / "s.config", PLA4)
+    base, got = json.loads(bambu3mf.SETTINGS.read_text()), json.loads(path.read_text())
+    assert got["filament_type"] == ["PLA"] * 4
+    assert got["filament_colour"] == [c for _, c in PLA4]
+    assert got["filament_settings_id"] == ["Bambu PLA Basic @BBL A1"] * 4
+    assert got["nozzle_temperature"] == [base["nozzle_temperature"][2]] * 4  # PLA temps, not PETG's
+    assert got["filament_self_index"] == base["filament_self_index"]
+    assert got["printable_area"] == base["printable_area"]  # 4 long, but the bed, not filaments
+    assert got["head_wrap_detect_zone"] == base["head_wrap_detect_zone"]
+
+
+def test_filament_settings_need_a_type_the_template_has(tmp_path):
+    with pytest.raises(ValueError, match="ABS"):
+        bambu3mf.write_settings(tmp_path / "s.config", [("ABS", "#000000")] * 4)
+    with pytest.raises(ValueError, match="4 filaments"):
+        bambu3mf.write_settings(tmp_path / "s.config", PLA4[:3])
+
+
+def test_write_plates_takes_project_settings(tmp_path, two_color):
+    s = bambu3mf.write_settings(tmp_path / "s.config", PLA4)
+    write_plates([Plate("pl", 1, [("deck", two_color())])], tmp_path, tmp_path / "p.csv", filament, settings=s)
+    proj = json.loads(zipfile.ZipFile(tmp_path / "pl.3mf").read("Metadata/project_settings.config"))
+    assert proj["filament_colour"] == [c for _, c in PLA4]
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_slices_with_written_filament_settings(tmp_path, two_color):
+    s = bambu3mf.write_settings(tmp_path / "s.config", PLA4)
+    write_plates([Plate("pl", 1, [("deck", two_color())])], tmp_path, tmp_path / "p.csv", filament, settings=s)
+    report = bambu.slice_report(tmp_path / "pl.3mf", tmp_path / "s.3mf")
+    assert [r[0] for r in report["layers"]] == [(2,), (1,)]
+    assert set(report["grams"]) == {1, 2}

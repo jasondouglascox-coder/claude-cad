@@ -15,6 +15,7 @@ is not from Bambu Lab, load geometry data and color data only") and every part l
 
 Check a file the way the slicer reads it with cadkit.bambu (round trip and slice through Bambu Studio's CLI).
 """
+import json
 import uuid
 import zipfile
 from pathlib import Path
@@ -58,6 +59,34 @@ def _object_file(parts: list[tuple[str, Shape, int]], ids: list[int], key: str) 
         out.append("    </triangles>\n   </mesh>\n  </object>")
     out += [" </resources>", " <build/>", "</model>"]
     return "\n".join(out)
+
+
+# 4 long in the template but describing the bed, not one entry per filament
+_NOT_PER_FILAMENT = {"printable_area", "head_wrap_detect_zone", "filament_self_index"}
+
+
+def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SETTINGS) -> Path:
+    """Project settings for your own AMS set: filaments[i] = (type, "#RRGGBB") for slot i + 1. Each slot copies every
+    per-filament setting (temperatures, speeds, preset id) from the first template slot of that type, then takes
+    its color. The template's slot count stays (Bambu's flush matrix is sized for it)."""
+    cfg = json.loads(Path(base).read_text())
+    types = cfg["filament_type"]
+    n = len(types)
+    if len(filaments) != n:
+        raise ValueError(f"the template has {n} filaments; got {len(filaments)}")
+    src = []
+    for kind, _ in filaments:
+        if kind not in types:
+            raise ValueError(f"no {kind} slot in the template (it has {sorted(set(types))})")
+        src.append(types.index(kind))
+    for key, val in cfg.items():
+        if isinstance(val, list) and len(val) == n and key not in _NOT_PER_FILAMENT:
+            cfg[key] = [val[i] for i in src]
+    for key in ("filament_colour", "filament_multi_colour"):
+        cfg[key] = [c for _, c in filaments]
+    path = Path(path)
+    path.write_text(json.dumps(cfg, indent=4))
+    return path
 
 
 def write(path: Path, objects: list[tuple[str, list[tuple[str, Shape, int]]]], settings: Path = SETTINGS) -> None:
