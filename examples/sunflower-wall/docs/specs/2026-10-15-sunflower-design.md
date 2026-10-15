@@ -1,0 +1,50 @@
+# Sunflower wall decor: design spec (2026-10-15)
+
+Reference: a real sunflower photo (large dark seed head about 45% of the width, two rings of plain yellow petals
+that arch back). Printer: Bambu A1 + AMS lite, 0.4 nozzle, 0.20 mm Standard, PLA.
+
+## Goal
+A 400 mm (~16") wall sunflower that prints without supports, assembles without glue, and shows no seams.
+
+## Pieces (9 prints + 8 pins)
+- **Back petal ring**, 4 identical quarters (yellow). 16 petals; each quarter owns 4 petals and a 90° wedge of a
+  hub disk (`hub_r`, `back_t` thick) that sits under everything.
+- **Front petal ring**, 4 identical quarters (yellow). 16 petals centered over the back ring's gaps; hub wedge
+  `front_t` thick, sitting on the back hub.
+- **Seed head**, one piece (black + brown, one color change): a disk 180 mm across with a 45° bevel underneath,
+  black up to `center_t`, then brown seeds (cones) in Vogel's Fibonacci spiral: small in the middle (dark eye),
+  big in the body, smaller at the rim (darker ring).
+- **Snap pins** x8 (yellow), printed flat so the barbs flex along the layers.
+
+## Hiding the seams
+- Back quarter boundaries run through back-petal gaps; a front petal sits over each one.
+- Front quarter boundaries run through front-petal gaps (open air between petals), offset from the back
+  boundaries by about 45° (the nearest front gap), so quarters overlap like brickwork.
+- Both hubs, where the quarters actually meet, are under the seed head.
+
+## Arching petals
+Printed flat (flat back on the bed). The top surface is a loft of cross sections: high along the midrib, lower
+at the edges, and along the length it rises out from under the seed head's bevel, peaks, and falls toward the tip
+(`profile` per ring). Back petals stay under the front ring's flat underside; front petals stay under the seed
+head and its bevel.
+
+## Joining
+Each pin goes in from the back: head in a recess in the back hub's underside (flush with the wall), shank through
+a back quarter and a front quarter, barbs snapping over a throat inside a socket in the seed head. Pins sit
+midway between neighbouring back and front boundaries, so every quarter is held by two pins and every pin
+ties a back quarter, a front quarter and the seed head together. Slot clearance `fit` (tune with
+`examples/fit-coupon`).
+
+## Hanging
+A keyhole in each back quarter's hub (any quarter can be the top one): the screw head drops through a round entry
+at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the front hub closing the pocket above.
+
+## Printing
+- Every face that faces down is a pin-head ledge (about 1 mm) or a socket roof under 3 mm²; no supports.
+- Tops and color seams on 0.2 mm layers; petal plates are one color, the seed head has one change.
+- AMS: 1 orange, 2 yellow, 3 black, 4 brown (PLA). Orange is spare (try it on the back ring for depth).
+
+## Amendments
+- 2026-10-15: First concept (seams following petal edges through a split seed head, 4 colors stacked by height,
+  orange flames) replaced after the user asked for a one-piece clip-in center, arching petals, and up to 9
+  prints, and sent a real sunflower photo: big dark center, plain yellow petals.
