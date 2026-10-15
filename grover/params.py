@@ -168,9 +168,12 @@ class Params:
     text_margin: float = 1.0  # text clear of the silhouette edge
 
     # vectorizing
-    vec_tol: float = 0.02  # mm, Douglas-Peucker
+    vec_tol: float = 0.005  # mm, Douglas-Peucker (0.02 left ~20 degree corners on a 1 mm curve)
     vec_smooth: float = 0.05  # mm, blur before contouring
     seam: float = 0.05  # mm, gaps up to this wide between neighbouring colors (each traced on its own) are closed
+    fur_smooth: float = 0.12  # mm, blur (sigma) on the white/orange edge of the fur before it is traced
+    burr_r: float = 0.25  # mm, fill tips round off to this, notches in a fill tighter than half of it fill in
+    burr_area: float = 0.06  # mm², pieces at least this big are shapes, not burrs
     base_sliver: float = 0.3  # mm, backdrop seen narrower than this between brown lines fills in (pad gaps are 0.4)
     base_tuck: float = 0.1  # mm, the base band's white/orange seam stays this far under the face band's edge
 

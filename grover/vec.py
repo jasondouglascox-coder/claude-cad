@@ -51,7 +51,8 @@ def multi(g) -> MultiPolygon:
 
 
 def mask_polys(mask: np.ndarray, to_mm, px_mm: float, smooth_mm: float, tol_mm: float, up: int = 2) -> MultiPolygon:
-    """Sub-pixel outline of a boolean mask in mm: blur, upsample, threshold, contour, Douglas-Peucker."""
+    """Sub-pixel outline of a boolean mask in mm: blur, upsample, threshold, contour, smoothed along its length
+    (no pixel steps), Douglas-Peucker."""
     f = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), max(smooth_mm * px_mm, 0.3))
     f = cv2.resize(f, None, fx=up, fy=up, interpolation=cv2.INTER_LINEAR)
     bw = (f > 0.5).astype(np.uint8)
@@ -62,7 +63,11 @@ def mask_polys(mask: np.ndarray, to_mm, px_mm: float, smooth_mm: float, tol_mm: 
     eps = tol_mm * px_mm * up
 
     def ring(c):
-        c = cv2.approxPolyDP(c, eps, True)[:, 0, :].astype(float)
+        c = c[:, 0, :].astype(np.float32)
+        if len(c) > 12:  # a Gaussian along the contour, sigma 1.5 px: the stairs go, the shape stays
+            from scipy.ndimage import gaussian_filter1d
+            c = gaussian_filter1d(c, 1.5 * up, axis=0, mode="wrap")
+        c = cv2.approxPolyDP(c[:, None, :], eps, True)[:, 0, :].astype(float)
         x, y = (c[:, 0] + 0.5) / up - 0.5, (c[:, 1] + 0.5) / up - 0.5
         return list(zip(*to_mm(x, y)))
 
@@ -83,9 +88,31 @@ def mask_polys(mask: np.ndarray, to_mm, px_mm: float, smooth_mm: float, tol_mm: 
     return multi(unary_union(polys))
 
 
+def _dedupe(q: Polygon, tol: float):
+    """q without vertices within tol of the one before (a near-duplicate is a zero-width wall); a ring left with
+    under three points goes."""
+    def ring(coords):
+        c = np.array(coords)[:-1]
+        keep = [c[0]]
+        for v in c[1:]:
+            if np.hypot(*(v - keep[-1])) > tol:
+                keep.append(v)
+        if len(keep) > 1 and np.hypot(*(keep[-1] - keep[0])) <= tol:
+            keep.pop()
+        return keep if len(keep) >= 3 else None
+
+    ext = ring(q.exterior.coords)
+    if ext is None:
+        return Polygon()
+    holes = [h for h in (ring(r.coords) for r in q.interiors) if h is not None]
+    return shapely.make_valid(Polygon(ext, holes))
+
+
 def clean(g, min_area: float = 1e-3):
     """Drop slivers and single-point pinches that make OCC solids invalid."""
     g = multi(g).buffer(-0.002, join_style="mitre").buffer(0.002, join_style="mitre")
+    g = multi(shapely.set_precision(g, 1e-5))  # vertices closer than this merge (a near-duplicate is a sliver wall)
+    g = multi(unary_union([_dedupe(q, 5e-4) for q in multi(g).geoms]))
     g = multi(g.simplify(0.0001))  # near-duplicate and in-line vertices make bad faces and mesh T-junctions
     return multi(unary_union([Polygon(q.exterior, [r for r in q.interiors if Polygon(r).area > min_area])
                               for q in multi(g).geoms if q.area > min_area]))

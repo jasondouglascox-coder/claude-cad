@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 import shapely
 from scipy import ndimage as ndi
-from shapely.geometry import MultiPolygon, Point, box
+from shapely.geometry import MultiPolygon, Point, Polygon, box
 from shapely.ops import unary_union
 
 from . import art as A
@@ -356,6 +356,14 @@ def design(p: Params = P) -> Design:
     # traced on their own, differ by up to vec_tol, and a gap shows the band below as a thin line between two
     # colors. In the face band higher priority wins the overlaps and the gaps go to a neighbour; the ring ink, the
     # silhouette and the base band are cut by the figure's own outline.
+    # the fur's edge between white and orange (the logo draws it in straight segments) smoothed, inside the cat's
+    # fill only (a normalized blur: the brown beside it neither pulls nor pushes the edge)
+    cat_px = (face == WHITE) | (face == ORANGE)
+    sig = p.fur_smooth * px
+    num = cv2.GaussianBlur(((face == ORANGE) & cat_px).astype(np.float32), (0, 0), sig)
+    den = cv2.GaussianBlur(cat_px.astype(np.float32), (0, 0), sig)
+    soft = num > 0.5 * np.maximum(den, 1e-6)
+    face[cat_px & soft], face[cat_px & ~soft] = ORANGE, WHITE
     face_g = [poly(face_ink)]
     for k in (WHITE, ORANGE, YELLOW):
         face_g.append(_minus(poly(face == k), *face_g))
@@ -383,6 +391,59 @@ def design(p: Params = P) -> Design:
         tongue = muzzle.tongue.difference(face_ink_g)
         cat_w_g, ribbon_g = (_minus(g, tongue) for g in (cat_w_g, ribbon_g))
         cat_o_g = V.multi(unary_union([cat_o_g, tongue]))
+    # burrs where lines and colors meet: a fill's tip sharper than burr_r rounds off (to the brown), and a brown nub
+    # or notch into a fill tighter than burr_r fills in (to the fill beside it); only small pieces (burr_area), so a
+    # whole wedge of white between two whiskers stays
+    fills = unary_union([cat_w_g.difference(paw_all), cat_o_g, ribbon_g]).buffer(0)
+    tips = [q for q in V.multi(_difference(fills, fills.buffer(-p.burr_r).buffer(p.burr_r))).geoms
+            if q.area < p.burr_area]
+    solid = unary_union([fills, paw_all])  # (a paw counts as solid: a line's end against one is a nub too)
+    nubs = [q for q in V.multi(_difference(solid.buffer(p.burr_r / 2).buffer(-p.burr_r / 2), solid)).geoms
+            if q.area < p.burr_area]
+    if tips or nubs:
+        tip = unary_union(tips)
+        gs = [V.multi(g.difference(tip)) for g in (cat_w_g, cat_o_g, ribbon_g)]
+        for q in nubs:  # to the fill that shares most of its edge
+            edge = q.buffer(0.01)
+            k = max(range(3), key=lambda i: gs[i].intersection(edge).area)
+            gs[k] = V.multi(unary_union([gs[k], q]))
+        cat_w_g, cat_o_g, ribbon_g = gs
+        face_ink_g = V.multi(unary_union([face_ink_g, tip]).difference(unary_union(gs)))
+    # a brown line narrowing to a point (thinner than any drawn line) ends there: the point goes to the fill beside
+    # it, or to the backdrop
+    spikes = [q for q in V.multi(_difference(face_ink_g, face_ink_g.buffer(-0.15).buffer(0.15))
+                                 .difference(paw_all.buffer(0.05))).geoms if q.area < p.burr_area]
+    if spikes:
+        gs = [cat_w_g, cat_o_g, ribbon_g]
+        to = [[], [], [], []]  # per fill, and the backdrop
+        for q in spikes:
+            edge = q.buffer(0.02)
+            k = max(range(3), key=lambda i: gs[i].intersection(edge).area)
+            to[k if gs[k].intersection(edge).area > 0 else 3].append(q)
+        gs = [V.multi(unary_union([g, *t]).buffer(0)) for g, t in zip(gs, to)]
+        cat_w_g, cat_o_g, ribbon_g = gs
+        figure_g = V.multi(_difference(figure_g, unary_union(to[3])).buffer(0)) if to[3] else figure_g
+        face_ink_g = V.multi(_difference(face_ink_g, unary_union(spikes)).buffer(0))
+    # and where the fur's two colors meet a line, a tip of one color pinched between the line and the other color
+    # goes to that other color (a cusp left where one color just touches the line, or a tip of it)
+    for a, b in ((0, 1), (1, 0)):
+        gs = [cat_w_g, cat_o_g]
+        other = unary_union([gs[b], face_ink_g])
+        cusps = [q for q in V.multi(_difference(other.buffer(p.burr_r).buffer(-p.burr_r), other)
+                                    .intersection(gs[a])).geoms
+                 if q.area < p.burr_area and q.buffer(0.02).intersects(gs[b])]
+        if cusps:
+            cusp = unary_union(cusps)
+            gs[a], gs[b] = V.multi(gs[a].difference(cusp)), V.multi(unary_union([gs[b], cusp]))
+            cat_w_g, cat_o_g = gs
+    for a, b in ((0, 1), (1, 0)):
+        gs = [cat_w_g, cat_o_g]
+        tips = [q for q in V.multi(_difference(gs[a], gs[a].buffer(-p.burr_r).buffer(p.burr_r))).geoms
+                if q.area < p.burr_area and q.buffer(0.02).intersects(gs[b])]
+        if tips:
+            tip = unary_union(tips)
+            gs[a], gs[b] = V.multi(gs[a].difference(tip)), V.multi(unary_union([gs[b], tip]))
+            cat_w_g, cat_o_g = gs
     # fill narrower than a nozzle between brown lines (wedges where lines meet, flecks) can't print cleanly: it goes
     # to the brown, and so does any fill piece too small to print (the white under a paw doesn't count: it's covered)
     for _ in range(2):  # (twice: an opening leaves a little more at the sharpest corners the first time)
@@ -396,8 +457,22 @@ def design(p: Params = P) -> Design:
             kept.append(V.multi(unary_union([q for q in g.geoms if q.area >= p.min_island])))
         cat_w_g, cat_o_g, ribbon_g = kept
         face_ink_g = V.multi(unary_union([face_ink_g, *narrow]).difference(unary_union(kept)))  # never over a fill
+    # traced ink left as a ledge along the ribbon's outline (thinner than a line, against the backdrop, not the cat):
+    # backdrop, so the outline's edge runs on clean
+    out = figure_g.difference(rib.region).difference(ribbon_g)
+    cat_near = unary_union([cat_w_g, cat_o_g]).buffer(0.02)
+    ledges = [q for q in V.multi(_difference(out, out.buffer(-0.15).buffer(0.15))).geoms
+              if not q.intersects(cat_near)]
+    ledge = unary_union(ledges).difference(paw_all.buffer(0.05)) if ledges else Polygon()  # (a paw's rim keeps
+    # the brown under it)
+    if ledges:
+        face_ink_g = _minus(face_ink_g, ledge)
+        figure_g = V.multi(figure_g.difference(ledge))
     silhouette_g = V.multi(unary_union([Point(0, 0).buffer(art.R, quad_segs=256), figure_g]))
-    ring_ink_g = _minus(poly(ring_ink).intersection(silhouette_g), figure_g)
+    ring_ink_g = _minus(poly(ring_ink).intersection(silhouette_g), figure_g, ledge.buffer(0.05))  # (none under one)
+    # traced ring ink thinner than a line against the figure (the logo's own outlines, left beside the drawn ones)
+    sliver = _difference(ring_ink_g, ring_ink_g.buffer(-0.15).buffer(0.15)).intersection(figure_g.buffer(0.5))
+    ring_ink_g = _minus(ring_ink_g, sliver)
     raised = unary_union([eye_all, paw_all])
     top_brown_g = V.multi(unary_union([_minus(poly(top_brown), raised), *(e.brown for e in eye_shapes), muzzle.nose,
                                        *(w.brown for w in paw_shapes)]))
@@ -410,6 +485,8 @@ def design(p: Params = P) -> Design:
     specks = [q for q in V.multi(seen).geoms if q.area < p.min_island]
     wedges = seen.difference(seen.buffer(-p.base_sliver / 2).buffer(p.base_sliver / 2))
     wedges = wedges.intersection(figure_g.buffer(0.5))  # against the cat; the ring prints' pad gaps stay open
+    near_hole = Point(hx, hy).buffer(hr + p.hole_ring_w + 1.0)  # where the hole's ring meets the disc circle
+    wedges = unary_union([wedges, _difference(seen, seen.buffer(-p.burr_r).buffer(p.burr_r)).intersection(near_hole)])
     ring_ink_g = _minus(V.multi(unary_union([ring_ink_g, *specks, wedges])))  # _minus drops the dust
     thin_white = top_white_g.difference(top_white_g.buffer(-p.printer.nozzle / 2).buffer(p.printer.nozzle / 2))
     top_brown_g = _minus(V.multi(unary_union([top_brown_g, thin_white])))

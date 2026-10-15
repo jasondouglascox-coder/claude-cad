@@ -25,12 +25,25 @@ class Ribbon:
     folds: list  # small folds where the front meets each back band
 
 
+def _smooth(pts: list) -> list:
+    """A sketch edge (a polyline between two corners) as a smooth curve through its points: Onshape exported each
+    spline as a few straight segments, which showed as kinks along the banner."""
+    from scipy.interpolate import CubicSpline
+
+    c = np.array(pts, dtype=float)
+    if len(c) < 3:
+        return pts
+    t = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(c, axis=0).T))])
+    f = CubicSpline(t, c, bc_type="natural")
+    return [tuple(q) for q in f(np.linspace(0, t[-1], max(20, int(t[-1] / 0.3))))]
+
+
 @lru_cache(maxsize=1)
 def raw():
     """(front, [left tail, right tail], folds) in sketch units, each grown by the sketch's outline thickness so it
     includes its outline. The sketch draws both edges of each outline and one tail; the ribbon is symmetric."""
     msp = ezdxf.readfile(SKETCH).modelspace()
-    lines = [shapely.set_precision(LineString([(q[0], q[1]) for q in e.get_points("xy")]), 1e-3)
+    lines = [shapely.set_precision(LineString(_smooth([(q[0], q[1]) for q in e.get_points("xy")])), 1e-3)
              for e in msp if e.dxftype() == "LWPOLYLINE"]
     faces = sorted(polygonize(unary_union(lines)), key=lambda f: -f.area)
     sil = unary_union(faces)
