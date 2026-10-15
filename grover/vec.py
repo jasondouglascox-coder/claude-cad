@@ -86,6 +86,7 @@ def mask_polys(mask: np.ndarray, to_mm, px_mm: float, smooth_mm: float, tol_mm: 
 def clean(g, min_area: float = 1e-3):
     """Drop slivers and single-point pinches that make OCC solids invalid."""
     g = multi(g).buffer(-0.002, join_style="mitre").buffer(0.002, join_style="mitre")
+    g = multi(g.simplify(0.0001))  # near-duplicate and in-line vertices make bad faces and mesh T-junctions
     return multi(unary_union([Polygon(q.exterior, [r for r in q.interiors if Polygon(r).area > min_area])
                               for q in multi(g).geoms if q.area > min_area]))
 

@@ -5,11 +5,13 @@
     z_body .. z_base  base band: white under disc / cat / ribbon, orange ring
     z_base .. z_face  face band: yellow ribbon, white cat + orange patches, brown ink; ring ink to z_ring_ink
     z_face .. z_top   top band: white paws, eye crescents + glints, brown eyes, nose, letters, paw lines
-Every body may be several solids (brown ink columns stand on white and orange); the fused keychain is one."""
+Every body may be several solids (brown ink columns stand on white and orange); the bands' footprints
+stacked are one solid."""
 from functools import lru_cache
 
 from build123d import Align, Color, Compound, Cone, Cylinder, Part, Pos, extrude
 from shapely.geometry import Point
+from shapely.ops import unary_union
 
 from . import back as B
 from . import vec as V
@@ -52,8 +54,12 @@ def bodies(p: Params = P) -> dict[str, Part]:
     solids["brown"].append(body)
     solids["white"].append(url_solid)
 
-    # front bands
+    # front bands. The ring ink runs 0.05 mm on under the face band's brown it meets: same color, and the solids
+    # then join by overlapping instead of along a knife edge
     for color, lo, hi, g in band_regions(d):
+        if g is d.ring_ink:
+            g = unary_union([g, g.buffer(0.05).intersection(d.face_ink)])
+            g = g.buffer(0.003, join_style="mitre").buffer(-0.003, join_style="mitre")  # weld point contacts
         if not g.is_empty:
             solids[color] += V.prisms(g, getattr(p, lo), getattr(p, hi))
 
@@ -74,6 +80,16 @@ def keychain(p: Params = P) -> Compound:
     return Compound(children=list(bodies(p).values()), label="grover_keychain")
 
 
+@lru_cache(maxsize=2)
 def fused(p: Params = P) -> Part:
-    """Every color fused: must be one solid."""
-    return _fuse(list(bodies(p).values()))
+    """The whole keychain as one shape: each band's footprint (all its colors) extruded and stacked, with the hole
+    cut. Must be one solid. (Fusing the four color bodies themselves, which share thousands of faces exactly, is
+    more than OCC does reliably; each body is checked on its own.)"""
+    d = design(p)
+    bands = {}
+    for _, lo, hi, g in band_regions(d):
+        bands.setdefault((lo, hi), []).append(g)
+    solids = V.prisms(d.silhouette, 0, p.z_body)
+    for (lo, hi), gs in bands.items():
+        solids += V.prisms(unary_union(gs), getattr(p, lo), getattr(p, hi))
+    return Part((_fuse(solids) - hole_cutter(p, d.hole)).solids())

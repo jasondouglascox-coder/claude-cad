@@ -87,6 +87,39 @@ class Params:
     eye_corners: tuple = ((-0.15, 2.60), (3.35, 2.72))
     eye_irises: tuple = ((-0.58, 4.21, 2.43), (3.17, 4.19, 2.68))
     eye_glints: tuple = (((-1.80, 4.60, 0.40), (-2.10, 3.50, 0.30)), ((4.80, 4.70, 0.40), (5.00, 3.58, 0.30)))
+    # nose, mouth and whiskers, drawn (muzzle.py), fitted to the logo; logo frame, mm. The nose is a closed curve
+    # (solid brown, raised); the rest are strokes a line wide, each a smooth curve through its points.
+    nose: tuple = ((1.85, 0.02), (1.25, 0.30), (0.75, 0.80), (0.48, 1.40), (0.50, 1.85), (0.95, 2.00), (1.70, 2.02),
+                   (2.45, 1.95), (2.85, 1.65), (2.85, 1.20), (2.55, 0.65), (2.20, 0.25))
+    mouth: tuple = (
+        ((1.86, 0.25), (1.82, -0.60), (1.76, -1.30)),  # philtrum
+        ((1.76, -1.30), (1.20, -1.78), (0.40, -2.00), (-0.50, -1.95), (-1.40, -1.65), (-2.20, -1.10), (-2.65, -0.50),
+         (-2.75, 0.00)),  # left lip, up into the muzzle
+        ((1.76, -1.30), (2.40, -1.72), (3.30, -1.98), (4.30, -1.97), (5.00, -1.75), (5.55, -1.35), (5.95, -0.78)),  # right lip, up to the middle whisker
+        ((0.40, -2.00), (0.50, -2.55), (0.95, -2.95), (1.70, -3.12), (2.45, -3.00), (2.95, -2.60), (3.20, -1.98)),  # mouth
+    )
+    whiskers: tuple = (  # the top ones from beside the nose, the others from the cheeks' arch, out to the tip
+        ((0.00, -0.25), (-1.00, 0.35), (-2.50, 0.90), (-4.00, 1.15), (-6.00, 1.27), (-8.00, 1.03), (-10.15, 0.38)),
+        ((-2.78, -0.57), (-3.50, -0.50), (-4.50, -0.55), (-5.30, -0.68)),
+        ((-2.15, -1.62), (-3.00, -2.00), (-4.10, -2.58)),
+        ((3.85, -0.45), (5.50, 0.35), (7.50, 0.88), (9.50, 1.15), (11.50, 1.20), (12.10, 1.15)),
+        ((5.95, -0.72), (8.00, -0.75), (9.50, -0.88), (10.50, -1.05), (11.75, -1.50)),
+        ((4.75, -1.85), (5.50, -2.50), (5.92, -2.90)),
+    )
+    muzzle_zone: tuple = ((-3.30, -2.90), (5.40, -2.90), (5.40, -1.30), (6.10, -1.30), (6.10, 2.20),
+                          (-3.30, 2.20))  # traced ink in here goes (it stops short of the right paw)
+    whisker_erase: float = 0.35  # mm along each stroke where the traced one goes (not near the face's outline,
+    stroke_end_keep: float = 0.5  # nor this close to a stroke's outer end, where it meets a paw or an arm)
+    # paws, drawn (paws.py), read off the logo: a closed outline (clockwise from the top left; the points at the
+    # cusps between the toe lobes are where the toe lines start) and the toe lines' centerlines; logo frame, mm
+    paw_outlines: tuple = (
+        ((-8.65, -1.05), (-7.60, -0.97), (-6.40, -0.95), (-5.60, -1.00), (-4.90, -1.25), (-4.35, -1.75), (-4.02, -2.45), (-3.97, -3.20), (-4.12, -3.85), (-4.45, -4.40), (-4.95, -4.73), (-5.60, -4.50), (-5.85, -5.00), (-6.40, -5.45), (-7.00, -5.58), (-7.55, -5.45), (-7.88, -5.05), (-8.25, -5.50), (-9.00, -5.72), (-9.60, -5.62), (-10.00, -5.10), (-10.12, -4.30), (-10.05, -3.40), (-9.75, -2.55), (-9.25, -1.80)),
+        ((6.60, -1.75), (7.30, -1.40), (8.20, -1.30), (9.40, -1.28), (10.40, -1.42), (11.10, -1.85), (11.60, -2.60), (11.85, -3.50), (11.85, -4.40), (11.65, -5.20), (11.25, -5.80), (10.70, -5.97), (10.10, -5.80), (9.62, -5.20), (9.20, -5.70), (8.60, -5.88), (8.05, -5.60), (7.75, -4.98), (7.30, -5.15), (6.60, -5.00), (6.15, -4.60), (5.98, -3.90), (6.05, -3.00), (6.25, -2.30)),
+    )
+    paw_toes: tuple = (
+        (((-7.88, -4.80), (-7.92, -4.00), (-7.93, -3.05)), ((-5.66, -4.25), (-5.85, -3.55), (-6.10, -2.60))),
+        (((7.80, -4.73), (7.95, -3.90), (8.15, -2.95)), ((9.66, -4.95), (9.87, -4.10), (10.13, -3.15))),
+    )
     eye_tip_r: float = 0.08  # mm, the pointed inner corner is rounded this much
     eye_erase: float = 0.4  # mm round an eye's outline where the traced ink goes
 
@@ -114,6 +147,7 @@ class Params:
     vec_tol: float = 0.02  # mm, Douglas-Peucker
     vec_smooth: float = 0.05  # mm, blur before contouring
     seam: float = 0.05  # mm, gaps up to this wide between neighbouring colors (each traced on its own) are closed
+    base_sliver: float = 0.3  # mm, backdrop seen narrower than this between brown lines fills in (pad gaps are 0.4)
     base_tuck: float = 0.1  # mm, the base band's white/orange seam stays this far under the face band's edge
 
     def z(self, layers: int) -> float:

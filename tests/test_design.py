@@ -11,6 +11,8 @@ from grover import art as A
 from grover import back as B
 from grover import ears as E
 from grover import eyes as EY
+from grover import muzzle as MZ
+from grover import paws as PW
 from grover import vec as V
 from grover.params import P
 from grover.regions import band_regions, design
@@ -66,6 +68,35 @@ def test_eyes_are_their_drawn_shapes_with_a_white_crescent_and_two_glints(d):
             0.97 * d.top_brown.intersection(eye.outer.buffer(0.01)).area  # the rim is a line wide
 
 
+def test_nose_mouth_and_whiskers_are_their_drawn_curves(d):
+    """Round the muzzle the brown is exactly the drawn nose and strokes (no traced tangle, no tooth); the nose is
+    raised as drawn; the whiskers' outer ends stick out past the face, in brown."""
+    m = MZ.shapes(P)
+    drawn = unary_union([m.nose, *(s.buffer(P.line_w / 2) for s in m.strokes)])
+    inside = m.zone
+    ink = d.face_ink.intersection(inside)
+    assert ink.symmetric_difference(drawn.intersection(inside)).area < 0.02 * drawn.intersection(inside).area
+    assert d.top_brown.intersection(m.nose.buffer(0.3)).symmetric_difference(m.nose).area < 0.01 * m.nose.area
+    tips = [Point(s.coords[-1]) for s in m.whiskers]
+    assert all(unary_union([d.face_ink, d.top_brown]).buffer(0.01).contains(t) for t in tips)  # brown from above
+    assert sum(not d.cat_white.buffer(0.3).contains(t) and not d.cat_orange.buffer(0.3).contains(t) for t in tips) >= 3
+
+
+def test_paws_are_their_drawn_outlines_with_toe_lines(d):
+    """Each paw prints as its smooth drawn outline: a brown rim a line wide and two toe lines over a white inside,
+    raised on white."""
+    paws = PW.shapes(P)
+    assert len(paws) == 2
+    top = unary_union([d.top_brown, d.top_white])
+    for paw in paws:
+        assert top.intersection(paw.outer.buffer(0.3)).symmetric_difference(paw.outer).area < 0.01 * paw.outer.area
+        brown = d.top_brown.intersection(paw.outer)
+        assert _opened(brown, P.line_w - 0.06).area > 0.97 * brown.area
+        assert d.top_white.intersection(paw.outer).area > 0.4 * paw.outer.area
+        assert d.cat_white.buffer(0.03).contains(paw.outer.buffer(-P.line_w - 0.03))  # white under its white
+        assert d.face_ink.buffer(0.03).contains(paw.outer.difference(paw.outer.buffer(-P.line_w)))  # brown under its rim
+
+
 def test_ring_paw_prints_point_their_toes_outward(d):
     """Each print in the ring: palm toward the center, toes away from it, centered on its angle."""
     art = A.load(P)
@@ -83,6 +114,24 @@ def test_ring_paw_prints_point_their_toes_outward(d):
         centre = np.array([X[c & d.masks["paws_ring"]].mean(), Y[c & d.masks["paws_ring"]].mean()])
         ang = np.degrees(np.arctan2(centre[1], centre[0])) - 90
         assert abs((ang + 180) % P.paw_print_step - P.paw_print_step / 2) > P.paw_print_step / 2 - 1.0
+
+
+def test_no_fill_narrower_than_a_nozzle_in_the_face(d):
+    """No white, orange or yellow sliver or fleck in the face band: anything narrower than a nozzle between brown
+    lines can't print cleanly and reads as a speck."""
+    fills = unary_union([d.cat_white, d.cat_orange, d.ribbon]).difference(d.paws)  # what's seen: not under a paw
+    thin = fills.difference(_opened(fills, P.printer.nozzle))
+    assert thin.area < 0.05, f"{thin.area:.2f} mm^2 of slivers"
+
+
+def test_no_pockets_or_slivers_of_backdrop_or_raised_white(d):
+    """The base band seen between raised regions has no pocket smaller than a printable island and nothing narrower
+    than 0.3 mm (the paw prints' 0.4 mm pad gaps stay); the raised white has nothing narrower than a nozzle."""
+    seen = d.silhouette.difference(_raised(d))
+    pockets = [g for g in V.multi(seen).geoms if 0.001 < g.area < P.min_island]  # under 0.001: float dust on seams
+    assert not pockets, [(round(g.centroid.x, 1), round(g.centroid.y, 1), round(g.area, 3)) for g in pockets[:5]]
+    assert seen.difference(_opened(seen, 0.3)).area < 0.05
+    assert d.top_white.difference(_opened(d.top_white, P.printer.nozzle)).area < 0.02
 
 
 def _raised(d):

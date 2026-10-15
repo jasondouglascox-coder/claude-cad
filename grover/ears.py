@@ -15,7 +15,7 @@ from . import vec as V
 from .params import P, Params
 
 
-def curve(points, step: float = 0.02) -> LineString:
+def curve(points, step: float = 0.05) -> LineString:
     """Smooth curve through the points: a natural cubic spline in chord length, sampled every `step` mm."""
     pts = np.asarray(points, float)
     u = np.r_[0, np.cumsum(np.hypot(*np.diff(pts, axis=0).T))]
