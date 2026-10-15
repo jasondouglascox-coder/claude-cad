@@ -31,9 +31,12 @@ class Params:
     center_rb: float = 80.0  # bottom radius: a 45-degree bevel up to the rim lets petals rise out from under it
     center_t: float = 10.0  # black body; seeds sit on top
     seed_c: float = 2.55  # Vogel spacing: seed i at r = c * sqrt(i), angle i * golden angle
-    seed_zones: tuple = ((14.0, 2.2), (68.0, 3.8), (999.0, 2.6))  # (out to radius, seed diameter)
+    seed_gaps: tuple = ((14.0, 1.4), (68.0, 0.5), (999.0, 0.9))  # (out to radius, black gap between seeds):
+    #                                                    wider gaps make the dark eye and the darker outer ring
+    seed_narrow: float = 0.8  # seeds narrowed across the radius: diamonds pointing in and out
+    seed_top: float = 0.35  # pyramid top: the top face is this fraction of the base
+    seed_min_edge: float = 0.6  # cell corners closer than this merge (no slivers)
     seed_h: tuple = (2.4, 1.6)  # seed height at the middle and at the rim (a gentle dome)
-    seed_taper: float = 14.0  # degrees
     seed_edge: float = 2.5  # bare black rim
 
     # snap pins (printed flat: profile in the print plane, pin_t thick)

@@ -13,8 +13,14 @@ def parts():
 
 
 def test_nothing_overlaps_including_wall_and_screw(parts):
+    """The seeds (1,100+ solids) stay out of the pairwise check: intersecting them with the head they stand on
+    exhausts memory. They need no check: they start on the head's top (test_center), above everything else."""
     env = assembly.environment(P)
-    assert find_clashes(parts + env) == []
+    assert find_clashes([it for it in parts if it[0] != "center_brown"] + env) == []
+    d = dict(parts)
+    seeds_bottom = d["center_brown"].bounding_box().min.Z
+    assert seeds_bottom == pytest.approx(d["center_black"].bounding_box().max.Z)
+    assert all(s.bounding_box().max.Z <= seeds_bottom + 1e-6 for n, s in parts + env if n != "center_brown")
 
 
 def test_parts_count(parts):
@@ -42,5 +48,5 @@ def test_neighbouring_quarters_keep_the_seam_gap(parts):
 @pytest.mark.slow
 def test_too_tight_pins_clash():
     tight = Params(fit=-0.4)
-    clashes = find_clashes(assembly.placed_parts(tight))
+    clashes = find_clashes([it for it in assembly.placed_parts(tight) if it[0] != "center_brown"])
     assert any(a.startswith("pin") or b.startswith("pin") for a, b, _ in clashes)

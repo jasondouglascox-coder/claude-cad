@@ -12,8 +12,8 @@ A 400 mm (~16") wall sunflower that prints without supports, assembles without g
 - **Front petal ring**, 4 identical quarters (yellow). 16 petals centered over the back ring's gaps; hub wedge
   `front_t` thick, sitting on the back hub.
 - **Seed head**, one piece (black + brown, one color change): a disk 180 mm across with a 45° bevel underneath,
-  black up to `center_t`, then brown seeds (cones) in Vogel's Fibonacci spiral: small in the middle (dark eye),
-  big in the body, smaller at the rim (darker ring).
+  black up to `center_t`, then brown diamond seeds (Voronoi cells of Vogel's Fibonacci spiral, pyramid tops), with wider black
+  gaps in the middle (dark eye) and at the rim (darker ring).
 - **Snap pins** x8 + 4 spare (yellow), printed flat so the barbs flex along the layers.
 
 ## Hiding the seams
@@ -53,3 +53,9 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
   throat 0.1 → 0.3 mm (`pin_play`), since three stacked prints add up. Three pins per back plate: 12, so 4 spare.
   Eye seeds 1.8 → 2.2 mm so their tops print, and Vogel spacing 2.45 → 2.55 so seeds keep a one-line gap
   (1,177 seeds).
+- 2026-10-15: Seeds are diamonds, not round cones (user's photo of a real seed head). Each seed is its Voronoi cell
+  in the Vogel spiral (neighbours along the spirals meet in diamonds), shrunk by half the black gap, narrowed to
+  80% across the radius, and lofted to a pyramid with a flat top 35% of the base. Gaps: 1.4 mm in the eye,
+  0.5 mm in the body, 0.9 mm at the rim. Rim slivers whose tops wouldn't print are dropped (1142 seeds).
+  Orange accents were tried (bands at the base, orange tops, feathered bands) and parked: base bands don't
+  show, the others didn't look right.

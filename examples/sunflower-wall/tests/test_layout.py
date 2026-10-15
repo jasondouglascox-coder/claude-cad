@@ -1,6 +1,7 @@
 """Layout math: quarters hide their seams, pins tie the rings together, seeds stay on the seed head."""
 import math
 
+import numpy as np
 import pytest
 
 from sunflower import layout
@@ -59,23 +60,59 @@ def test_front_petals_stay_under_the_seed_head_and_its_bevel():
         assert layout.midrib(P.front, r) < ceiling
 
 
-def test_seed_tips_print():
-    tan = math.tan(math.radians(P.seed_taper))
-    assert min(d - 2 * h * tan for _, _, d, h in layout.seeds(P)) >= 2 * P.printer.nozzle
+def _gap(a, b) -> float:
+    """Distance between two convex polygons (0 if they overlap)."""
+    def seg(p, q, r):
+        d = q - p
+        t = np.clip(np.dot(r - p, d) / np.dot(d, d), 0, 1)
+        return np.linalg.norm(p + t * d - r)
+    sep = False
+    for P_, Q_ in ((a, b), (b, a)):
+        for k in range(len(P_)):
+            e = P_[(k + 1) % len(P_)] - P_[k]
+            n = np.array([e[1], -e[0]])  # outward for counter-clockwise
+            if np.all((Q_ - P_[k]) @ n > 0):
+                sep = True
+    if not sep:
+        return 0.0
+    return min(min(seg(P_[k], P_[(k + 1) % len(P_)], r) for k in range(len(P_)) for r in Q_)
+               for P_, Q_ in ((a, b), (b, a)))
 
 
-def test_seeds_stay_on_the_head_and_never_touch():
-    s = layout.seeds(P)
-    assert len(s) > 1000
-    for x, y, d, h in s:
-        assert math.hypot(x, y) + d / 2 <= P.center_r
+@pytest.fixture(scope="module")
+def seeds():
+    return [(np.array(poly), h) for poly, h in layout.seeds(P)]
+
+
+def test_seeds_are_diamonds_pointing_in_and_out(seeds):
+    """Narrowed across the radius: each seed is longer toward the center than it is wide."""
+    long = 0
+    for poly, _ in seeds:
+        c = poly.mean(0)
+        ur = c / np.linalg.norm(c)
+        ut = np.array([-ur[1], ur[0]])
+        rel = poly - c
+        long += np.ptp(rel @ ur) > np.ptp(rel @ ut)
+    assert long / len(seeds) > 0.7
+
+
+def test_seed_tops_print(seeds):
+    for poly, h in seeds:
         assert P.printer.on_layer(h)
-    pts = sorted(s)
-    for i, (x, y, d, _) in enumerate(pts):  # sweep in x: neighbours closer than the biggest seed
-        for x2, y2, d2, _ in pts[i + 1:]:
-            if x2 - x > 4:
+        assert 2 * P.seed_top * layout.inradius(poly) >= 2 * P.printer.nozzle
+
+
+def test_seeds_stay_on_the_head_and_keep_a_line_wide_gap(seeds):
+    assert len(seeds) > 1000
+    assert max(np.hypot(*poly.T).max() for poly, _ in seeds) <= P.center_r - 1.0
+    cen = np.array([poly.mean(0) for poly, _ in seeds])
+    order = np.argsort(cen[:, 0])
+    for i, a in enumerate(order):  # sweep in x over neighbours
+        for b in order[i + 1:]:
+            if cen[b, 0] - cen[a, 0] > 8:
                 break
-            assert math.hypot(x2 - x, y2 - y) - (d + d2) / 2 >= P.printer.nozzle  # a gap one line wide
+            if np.linalg.norm(cen[b] - cen[a]) < 8:
+                assert _gap(seeds[a][0], seeds[b][0]) >= P.printer.nozzle
 
 
 def test_pin_barbs_clear_the_throat_with_play_for_three_stacked_prints():
