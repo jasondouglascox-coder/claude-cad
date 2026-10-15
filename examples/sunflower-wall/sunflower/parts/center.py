@@ -14,13 +14,14 @@ ROOF_LEFT = 0.6  # flat strip left at the top of the 45-degree roof (a tiny brid
 BLACK, BROWN = Color(0.09, 0.08, 0.07), Color(0.36, 0.22, 0.10)
 
 
-def _seed(p: Params, cell: list, h: float) -> Part:
-    """A diamond seed: its base cell lofted (ruled) to a smaller copy on top, a low pyramid with a flat top."""
+def _seed(s) -> Part:
+    """A diamond seed: straight sides up to its shoulder, then a pyramid to a small flat top."""
+    cell = s.cell
     cx = sum(x for x, _ in cell) / len(cell)
     cy = sum(y for _, y in cell) / len(cell)
-    top = [(cx + (x - cx) * p.seed_top, cy + (y - cy) * p.seed_top, h) for x, y in cell]
-    return loft([Face(Wire.make_polygon([(x, y, 0) for x, y in cell], close=True)),
-                 Face(Wire.make_polygon(top, close=True))], ruled=True)
+    top = [(cx + (x - cx) * s.top_scale, cy + (y - cy) * s.top_scale, s.top) for x, y in cell]
+    ring = lambda z: Face(Wire.make_polygon([(x, y, z) for x, y in cell], close=True))
+    return loft([ring(0), ring(s.shoulder), Face(Wire.make_polygon(top, close=True))], ruled=True)
 
 
 def _layer(p: Params, z: float) -> float:
@@ -44,7 +45,7 @@ def assembled(p: Params) -> Compound:
     """Centered on the flower axis, z = 0 at its underside."""
     body = Part(Cone(p.center_rb, p.center_r, p.center_t, align=(Align.CENTER, Align.CENTER, Align.MIN)).solids())
     body = Part((body - [s for a in layout.pin_angles(p) for s in _socket(p, a)]).solids())
-    seeds = [Pos(0, 0, p.center_t) * _seed(p, cell, h) for cell, h in layout.seeds(p)]
+    seeds = [Pos(0, 0, p.center_t) * _seed(s) for s in layout.seeds(p)]
     brown = Compound(children=seeds)
     body.label, body.color = "center_black", BLACK
     brown.label, brown.color = "center_brown", BROWN

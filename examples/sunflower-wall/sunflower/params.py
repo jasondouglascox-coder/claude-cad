@@ -21,6 +21,8 @@ class Params:
     front: Ring = Ring(60, 192, 40, ((60, 2.8), (83, 2.8), (90, 6.6), (98, 9.0), (115, 8.2), (150, 5.0),
                                      (194, 1.2)), 2.4)  # rises once clear of the head's flat underside
     petal_min: float = 1.0  # thinnest petal anywhere (edges, tips): 5 layers
+    petal_veins: int = 9  # lengthwise grooves across each petal
+    vein_depth: float = 0.4  # two layers
     hub_r: float = 78.0  # hub disk under the seed head, split into quarter wedges
     back_t: float = 6.0  # back hub thickness; back petals stay below it
     front_t: float = 3.0  # front hub thickness; the seed head sits on it
@@ -31,12 +33,13 @@ class Params:
     center_rb: float = 80.0  # bottom radius: a 45-degree bevel up to the rim lets petals rise out from under it
     center_t: float = 10.0  # black body; seeds sit on top
     seed_c: float = 2.55  # Vogel spacing: seed i at r = c * sqrt(i), angle i * golden angle
-    seed_gaps: tuple = ((14.0, 1.4), (68.0, 0.5), (999.0, 0.9))  # (out to radius, black gap between seeds):
-    #                                                    wider gaps make the dark eye and the darker outer ring
+    seed_gaps: tuple = ((14.0, 0.8), (68.0, 0.6), (999.0, 0.9))  # (out to radius, black gap between seeds)
     seed_narrow: float = 0.8  # seeds narrowed across the radius: diamonds pointing in and out
-    seed_top: float = 0.35  # pyramid top: the top face is this fraction of the base
+    seed_top: float = 0.35  # pyramid top: the top face is this fraction of the base (more on tiny seeds)
     seed_min_edge: float = 0.6  # cell corners closer than this merge (no slivers)
-    seed_h: tuple = (2.4, 1.6)  # seed height at the middle and at the rim (a gentle dome)
+    seed_shoulder: float = 0.6  # straight-sided column of a rim seed, below its pyramid
+    seed_pyramid: float = 1.4  # pyramid height
+    seed_dome: float = 7.0  # middle seeds' columns this much taller than the rim's: the head domes out
     seed_edge: float = 2.5  # bare black rim
 
     # snap pins (printed flat: profile in the print plane, pin_t thick)

@@ -85,3 +85,16 @@ def test_petal_is_never_thinner_than_the_minimum(layer):
         for y in (0, 0.9 * hw):
             col = pet & probe(r - 0.05, y - 0.05, 0, 0.1, 0.1, 20)
             assert col.bounding_box().max.Z >= P.petal_min - 1e-6
+
+
+def test_printed_petal_keeps_its_vein_grooves():
+    """The solid, not just the math: a spline through the cross sections once smoothed the grooves away."""
+    import numpy as np
+    pet = quarter.petal(P, "front")
+    r = (P.front.r0 + P.front.r1) / 2
+    hw = layout.half_width(P.front, r)
+    zs = []
+    for y in np.linspace(-0.8 * hw, 0.8 * hw, 45):  # ~5 samples per groove
+        zs.append((pet & probe(r - 0.05, y - 0.05, 0, 0.1, 0.1, 20)).bounding_box().max.Z)
+    dips = sum(1 for a, b, c in zip(zs, zs[1:], zs[2:]) if b < a - 0.02 and b < c - 0.02)
+    assert dips >= P.petal_veins - 3  # the outer grooves sit past 0.8 of the half width

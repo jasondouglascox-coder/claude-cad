@@ -59,3 +59,10 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
   0.5 mm in the body, 0.9 mm at the rim. Rim slivers whose tops wouldn't print are dropped (1142 seeds).
   Orange accents were tried (bands at the base, orange tops, feathered bands) and parked: base bands don't
   show, the others didn't look right.
+- 2026-10-15: From the user's Onshape look and a photo of a real head. The middle had lost its seeds (a filter
+  dropped small seeds whose tops looked too small); small seeds now get a bigger flat top instead, and a test
+  requires a seed near every spot of the head. The head domes: each seed is a column from the flat black floor
+  (the color seam stays one flat layer) up to a shoulder that is `seed_dome` = 7 mm higher in the middle than at the
+  rim, then its pyramid. Petals get 9 lengthwise vein grooves 0.4 mm deep that follow the petal's width, so
+  they gather at the root and tip. Cross sections are now straight-segment polygons: a spline through them
+  smoothed the grooves away.

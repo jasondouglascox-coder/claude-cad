@@ -7,15 +7,14 @@ recess for each pin and a keyhole for hanging.
 import math
 from functools import lru_cache
 
-from build123d import (Align, Box, Cylinder, Face, Line, Location, Part, Pos, Rot, SlotCenterToCenter, Spline,
-                       Wire, extrude, loft)
+from build123d import Align, Box, Cylinder, Face, Location, Part, Pos, Rot, SlotCenterToCenter, Wire, extrude, loft
 
 from cadkit.shapes import poly
 from sunflower import layout
 from sunflower.params import Params
 
 SECTIONS = 32  # loft stations along a petal
-CROSS = 16  # points across each section's top
+CROSS = 96  # points across each section's top: enough for the veins
 BIG = 400.0
 
 
@@ -47,11 +46,10 @@ def petal(p: Params, layer: str) -> Part:
         r = rg.r0 - 1 + (length + 5) * i / (SECTIONS - 1)
         hw = max(layout.half_width(rg, r), 0.5)
         span = hw * 1.1 + 1.0  # section a bit wider than the petal; the outline trims it
-        zc = layout.midrib(rg, r)
         ys = [-span + 2 * span * j / CROSS for j in range(CROSS + 1)]
-        top = [(r, y, max(zc - rg.drop * min((y / hw) ** 2, 1.5), 0.2)) for y in ys]
-        secs.append(Face(Wire([Line((r, -span, -1), (r, span, -1)), Line((r, span, -1), top[-1]),
-                               Spline(*reversed(top)), Line(top[0], (r, -span, -1))])))
+        top = [(r, y, max(layout.petal_top(p, rg, r, y, hw), 0.2)) for y in ys]
+        # straight segments, not a spline: a spline through the vein points smooths the grooves away
+        secs.append(Face(Wire.make_polygon([(r, -span, -1), (r, span, -1)] + top[::-1], close=True)))
     flat = outline(rg)
     body = Part((loft(secs) & extrude(flat, 30)).solids())
     return Part((body + extrude(flat, p.petal_min)).solids())

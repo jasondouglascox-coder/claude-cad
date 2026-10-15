@@ -81,7 +81,26 @@ def _gap(a, b) -> float:
 
 @pytest.fixture(scope="module")
 def seeds():
-    return [(np.array(poly), h) for poly, h in layout.seeds(P)]
+    return [(np.array(s.cell), s) for s in layout.seeds(P)]
+
+
+def test_no_bare_patch_on_the_seed_head(seeds):
+    """Every spot of the head has a seed nearby (the first diamond seeds left the middle bare)."""
+    cen = np.array([poly.mean(0) for poly, _ in seeds])
+    lim = P.center_r - P.seed_edge - 3
+    for x in np.arange(-lim, lim, 1.5):
+        for y in np.arange(-lim, lim, 1.5):
+            if math.hypot(x, y) < lim:
+                assert np.min(np.hypot(*(cen - (x, y)).T)) <= 1.3 * P.seed_c, (x, y)  # a missing seed leaves ~1.8 c
+
+
+def test_seed_tops_dome_like_a_real_head(seeds):
+    tops = sorted((math.hypot(*poly.mean(0)), s.top) for poly, s in seeds)
+    middle = [t for r, t in tops if r < 15]
+    rim = [t for r, t in tops if r > P.center_r - P.seed_edge - 4]
+    assert min(middle) - max(rim) >= P.seed_dome - 1.0
+    for _, s in seeds:
+        assert P.printer.on_layer(s.shoulder) and P.printer.on_layer(s.top) and s.top > s.shoulder > 0
 
 
 def test_seeds_are_diamonds_pointing_in_and_out(seeds):
@@ -97,9 +116,8 @@ def test_seeds_are_diamonds_pointing_in_and_out(seeds):
 
 
 def test_seed_tops_print(seeds):
-    for poly, h in seeds:
-        assert P.printer.on_layer(h)
-        assert 2 * P.seed_top * layout.inradius(poly) >= 2 * P.printer.nozzle
+    for poly, s in seeds:
+        assert 2 * s.top_scale * layout.inradius(poly) >= 2 * P.printer.nozzle - 1e-9
 
 
 def test_seeds_stay_on_the_head_and_keep_a_line_wide_gap(seeds):
@@ -113,6 +131,19 @@ def test_seeds_stay_on_the_head_and_keep_a_line_wide_gap(seeds):
                 break
             if np.linalg.norm(cen[b] - cen[a]) < 8:
                 assert _gap(seeds[a][0], seeds[b][0]) >= P.printer.nozzle
+
+
+def test_petal_veins_run_the_length():
+    """Lengthwise grooves: across the petal the top rises and falls once per vein."""
+    for ring in (P.back, P.front):
+        r = (ring.r0 + ring.r1) / 2
+        hw = layout.half_width(ring, r)
+        zs = [layout.petal_top(P, ring, r, y, hw) for y in np.linspace(-0.95 * hw, 0.95 * hw, 400)]
+        dips = sum(1 for a, b, c in zip(zs, zs[1:], zs[2:]) if b < a and b < c)
+        assert dips >= P.petal_veins - 2
+        bumps = np.array(zs) - [layout.petal_top(P, ring, r, y, hw, veins=False)
+                                for y in np.linspace(-0.95 * hw, 0.95 * hw, 400)]
+        assert bumps.min() == pytest.approx(-P.vein_depth, abs=0.05) and bumps.max() <= 1e-9
 
 
 def test_pin_barbs_clear_the_throat_with_play_for_three_stacked_prints():

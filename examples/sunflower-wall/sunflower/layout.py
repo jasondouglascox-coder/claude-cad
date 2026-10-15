@@ -1,5 +1,6 @@
 """Pure math (no CAD): petal angles, quarter boundaries, pin and seed positions, petal shape functions."""
 import math
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.spatial import Voronoi
@@ -54,6 +55,17 @@ def half_width(ring: Ring, r: float) -> float:
     if s <= 0 or s >= 1:
         return 0.0
     return ring.width / 2 * math.sin(math.pi * s) ** 0.6
+
+
+def petal_top(p: Params, ring: Ring, r: float, y: float, hw: float, veins: bool = True) -> float:
+    """Petal top at radius r, y across from the midrib (hw = half width there): the midrib height, falling by
+    `drop` toward the edges, with `petal_veins` lengthwise grooves `vein_depth` deep. Veins follow the petal's
+    width, so they gather toward the root and the tip like real ones."""
+    u = y / hw
+    z = midrib(ring, r) - ring.drop * min(u * u, 1.5)
+    if veins and abs(u) <= 1:
+        z -= p.vein_depth * (1 - math.cos(math.pi * p.petal_veins * (u + 1))) / 2
+    return z
 
 
 def midrib(ring: Ring, r: float) -> float:
@@ -119,11 +131,20 @@ def inradius(poly: np.ndarray) -> float:
                for k in range(n))
 
 
-def seeds(p: Params) -> list[tuple[list[tuple[float, float]], float]]:
-    """(base polygon, height) per seed. Seeds sit at Vogel's spiral points (seed i at r = c * sqrt(i), angle
-    i * golden angle); each takes its Voronoi cell (the space nearer to it than to any other), so neighbours along
-    the spirals meet in diamonds. Cells shrink by half the gap, narrow across the radius, and stay inside the rim.
-    Heights fall toward the rim on layer multiples. Rim slivers whose tops wouldn't print are left out."""
+@dataclass(frozen=True)
+class Seed:
+    cell: tuple  # base polygon (counter-clockwise) on the head's top
+    shoulder: float  # straight sides up to here (above the head's top)
+    top: float  # pyramid apex plateau
+    top_scale: float  # plateau size as a fraction of the base
+
+
+def seeds(p: Params) -> list[Seed]:
+    """Seeds sit at Vogel's spiral points (seed i at r = c * sqrt(i), angle i * golden angle); each takes its
+    Voronoi cell (the space nearer to it than to any other), so neighbours along the spirals meet in diamonds.
+    Cells shrink by half the gap, narrow across the radius, and stay inside the rim. Each is a column up to its
+    shoulder, taller toward the middle (the dome), then a pyramid. Small seeds get a bigger plateau so it prints;
+    rim slivers too thin to print are left out."""
     lim = p.center_r - p.seed_edge
     pts, i = [], 0
     while True:  # points past the rim too, so the rim cells are closed
@@ -134,8 +155,8 @@ def seeds(p: Params) -> list[tuple[list[tuple[float, float]], float]]:
         pts.append((r * math.cos(i * GOLDEN), r * math.sin(i * GOLDEN)))
     pts = np.array(pts)
     vor = Voronoi(pts)
+    lay = p.printer.layer
     out = []
-    h0, h1 = p.seed_h
     for k, (x, y) in enumerate(pts):
         r = math.hypot(x, y)
         reg = vor.regions[vor.point_region[k]]
@@ -150,18 +171,25 @@ def seeds(p: Params) -> list[tuple[list[tuple[float, float]], float]]:
                 keep.append(q)
         if np.linalg.norm(keep[0] - keep[-1]) <= p.seed_min_edge:
             keep.pop()
+        if len(keep) < 3:
+            continue
         gap = next(g for rr, g in p.seed_gaps if r < rr)
         cell = _shrink(np.array(keep), gap / 2)
         c = cell.mean(0)
-        ur = c / np.linalg.norm(c)
-        ut = np.array([-ur[1], ur[0]])
-        rel = cell - c
-        cell = c + np.outer(rel @ ur, ur) + np.outer(rel @ ut, ut) * p.seed_narrow
+        if np.linalg.norm(c) > 1e-6:
+            ur = c / np.linalg.norm(c)
+            ut = np.array([-ur[1], ur[0]])
+            rel = cell - c
+            cell = c + np.outer(rel @ ur, ur) + np.outer(rel @ ut, ut) * p.seed_narrow
         cell = _clip_circle(cell, lim)
-        if len(cell) < 3 or 2 * p.seed_top * inradius(cell) < 2 * p.printer.nozzle:
-            continue  # a sliver the rim cut off: its top wouldn't print
-        h = round((h0 + (h1 - h0) * (r / lim) ** 2) / p.printer.layer) * p.printer.layer
-        out.append(([tuple(q) for q in cell], h))
+        if len(cell) < 3:
+            continue
+        inr = inradius(cell)
+        if 2 * inr < 2.5 * p.printer.nozzle:
+            continue  # a sliver the rim cut off
+        top_scale = min(max(p.seed_top, p.printer.nozzle / inr), 0.8)
+        shoulder = round((p.seed_shoulder + p.seed_dome * (1 - (r / lim) ** 2)) / lay) * lay
+        out.append(Seed(tuple(map(tuple, cell)), shoulder, shoulder + p.seed_pyramid, top_scale))
     return out
 
 
