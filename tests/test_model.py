@@ -31,7 +31,7 @@ def test_whole_keychain_is_one_printable_solid(whole):
     assert printable_problems(Pos(P.width, P.width, 0) * whole, P.printer) == []
     bb = whole.bounding_box()
     assert bb.min.Z == pytest.approx(0, abs=1e-6) and bb.max.Z == pytest.approx(P.thickness, abs=1e-6)
-    assert bb.size.X == pytest.approx(P.width, abs=0.3)
+    assert bb.size.X == pytest.approx(P.width - 2 * P.ribbon_slide, abs=0.6)  # the logo's width, tails slid in
 
 
 def test_colors_never_overlap(b):

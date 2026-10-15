@@ -21,8 +21,9 @@ class Params:
                   ("white", (1.0, 1.0, 1.0)), ("brown", (0.243, 0.184, 0.153)))
 
     # size
-    width: float = 50.0  # ribbon tip to tip, sets the art scale
+    width: float = 50.0  # the logo's ribbon tip to tip: sets the art scale (the tails then slide in, ribbon_slide)
     figure_drop: float = 2.0  # cat + ribbon moved down from the logo position
+    ribbon_slide: float = 3.0  # mm each ribbon tail slides in toward the middle (v1's look)
     ear_clear: float = 1.5  # ear tips stay this far inside the ring's outer circle
 
     # keyring hole, replacing the top paw print
@@ -108,6 +109,7 @@ class Params:
         ((4.35, -1.05), (5.20, -0.80), (5.95, -0.62), (8.00, -0.35), (9.50, -0.40), (10.50, -0.50), (11.75, -0.85)),
         ((4.35, -1.05), (4.75, -1.55), (5.10, -2.05), (5.50, -2.50)),
     )
+    tongue: str = "white"  # inside the mouth: "white", "orange", or "none" (no opening, just the smile)
     muzzle_zone: tuple = ((-3.30, -2.90), (5.40, -2.90), (5.40, -1.30), (6.10, -1.30), (6.10, 2.20),
                           (-3.30, 2.20))  # traced ink in here goes (it stops short of the right paw)
     muzzle_unlines: tuple = (  # traced lines that go though nothing is drawn on them (where a whisker was moved)
@@ -138,7 +140,8 @@ class Params:
     base_layers: int = 3  # white/orange base band (to 2.4)
     face_layers: int = 2  # ribbon, cat, ink (to 2.8)
     top_layers: int = 2  # paws, eyes, nose, letters (to 3.2)
-    ring_ink_layers: int = 1  # ring circles, paw prints, hole ring above the base band (to 2.6)
+    ring_ink_layers: int = 2  # ring circles, paw prints, hole ring above the base band (to 2.8, the face band's
+    # height: the ring ink and the face's brown meet, and must be one shape to mesh cleanly)
 
     # back: QR panel and URL text
     qr_module: float = 0.9  # 2.25 nozzle widths; 1.0 left no room for the URL under the panel

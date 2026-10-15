@@ -8,6 +8,7 @@ from functools import lru_cache
 
 import cv2
 import numpy as np
+import shapely
 from scipy import ndimage as ndi
 from shapely.geometry import MultiPolygon, Point, box
 from shapely.ops import unary_union
@@ -17,6 +18,7 @@ from . import ears as E
 from . import eyes as EY
 from . import muzzle as MZ
 from . import paws as PW
+from . import ribbon as RB
 from . import ink as I
 from . import vec as V
 from .params import P, Params
@@ -53,14 +55,6 @@ def _shift(mask: np.ndarray, dy_px: int) -> np.ndarray:
     out = np.zeros_like(mask)
     out[dy_px:] = mask[:mask.shape[0] - dy_px]
     return out
-
-
-def _sweep_down(mask: np.ndarray, dy_px: int, step: int = 4) -> np.ndarray:
-    """Union of the mask moved down by 0 .. dy_px."""
-    out = mask.copy()
-    for d in range(step, dy_px + 1, step):
-        out |= _shift(mask, d)
-    return out | _shift(mask, dy_px)
 
 
 def _big(mask: np.ndarray, min_px: float) -> np.ndarray:
@@ -154,11 +148,12 @@ def _minus(g, *higher, sliver: float = 0.02):
 def _tile(regions: list, outline, reach: float, dust: float = 0.02) -> list:
     """Disjoint regions, in priority order, grown into the gaps between them so that together they tile `outline`:
     each takes what's left of the gaps within `reach` of it (bits that only meet it at a corner are dropped as dust)."""
-    gaps = outline.difference(unary_union(regions))
+    regions = [shapely.make_valid(g) for g in regions]
+    gaps = shapely.make_valid(shapely.make_valid(outline).difference(unary_union(regions)))
     out = []
     for g in regions:
-        take = gaps.intersection(g.buffer(reach))
-        gaps = gaps.difference(take)
+        take = shapely.make_valid(gaps.intersection(g.buffer(reach).buffer(0)))
+        gaps = shapely.make_valid(gaps.difference(take))
         grown = V.multi(unary_union([g, *V.multi(take).geoms]))
         out.append(V.multi(unary_union([q for q in grown.geoms if q.area >= dust])))
     return out
@@ -239,19 +234,15 @@ def design(p: Params = P) -> Design:
     thick, thin = thick & ~paw_mask & ~paw_top, thin & ~paw_mask & ~paw_top
     eyes = [(e.outer.centroid.x, e.outer.centroid.y, float(np.sqrt(e.outer.area / np.pi))) for e in eye_shapes]
 
-    # the ribbon's folds ended at the ring before the drop; sweep them down so they still touch it
-    under_ring = _sweep_down(D <= art.R, dy) & (D > art.R)
-    outside = ribbon & (D > art.R - 0.2)
-    circle_ink = V.dilated(bg_ink & (np.abs(D - (art.R - p.circle_w / 2)) < p.circle_w / 2 + 0.2), 0.6 * px)
-    fold = np.zeros_like(ribbon)
-    for c in V.components(outside, int(1.0 * px * px)):  # a fold's yellow meets the ring's own outline; the band in
-        if (c & circle_ink & (Y < 0)).any():  # front of the ring interrupts that outline, so its ends don't
-            fold |= c
-    fold_ink = ink & V.dilated(fold, 0.4 * px) & ~V.dilated(ribbon & ~fold, 0.4 * px)
-    ext_ink = _sweep_down(fold_ink, dy) & under_ring
-    ext_fill = _sweep_down(fold, dy) & under_ring & ~ext_ink
-    ext_ink = V.dilated(V.opened(V.closed(ext_ink, 0.1 * px), (p.line_w - 0.1) / 2 * px), 0.05 * px)
-    ribbon_mask = (ribbon_mask | ext_fill) & ~paw_mask
+    # the ribbon: drawn (ribbon.py), v1's sketch registered onto the logo's ribbon. It replaces the traced one, fill
+    # and outline (the letters stay traced), and is in front of the cat
+    rib = RB.shapes(p)
+    rib_region = E.raster(rib.region, art, cls.shape)
+    rib_erase = V.dilated(ribbon_mask, 0.6 * px) | E.raster(rib.region.buffer(0.4), art, cls.shape)
+    thick, thin = thick & ~rib_erase, (thin & ~rib_erase) | E.raster(rib.brown, art, cls.shape)
+    ext_ink = np.zeros_like(thick)
+    ribbon_mask = E.raster(rib.yellow, art, cls.shape) & ~paw_mask
+    cat_mask = cat_mask & ~rib_region
 
     white_src = np.isin(cls_s, [C[n] for n in ("cat_white", "cat_white2", "cat_tan", "cat_tan2", "cat_tan3",
                                                 "pink_light")]) | (pink & ~nose)
@@ -356,12 +347,13 @@ def design(p: Params = P) -> Design:
     eye_all = unary_union([*(e.outer for e in eye_shapes), muzzle.nose])  # drawn shapes raised in the top band
     clear = 3 * p.seam  # the traced leftovers round a drawn eye or nose go to the fills beside it
     strokes_g = muzzle.ink  # the muzzle's strokes, exactly
-    traced = unary_union([eye_all.buffer(clear), muzzle.zone.intersection(strokes_g.buffer(clear))])
+    traced = unary_union([eye_all.buffer(clear), muzzle.zone.intersection(strokes_g.buffer(clear)), rib.region.buffer(clear)])
     paw_all = unary_union([w.outer for w in paw_shapes])
-    face_ink_g = V.multi(unary_union([_minus(face_ink_g, traced), eye_all, strokes_g]).difference(paw_all))
-    figure_g = V.multi(unary_union([figure_g, face_ink_g, paw_all]))
+    face_ink_g = V.multi(unary_union([_minus(face_ink_g, traced), eye_all, strokes_g, rib.brown]).difference(paw_all))
+    figure_g = V.multi(unary_union([figure_g, face_ink_g, paw_all, rib.region]))
     # the paw's white goes under it exactly: the traced white round it is cleared and refilled from outside the paw
-    cat_w_g, cat_o_g, ribbon_g = (g.difference(paw_all.buffer(clear)) for g in (cat_w_g, cat_o_g, ribbon_g))
+    cat_w_g, cat_o_g = (g.difference(paw_all.buffer(clear)).difference(rib.region) for g in (cat_w_g, cat_o_g))
+    ribbon_g = rib.yellow.difference(paw_all.buffer(clear))  # the drawn ribbon's yellow, exactly
     cat_w_g, cat_o_g, ribbon_g = _tile([_minus(g, face_ink_g) for g in (cat_w_g, cat_o_g, ribbon_g)],
                                        figure_g.difference(face_ink_g).difference(paw_all), clear + p.seam)
     paw_inner = unary_union([w.outer.buffer(-p.line_w) for w in paw_shapes])  # white under it, brown under its rim
@@ -369,6 +361,10 @@ def design(p: Params = P) -> Design:
     face_ink_g = V.multi(unary_union([face_ink_g, paw_all.difference(paw_inner)]))
     face_ink_g, cat_w_g, cat_o_g, ribbon_g = _tile([face_ink_g, cat_w_g, cat_o_g, ribbon_g], figure_g,
                                                    3 * p.seam, dust=0)  # no gap left, however small
+    if p.tongue == "orange":
+        tongue = muzzle.tongue.difference(face_ink_g)
+        cat_w_g, ribbon_g = (_minus(g, tongue) for g in (cat_w_g, ribbon_g))
+        cat_o_g = V.multi(unary_union([cat_o_g, tongue]))
     # fill narrower than a nozzle between brown lines (wedges where lines meet, flecks) can't print cleanly: it goes
     # to the brown, and so does any fill piece too small to print (the white under a paw doesn't count: it's covered)
     fills = unary_union([cat_w_g.difference(paw_all), cat_o_g, ribbon_g]).buffer(0)

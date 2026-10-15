@@ -100,9 +100,9 @@ def face(poly: Polygon) -> Face:
     return Face(wire(poly.exterior.coords), [wire(r.coords) for r in poly.interiors])
 
 
-def prisms(polys, z0: float, z1: float) -> list:
+def prisms(polys, z0: float, z1: float, cleaned: bool = False) -> list:
     out = []
-    for g in clean(polys).geoms:
+    for g in (multi(polys) if cleaned else clean(polys)).geoms:
         pr = Pos(0, 0, z0) * extrude(face(g), z1 - z0)
         if not pr.is_valid:
             raise ValueError(f"invalid prism at {g.representative_point()} z={z0}..{z1}")

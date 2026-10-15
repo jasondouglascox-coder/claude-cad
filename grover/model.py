@@ -3,7 +3,7 @@
     0 .. z_back       back inlay: white QR panel (modules = brown body) and white URL, brown elsewhere
     z_back .. z_body  solid brown
     z_body .. z_base  base band: white under disc / cat / ribbon, orange ring
-    z_base .. z_face  face band: yellow ribbon, white cat + orange patches, brown ink; ring ink to z_ring_ink
+    z_base .. z_face  face band: yellow ribbon, white cat + orange patches, brown ink and ring ink
     z_face .. z_top   top band: white paws, eye crescents + glints, brown eyes, nose, letters, paw lines
 Every body may be several solids (brown ink columns stand on white and orange); the bands' footprints
 stacked are one solid."""
@@ -54,14 +54,19 @@ def bodies(p: Params = P) -> dict[str, Part]:
     solids["brown"].append(body)
     solids["white"].append(url_solid)
 
-    # front bands. The ring ink runs 0.05 mm on under the face band's brown it meets: same color, and the solids
-    # then join by overlapping instead of along a knife edge
+    # front bands. Regions of one color spanning the same heights are one shape before they're extruded (face ink
+    # and ring ink meet), welded where parts touch at a point; and the raised top band stands 0.01 mm in from its
+    # edges, so it never sits flush on the face band's same color below. Either way two solids of one color would
+    # otherwise share faces edge to edge, and the fused mesh gets T-junctions (open edges).
+    groups = {}
     for color, lo, hi, g in band_regions(d):
-        if g is d.ring_ink:
-            g = unary_union([g, g.buffer(0.05).intersection(d.face_ink)])
-            g = g.buffer(0.003, join_style="mitre").buffer(-0.003, join_style="mitre")  # weld point contacts
+        groups.setdefault((color, getattr(p, lo), getattr(p, hi)), []).append(g)
+    for (color, z0, z1), gs in groups.items():
+        g = unary_union(gs).buffer(0.003, join_style="mitre").buffer(-0.003, join_style="mitre")
+        if z0 == p.z_face:
+            g = g.buffer(-0.01, join_style="mitre")
         if not g.is_empty:
-            solids[color] += V.prisms(g, getattr(p, lo), getattr(p, hi))
+            solids[color] += V.prisms(g, z0, z1)
 
     cutter = hole_cutter(p, d.hole)
     out = {}
