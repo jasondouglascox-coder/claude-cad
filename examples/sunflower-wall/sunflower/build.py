@@ -1,19 +1,19 @@
 """uv run python -m sunflower.build [all|plates|step|render] [--out out]
 
 plates: out/plates/*.3mf (Bambu projects that open colored, your AMS filaments) + .step, out/plates.csv
-step:   out/step/*.step, one per part, for CAD
+step:   out/step/*.step, one per part, plus sunflower_assembly.step (the whole flower) for Onshape
 render: out/render/*.png shaded previews of the assembled flower
 """
 import argparse
 import sys
 from pathlib import Path
 
-from build123d import Color, export_step
+from build123d import Color, Compound, export_step
 
 from cadkit import bambu3mf
 from cadkit.export import write_plates
 from cadkit.render import ISO, TOP, render
-from sunflower import assembly
+from sunflower import assembly, layout
 from sunflower.params import P, Params
 from sunflower.parts import center, pin, quarter
 from sunflower.plates import filament_for, plans
@@ -48,6 +48,34 @@ def write_steps(p: Params, out: Path) -> None:
     for b in head.children:
         b.color = col[b.label]
     export_step(head, str(out / "step" / "seed_head.step"))
+    export_step(assembled(p), str(out / "step" / "sunflower_assembly.step"))
+
+
+def assembled(p: Params) -> Compound:
+    """The whole flower as hung (wall at z = 0), an assembly tree for CAD: placed copies of one shape per part
+    type, so the file stays small and Onshape lists 4 back_quarter, 4 front_quarter, 8 pin and the seed_head."""
+    col = colors(p)
+    kids = []
+    for layer in ("back", "front"):
+        base = quarter.make(p, layer)
+        base.color = col[base.label]
+        for q in range(4):
+            placed = quarter.place(p, layer, q) * base
+            placed.label, placed.color = base.label, base.color
+            kids.append(placed)
+    bodies = []
+    for b in center.make(p).children:
+        moved = center.place(p) * b
+        moved.label, moved.color = b.label, col[b.label]
+        bodies.append(moved)
+    kids.append(Compound(children=bodies, label="seed_head"))
+    snap = pin.make(p)
+    snap.color = col["pin"]
+    for a in layout.pin_angles(p):
+        placed = pin.place(p, a) * snap
+        placed.label, placed.color = "pin", snap.color
+        kids.append(placed)
+    return Compound(children=kids, label="sunflower")
 
 
 def write_renders(p: Params, out: Path) -> list[Path]:

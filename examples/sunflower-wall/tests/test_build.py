@@ -56,3 +56,18 @@ def test_bambu_slices_each_plate_with_at_most_one_color_change(out, tmp_path, na
     assert bambu3mf.same_objects(back, src)
     report = bambu.slice_report(src, tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == bands
+
+
+@pytest.mark.slow
+def test_assembly_step_opens_as_the_whole_flower(tmp_path):
+    """One STEP for Onshape: every part placed, named by part type, colored."""
+    from build123d import import_step
+    from sunflower import layout
+    assert build.main(["step", "--out", str(tmp_path)]) == 0
+    flower = import_step(str(tmp_path / "step" / "sunflower_assembly.step"))
+    solids = flower.solids()
+    assert len(solids) == 8 + 1 + len(layout.seeds(P)) + 8
+    bb = flower.bounding_box()
+    assert bb.size.X == pytest.approx(P.diameter, abs=2) and bb.min.Z == pytest.approx(0, abs=1e-3)
+    names = {c.label for c in flower.children}
+    assert {"back_quarter", "front_quarter", "seed_head", "pin"} <= names
