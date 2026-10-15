@@ -25,6 +25,7 @@ def loop(points, step: float = 0.05) -> Polygon:
 class Muzzle:
     nose: Polygon
     strokes: list  # mouth lines and whiskers, LineStrings
+    ink: object  # the strokes drawn: mouth lines line_w wide, whiskers whisker_w
     whiskers: list  # the whiskers alone, each ending at its outer tip
     zone: Polygon  # everything traced in here goes
     erase: object  # the box and a band along each stroke
@@ -42,5 +43,7 @@ def shapes(p: Params = P) -> Muzzle:
     zone = Polygon(moved(p.muzzle_zone))
     bands = [substring(q, 0, q.length - p.stroke_end_keep).buffer(p.whisker_erase, cap_style="flat")
              for q in mouth + whiskers]
+    bands += [E.curve(moved(u)).buffer(p.unline_erase) for u in p.muzzle_unlines]  # a moved line's old path, all of it
     erase = unary_union([zone, *bands])
-    return Muzzle(nose, mouth + whiskers, whiskers, zone, erase)
+    ink = unary_union([*(q.buffer(p.line_w / 2) for q in mouth), *(q.buffer(p.whisker_w / 2) for q in whiskers)])
+    return Muzzle(nose, mouth + whiskers, ink, whiskers, zone, erase)

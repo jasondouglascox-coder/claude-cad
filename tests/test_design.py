@@ -69,13 +69,15 @@ def test_eyes_are_their_drawn_shapes_with_a_white_crescent_and_two_glints(d):
 
 
 def test_nose_mouth_and_whiskers_are_their_drawn_curves(d):
-    """Round the muzzle the brown is exactly the drawn nose and strokes (no traced tangle, no tooth); the nose is
-    raised as drawn; the whiskers' outer ends stick out past the face, in brown."""
+    """Round the muzzle the brown is the drawn nose and strokes (no traced tangle, no tooth) plus only fill too thin
+    to print where lines meet; the nose is raised as drawn; the whiskers' outer ends stick out past the face."""
     m = MZ.shapes(P)
-    drawn = unary_union([m.nose, *(s.buffer(P.line_w / 2) for s in m.strokes)])
+    drawn = unary_union([m.nose, m.ink])
     inside = m.zone
     ink = d.face_ink.intersection(inside)
-    assert ink.symmetric_difference(drawn.intersection(inside)).area < 0.02 * drawn.intersection(inside).area
+    assert drawn.intersection(inside).difference(ink).area < 0.01  # every drawn line is there
+    extra = ink.difference(drawn)  # beyond them only fill too thin to print (wedges where lines meet)
+    assert _opened(extra, P.printer.nozzle + 0.05).area < 0.02, f"{extra.area:.2f} mm^2 of extra brown"
     assert d.top_brown.intersection(m.nose.buffer(0.3)).symmetric_difference(m.nose).area < 0.01 * m.nose.area
     tips = [Point(s.coords[-1]) for s in m.whiskers]
     assert all(unary_union([d.face_ink, d.top_brown]).buffer(0.01).contains(t) for t in tips)  # brown from above
@@ -166,10 +168,13 @@ def test_the_base_shows_only_as_the_ring_and_the_disc(d):
 
 
 def test_every_brown_mark_is_at_least_a_line_wide(d):
+    """No brown narrower than the finest line allowed (the whiskers, a nozzle width)."""
+    finest = min(P.line_w, P.whisker_w)
+    assert finest >= P.printer.nozzle
     for name in ("face_ink", "ring_ink", "top_brown"):
         g = getattr(d, name)
-        kept = _opened(g, P.line_w - 0.06).area
-        assert kept >= 0.97 * g.area, f"{name}: {g.area - kept:.1f} mm^2 thinner than {P.line_w}"
+        kept = _opened(g, finest - 0.06).area
+        assert kept >= 0.97 * g.area, f"{name}: {g.area - kept:.1f} mm^2 thinner than {finest}"
 
 
 def test_fills_have_no_tiny_islands(d):

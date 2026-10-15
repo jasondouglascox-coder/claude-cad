@@ -33,6 +33,7 @@ class Params:
 
     # ink and fills
     line_w: float = 0.5  # every thin stroke is re-drawn this wide
+    whisker_w: float = 0.4  # whiskers: one nozzle width, as fine as a 0.4 nozzle prints solid
     ink_thick: float = 0.7  # marks at least this wide in the art keep their traced shape
     ink_min_src: float = 0.12  # strokes thinner than this in the art are dropped (the cat's outline is ~0.25)
     ink_min_len: float = 1.2  # mm, shorter stroke fragments (specks, ear tuft stubs) are dropped
@@ -95,19 +96,24 @@ class Params:
         ((1.86, 0.25), (1.82, -0.60), (1.76, -1.30)),  # philtrum
         ((1.76, -1.30), (1.20, -1.78), (0.40, -2.00), (-0.50, -1.95), (-1.40, -1.65), (-2.20, -1.10), (-2.65, -0.50),
          (-2.75, 0.00)),  # left lip, up into the muzzle
-        ((1.76, -1.30), (2.40, -1.72), (3.30, -1.98), (4.30, -1.97), (5.00, -1.75), (5.55, -1.35), (5.95, -0.78)),  # right lip, up to the middle whisker
+        ((1.76, -1.30), (2.40, -1.72), (3.30, -1.98), (4.30, -1.97), (4.90, -1.80), (5.30, -1.55)),  # right lip, a smile ending short of the whiskers
         ((0.40, -2.00), (0.50, -2.55), (0.95, -2.95), (1.70, -3.12), (2.45, -3.00), (2.95, -2.60), (3.20, -1.98)),  # mouth
     )
-    whiskers: tuple = (  # the top ones from beside the nose, the others from the cheeks' arch, out to the tip
+    whiskers: tuple = (  # the top ones from beside the nose, the lower pair a side fanning from a root in the
+        # whisker pad (the white between nose and lip), each out to its tip
         ((0.00, -0.25), (-1.00, 0.35), (-2.50, 0.90), (-4.00, 1.15), (-6.00, 1.27), (-8.00, 1.03), (-10.15, 0.38)),
-        ((-2.78, -0.57), (-3.50, -0.50), (-4.50, -0.55), (-5.30, -0.68)),
-        ((-2.15, -1.62), (-3.00, -2.00), (-4.10, -2.58)),
+        ((-1.00, -0.75), (-2.00, -0.66), (-2.78, -0.57), (-3.50, -0.50), (-4.50, -0.55), (-5.30, -0.68)),
+        ((-1.00, -0.75), (-1.60, -1.10), (-2.15, -1.62), (-2.85, -1.95), (-3.50, -2.27)),
         ((3.85, -0.45), (5.50, 0.35), (7.50, 0.88), (9.50, 1.15), (11.50, 1.20), (12.10, 1.15)),
-        ((5.95, -0.72), (8.00, -0.75), (9.50, -0.88), (10.50, -1.05), (11.75, -1.50)),
-        ((4.75, -1.85), (5.50, -2.50), (5.92, -2.90)),
+        ((4.35, -1.05), (5.20, -0.80), (5.95, -0.62), (8.00, -0.35), (9.50, -0.40), (10.50, -0.50), (11.75, -0.85)),
+        ((4.35, -1.05), (4.75, -1.55), (5.10, -2.05), (5.50, -2.50)),
     )
     muzzle_zone: tuple = ((-3.30, -2.90), (5.40, -2.90), (5.40, -1.30), (6.10, -1.30), (6.10, 2.20),
                           (-3.30, 2.20))  # traced ink in here goes (it stops short of the right paw)
+    muzzle_unlines: tuple = (  # traced lines that go though nothing is drawn on them (where a whisker was moved)
+        ((4.25, -0.90), (6.00, -0.72), (8.00, -0.75), (9.50, -0.88), (10.50, -1.05), (11.75, -1.50)),
+    )
+    unline_erase: float = 0.5  # mm round an old path: the traced stroke wandered off it
     whisker_erase: float = 0.35  # mm along each stroke where the traced one goes (not near the face's outline,
     stroke_end_keep: float = 0.5  # nor this close to a stroke's outer end, where it meets a paw or an arm)
     # paws, drawn (paws.py), read off the logo: a closed outline (clockwise from the top left; the points at the
@@ -120,6 +126,8 @@ class Params:
         (((-7.88, -4.80), (-7.92, -4.00), (-7.93, -3.05)), ((-5.66, -4.25), (-5.85, -3.55), (-6.10, -2.60))),
         (((7.80, -4.73), (7.95, -3.90), (8.15, -2.95)), ((9.66, -4.95), (9.87, -4.10), (10.13, -3.15))),
     )
+    paw_top_clear: float = 0.45  # mm over a paw's top that's plain white (traced lines and shading go)
+    paw_top_depth: float = 0.8  # mm down from a paw's top that counts as its top (its sides keep their lines)
     eye_tip_r: float = 0.08  # mm, the pointed inner corner is rounded this much
     eye_erase: float = 0.4  # mm round an eye's outline where the traced ink goes
 

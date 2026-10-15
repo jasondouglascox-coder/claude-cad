@@ -9,7 +9,7 @@ from functools import lru_cache
 import cv2
 import numpy as np
 from scipy import ndimage as ndi
-from shapely.geometry import MultiPolygon, Point
+from shapely.geometry import MultiPolygon, Point, box
 from shapely.ops import unary_union
 
 from . import art as A
@@ -217,7 +217,7 @@ def design(p: Params = P) -> Design:
     face_edge = V.dilated(~V.closed(cat_mask | fig_ink_s, 0.1 * px), 0.6 * px)
     muzzle_box = E.raster(muzzle.zone, art, cls.shape)
     muzzle_erase = muzzle_box | (E.raster(muzzle.erase, art, cls.shape) & ~face_edge)
-    muzzle_ink = E.raster(unary_union([q.buffer(p.line_w / 2) for q in muzzle.strokes]), art, cls.shape)
+    muzzle_ink = E.raster(muzzle.ink, art, cls.shape)
     thick, thin = thick & ~muzzle_erase, (thin & ~muzzle_erase) | muzzle_ink
     nose = E.raster(muzzle.nose, art, cls.shape)
 
@@ -229,7 +229,14 @@ def design(p: Params = P) -> Design:
     # paws: drawn (paws.py); traced ink inside them goes, the face band under them is white
     paw_shapes = PW.shapes(p)
     paw_mask = E.raster(unary_union([w.outer for w in paw_shapes]), art, cls.shape)
-    thick, thin = thick & ~paw_mask, thin & ~paw_mask
+    above = []  # the band over each paw's top is plain white fur up to the rim (no traced arm line or shading)
+    for w in paw_shapes:
+        x0, y0, x1, y1 = w.outer.bounds
+        inset = 0.15 * (x1 - x0)  # the corners, where the body's outline meets the paw, keep their lines
+        above.append(w.outer.buffer(p.paw_top_clear).difference(w.outer).intersection(
+            box(x0 + inset, y1 - p.paw_top_depth, x1 - inset, y1 + 1)))
+    paw_top = E.raster(unary_union(above), art, cls.shape)
+    thick, thin = thick & ~paw_mask & ~paw_top, thin & ~paw_mask & ~paw_top
     eyes = [(e.outer.centroid.x, e.outer.centroid.y, float(np.sqrt(e.outer.area / np.pi))) for e in eye_shapes]
 
     # the ribbon's folds ended at the ring before the drop; sweep them down so they still touch it
@@ -250,8 +257,8 @@ def design(p: Params = P) -> Design:
                                                 "pink_light")]) | (pink & ~nose)
     # round the drawn eyes, what was the traced eye's ink is face white (orange fur stays orange)
     orange_src = np.isin(cls_s, [C[n] for n in ("cat_orange", "cat_orange2", "ear")])
-    cat_mask = cat_mask | (eye_zone & ~eye_mask) | (muzzle_box & ~nose) | paw_mask
-    white_src = white_src | ((eye_zone & ~eye_mask) | (muzzle_box & ~nose)) & ~orange_src | paw_mask
+    cat_mask = cat_mask | (eye_zone & ~eye_mask) | (muzzle_box & ~nose) | paw_mask | paw_top
+    white_src = white_src | ((eye_zone & ~eye_mask) | (muzzle_box & ~nose)) & ~orange_src | paw_mask | paw_top
 
     def labels(ink_print):
         """Face-band label map: ribbon / cat white / cat orange / ink, gap-free inside the figure."""
@@ -348,7 +355,7 @@ def design(p: Params = P) -> Design:
     # under each eye the face band is the eye's own outline, not its traced copy: their edges coincide
     eye_all = unary_union([*(e.outer for e in eye_shapes), muzzle.nose])  # drawn shapes raised in the top band
     clear = 3 * p.seam  # the traced leftovers round a drawn eye or nose go to the fills beside it
-    strokes_g = unary_union([q.buffer(p.line_w / 2) for q in muzzle.strokes])  # the muzzle's strokes, exactly
+    strokes_g = muzzle.ink  # the muzzle's strokes, exactly
     traced = unary_union([eye_all.buffer(clear), muzzle.zone.intersection(strokes_g.buffer(clear))])
     paw_all = unary_union([w.outer for w in paw_shapes])
     face_ink_g = V.multi(unary_union([_minus(face_ink_g, traced), eye_all, strokes_g]).difference(paw_all))
@@ -364,7 +371,7 @@ def design(p: Params = P) -> Design:
                                                    3 * p.seam, dust=0)  # no gap left, however small
     # fill narrower than a nozzle between brown lines (wedges where lines meet, flecks) can't print cleanly: it goes
     # to the brown, and so does any fill piece too small to print (the white under a paw doesn't count: it's covered)
-    fills = unary_union([cat_w_g.difference(paw_all), cat_o_g, ribbon_g])
+    fills = unary_union([cat_w_g.difference(paw_all), cat_o_g, ribbon_g]).buffer(0)
     narrow = [fills.difference(fills.buffer(-p.printer.nozzle / 2).buffer(p.printer.nozzle / 2))]
     kept = []
     for g in (cat_w_g, cat_o_g, ribbon_g):
@@ -372,7 +379,7 @@ def design(p: Params = P) -> Design:
         narrow += [q for q in g.geoms if q.area < p.min_island]
         kept.append(V.multi(unary_union([q for q in g.geoms if q.area >= p.min_island])))
     cat_w_g, cat_o_g, ribbon_g = kept
-    face_ink_g = V.multi(unary_union([face_ink_g, *narrow]))
+    face_ink_g = V.multi(unary_union([face_ink_g, *narrow]).difference(unary_union(kept)))  # never over a fill
     silhouette_g = V.multi(unary_union([Point(0, 0).buffer(art.R, quad_segs=256), figure_g]))
     ring_ink_g = _minus(poly(ring_ink).intersection(silhouette_g), figure_g)
     raised = unary_union([eye_all, paw_all])
