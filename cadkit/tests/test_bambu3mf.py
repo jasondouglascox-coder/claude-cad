@@ -110,3 +110,28 @@ def test_bambu_slices_with_written_filament_settings(tmp_path, two_color):
     report = bambu.slice_report(tmp_path / "pl.3mf", tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (1,)]
     assert set(report["grams"]) == {1, 2}
+
+
+def _three_color():
+    """Bodies stacked by height, three colors: two color changes, each a whole layer."""
+    from build123d import Color, Compound
+    a, b, c = box(0, 0, 0, 30, 30, 2), box(5, 5, 2, 20, 20, 2), box(10, 10, 4, 10, 10, 1)
+    for body, name, col in ((a, "f_low", (0.9, 0.8, 0.1)), (b, "f_mid", (0.1, 0.1, 0.1)), (c, "f_top", (0.4, 0.2, 0.1))):
+        body.label, body.color = name, Color(*col)
+    return Compound(children=[a, b, c], label="flower")
+
+
+def test_three_color_part_is_one_object_with_three_parts(tmp_path):
+    fil = {"f_low": 2, "f_mid": 3, "f_top": 4}
+    write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get)
+    assert bambu3mf.read_filaments(tmp_path / "pl.3mf") == [("flower", 2, fil)]
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_slices_three_colors_in_height_order(tmp_path):
+    fil = {"f_low": 2, "f_mid": 3, "f_top": 4}
+    s = bambu3mf.write_settings(tmp_path / "s.config", PLA4)
+    write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get, settings=s)
+    report = bambu.slice_report(tmp_path / "pl.3mf", tmp_path / "s.3mf")
+    assert [r[0] for r in report["layers"]] == [(2,), (3,), (4,)]

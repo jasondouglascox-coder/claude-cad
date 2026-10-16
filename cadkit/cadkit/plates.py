@@ -35,9 +35,13 @@ def zeroed(s: Shape) -> Shape:
     return Pos(-bb.min.X, -bb.min.Y, -bb.min.Z) * s
 
 
-def is_two_color(s: Shape) -> bool:
-    """A multi-color print part: a Compound of two colored bodies, lower color first (e.g. brown ties, gray plates)."""
-    return isinstance(s, Compound) and len(s.children) == 2 and all(c.color is not None for c in s.children)
+def is_multi_color(s: Shape) -> bool:
+    """A multi-color print part: a Compound of colored bodies stacked by height, lowest color first (e.g. brown ties
+    under gray plates). Two bodies make one color change; three make two."""
+    return isinstance(s, Compound) and len(s.children) >= 2 and all(c.color is not None for c in s.children)
+
+
+is_two_color = is_multi_color  # the original name
 
 
 def _free_after(free: list[_Rect], u: _Rect) -> list[_Rect]:
@@ -59,9 +63,9 @@ def _free_after(free: list[_Rect], u: _Rect) -> list[_Rect]:
 
 
 def pack(items: list[tuple[str, Shape]], printer: Printer = A1, gap: float = GAP) -> list[list[tuple[str, Shape]]]:
-    """Pack (name, flat shape) items onto as few beds as possible; two-color parts get their own plates."""
-    two = [it for it in items if is_two_color(it[1])]
-    one = [it for it in items if not is_two_color(it[1])]
+    """Pack (name, flat shape) items onto as few beds as possible; multi-color parts get their own plates."""
+    two = [it for it in items if is_multi_color(it[1])]
+    one = [it for it in items if not is_multi_color(it[1])]
     if two and one:
         return _pack(two, printer, gap) + _pack(one, printer, gap)
     return _pack(items, printer, gap)

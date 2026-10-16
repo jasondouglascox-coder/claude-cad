@@ -7,7 +7,7 @@ from typing import Callable
 from build123d import Compound, ExportSVG, LineType, Shape
 
 from cadkit import bambu3mf, paint
-from cadkit.plates import Plate, is_two_color
+from cadkit.plates import Plate, is_multi_color
 
 TOP = ((0, 0, 1), (0, 1, 0))  # (view direction toward the eye, up): flat parts from above
 FRONT = ((0, -1, 0), (0, 0, 1))
@@ -37,7 +37,7 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
                  preview_dir: Path | None = None, settings: Path = bambu3mf.SETTINGS) -> None:
     """Each plate as STEP (painted) + Bambu Studio project 3MF + an optional SVG, and csv_path listing what to print
     and how many. settings: Bambu project settings (bambu3mf.write_settings for your filaments).
-    filament_for(body label) -> filament number; two-color parts are one object with a part per color
+    filament_for(body label) -> filament number; multi-color parts are one object with a part per color
     body, so the upper color can't drop onto the bed."""
     folder.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -50,7 +50,7 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
         paint.export_step(comp, folder / f"{pl.name}.step")
         objects = []
         for s in children:
-            if is_two_color(s):
+            if is_multi_color(s):
                 objects.append((s.label, [(b.label, b, filament_for(b.label)) for b in s.children]))
             else:
                 for body in (s.children if isinstance(s, Compound) and s.children else [s]):
