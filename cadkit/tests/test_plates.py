@@ -5,7 +5,7 @@ from conftest import box
 
 def test_packs_onto_few_plates_inside_the_bed():
     items = [(f"sq{i}", box(0, 0, 0, 120, 120, 3)) for i in range(5)]
-    plates = pack(items)
+    plates = pack(items, A1)
     assert [len(p) for p in plates] == [4, 1]
     for p in plates:
         for _, s in p:
@@ -14,7 +14,7 @@ def test_packs_onto_few_plates_inside_the_bed():
 
 
 def test_two_color_parts_get_their_own_plates(two_color):
-    plates = pack([("deck", two_color()), ("block", box(0, 0, 0, 20, 20, 3))])
+    plates = pack([("deck", two_color()), ("block", box(0, 0, 0, 20, 20, 3))], A1, colors=4)
     assert len(plates) == 2
     assert all(len({is_two_color(s) for _, s in p}) == 1 for p in plates)
 
@@ -27,7 +27,7 @@ def test_multi_color_parts_get_their_own_plates():
         b.color = Color(0.5, 0.5, 0.5)
     three = Compound(children=bodies)
     assert is_multi_color(three)
-    plates = pack([("flower", three), ("block", box(0, 0, 0, 20, 20, 3))])
+    plates = pack([("flower", three), ("block", box(0, 0, 0, 20, 20, 3))], A1, colors=4)
     assert len(plates) == 2
 
 
@@ -52,4 +52,4 @@ def test_pack_uses_the_printer_from_settings(monkeypatch):
 
 
 def test_one_color_printer_mixes_multi_color_parts_with_the_rest(two_color):
-    assert len(pack([("deck", two_color()), ("block", box(0, 0, 0, 20, 20, 3))], colors=1)) == 1
+    assert len(pack([("deck", two_color()), ("block", box(0, 0, 0, 20, 20, 3))], A1, colors=1)) == 1

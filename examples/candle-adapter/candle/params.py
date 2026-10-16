@@ -18,6 +18,13 @@ class Params:
     filament_black: int = 3  # AMS slot
     printer: Printer = Printer()
 
+    def __post_init__(self):
+        """Heights land on the printer's layers (yours, from cadkit.settings), so every top prints whole."""
+        for name in ("edge_t", "flare_h", "floor_t"):
+            object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
+        for name in ("depth",):  # stacked on a height above
+            object.__setattr__(self, name, self.printer.layers(getattr(self, name)))
+
     @property
     def collar_d(self) -> float:
         return self.candle_d + 2 * self.wall

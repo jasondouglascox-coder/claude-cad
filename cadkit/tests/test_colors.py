@@ -5,7 +5,7 @@ import warnings
 import pytest
 from build123d import Color, Compound, Pos
 
-from cadkit import bambu3mf
+from cadkit import A1, bambu3mf
 from cadkit.checks import color_problems
 from cadkit.export import write_plates
 from cadkit.plates import Plate, color_changes
@@ -28,23 +28,23 @@ def _beads():
 
 
 def test_stacked_colors_change_once_per_seam(two_color):
-    assert color_changes(two_color()) == 1
-    assert color_changes(box(0, 0, 0, 5, 5, 2)) == 0
-    assert color_changes([("a", two_color()), ("b", Pos(0, 20, 0) * two_color(60))]) == 1  # same seam: one swap
+    assert color_changes(two_color(), A1) == 1
+    assert color_changes(box(0, 0, 0, 5, 5, 2), A1) == 0
+    assert color_changes([("a", two_color()), ("b", Pos(0, 20, 0) * two_color(60))], A1) == 1  # same seam: one swap
 
 
 def test_colors_side_by_side_change_every_layer():
     # 5 layers yellow+orange: yellow, orange | orange, yellow | ... = 1 swap per layer (start with the last one),
     # then black on top: 1 more
-    assert color_changes(_beads()) == 5 + 1
+    assert color_changes(_beads(), A1) == 5 + 1  # 0.2 mm layers
 
 
 def test_within_budget_is_no_problem(two_color):
-    assert color_problems([("deck", two_color())], colors=4, changes=1) == []
+    assert color_problems([("deck", two_color())], colors=4, changes=1, printer=A1) == []
 
 
 def test_over_budget_says_how_many_and_what_to_do(two_color):
-    probs = color_problems([("f", _beads())], colors=4, changes=1)
+    probs = color_problems([("f", _beads())], colors=4, changes=1, printer=A1)
     assert len(probs) == 1 and "6 color changes" in probs[0] and "CADKIT_COLOR_CHANGES" in probs[0]
     assert "split" in probs[0] and "glue" in probs[0]
     probs = color_problems([("deck", two_color())], colors=1, changes=1)
@@ -53,7 +53,10 @@ def test_over_budget_says_how_many_and_what_to_do(two_color):
 
 def test_budget_comes_from_settings(monkeypatch, two_color):
     from cadkit import settings
-    assert color_problems([("f", _beads())])  # defaults: 4 colors, 1 change
+    monkeypatch.setenv("CADKIT_COLORS", "4")
+    monkeypatch.setenv("CADKIT_COLOR_CHANGES", "1")
+    settings.reload()
+    assert color_problems([("f", _beads())])
     monkeypatch.setenv("CADKIT_COLOR_CHANGES", "10")
     settings.reload()
     try:
@@ -81,12 +84,13 @@ def test_more_filaments_than_the_printer_has_stops_with_options(tmp_path, two_co
 
 
 def test_plate_over_the_change_budget_warns_but_still_writes(tmp_path):
-    with pytest.warns(UserWarning, match="pl: 6 color changes"):
-        write_plates([Plate("pl", 1, [("f", _beads())])], tmp_path, tmp_path / "p.csv", FIL.get)
+    with pytest.warns(UserWarning, match=r"pl: \d+ color changes, over the budget of 1"):
+        write_plates([Plate("pl", 1, [("f", _beads())])], tmp_path, tmp_path / "p.csv", FIL.get, colors=4,
+                     color_changes=1)
     assert (tmp_path / "pl.3mf").exists()
     with warnings.catch_warnings():
         warnings.simplefilter("error")  # a project that accepts the cost says so
-        write_plates([Plate("pl", 1, [("f", _beads())])], tmp_path, tmp_path / "p.csv", FIL.get, color_changes=6)
+        write_plates([Plate("pl", 1, [("f", _beads())])], tmp_path, tmp_path / "p.csv", FIL.get, colors=4, color_changes=99)
 
 
 def test_count_filaments_not_colors(two_color):
@@ -94,12 +98,12 @@ def test_count_filaments_not_colors(two_color):
     lower layers, so every one of them swaps."""
     plate = [("deck", two_color()), ("block", Pos(0, 20, 0) * box(0, 0, 0, 20, 20, 3))]
     fil = lambda name, body: FIL.get(name, 1)
-    assert color_changes(plate, key=fil) == 12 + 1 - 1  # 12 two-filament layers, then gray carries on
+    assert color_changes(plate, A1, key=fil) == 12 + 1 - 1  # 12 two-filament layers, then gray carries on
 
 
 def test_a_plate_can_accept_its_own_cost(tmp_path, two_color):
     """The design accepts the beads' swaps on that plate only; another plate over budget still warns."""
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        write_plates([Plate("beads", 1, [("f", _beads())], color_changes=6), Plate("deck", 1, [("d", two_color())])],
-                     tmp_path, tmp_path / "p.csv", FIL.get)
+        write_plates([Plate("beads", 1, [("f", _beads())], color_changes=99), Plate("deck", 1, [("d", two_color())])],
+                     tmp_path, tmp_path / "p.csv", FIL.get, colors=4, color_changes=1)

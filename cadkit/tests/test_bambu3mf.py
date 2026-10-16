@@ -17,7 +17,7 @@ filament = lambda name: FIL.get(name, 1)
 
 
 def _write(tmp_path, items, name="pl"):
-    write_plates([Plate(name, 1, items)], tmp_path, tmp_path / "p.csv", filament, color_changes=99)
+    write_plates([Plate(name, 1, items)], tmp_path, tmp_path / "p.csv", filament, colors=4, color_changes=99)
     return tmp_path / f"{name}.3mf"
 
 
@@ -106,7 +106,7 @@ def test_filament_settings_need_a_type_the_template_has(tmp_path):
 
 def test_write_plates_takes_project_settings(tmp_path, two_color):
     s = bambu3mf.write_settings(tmp_path / "s.config", PLA4)
-    write_plates([Plate("pl", 1, [("deck", two_color())])], tmp_path, tmp_path / "p.csv", filament, settings=s)
+    write_plates([Plate("pl", 1, [("deck", two_color())])], tmp_path, tmp_path / "p.csv", filament, settings=s, colors=4)
     proj = json.loads(zipfile.ZipFile(tmp_path / "pl.3mf").read("Metadata/project_settings.config"))
     assert proj["filament_colour"] == [c for _, c in PLA4]
 
@@ -115,7 +115,7 @@ def test_write_plates_takes_project_settings(tmp_path, two_color):
 @pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
 def test_bambu_slices_with_written_filament_settings(tmp_path, two_color):
     s = bambu3mf.write_settings(tmp_path / "s.config", PLA4)
-    write_plates([Plate("pl", 1, [("deck", two_color())])], tmp_path, tmp_path / "p.csv", filament, settings=s)
+    write_plates([Plate("pl", 1, [("deck", two_color())])], tmp_path, tmp_path / "p.csv", filament, settings=s, colors=4)
     report = bambu.slice_report(tmp_path / "pl.3mf", tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (1,)]
     assert set(report["grams"]) == {1, 2}
@@ -132,7 +132,7 @@ def _three_color():
 
 def test_three_color_part_is_one_object_with_three_parts(tmp_path):
     fil = {"f_low": 2, "f_mid": 3, "f_top": 4}
-    write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get, color_changes=2)
+    write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get, colors=4, color_changes=2)
     assert bambu3mf.read_filaments(tmp_path / "pl.3mf") == [("flower", 2, fil)]
 
 
@@ -142,6 +142,6 @@ def test_bambu_slices_three_colors_in_height_order(tmp_path):
     fil = {"f_low": 2, "f_mid": 3, "f_top": 4}
     s = bambu3mf.write_settings(tmp_path / "s.config", PLA4)
     write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get, settings=s,
-                 color_changes=2)
+                 colors=4, color_changes=2)
     report = bambu.slice_report(tmp_path / "pl.3mf", tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (3,), (4,)]

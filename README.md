@@ -116,8 +116,9 @@ Bambu Studio.
 cd cadkit && uv run python -m cadkit.settings      # what's in effect, and where each value came from
 ```
 
-Packing, print checks and plate files follow these settings. A part bigger than your bed fails its test with the
-numbers, so Claude splits it. When a design wants more colors or swaps than you set, the build warns and Claude
+Packing, print checks and plate files follow these settings, and the fit coupon and candle adapter adapt their
+heights to your layer height. A part bigger than your bed fails its test with the numbers, so Claude splits it.
+The railroad and the sunflower were sized for the A1 at 0.2 mm; on other setups their tests name what to change. When a design wants more colors or swaps than you set, the build warns and Claude
 offers alternatives: split the colors by height, print a detail separately and glue it, or drop a color.
 
 ## Start your own project

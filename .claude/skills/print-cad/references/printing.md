@@ -41,6 +41,10 @@ the footprint and the bed, and you split it.
 
 Every top, color seam and inlay sits on a multiple of the layer height: `checks.off_layer_z(part, printer) == []`.
 A seam at 2.3 mm with 0.2 mm layers makes the slicer split a layer, and the color change lands mid-layer.
+The layer height is the user's (settings), so make heights follow it: in params `__post_init__`, pass absolute
+heights through `printer.snap(z)` (nearest boundary, first layer included) and thicknesses stacked on another
+height through `printer.layers(t)` (whole layers). On 0.2 mm layers both leave round values alone; on 0.16 or
+0.12 they keep every top on a boundary (`examples/fit-coupon/fitcoupon/params.py`).
 
 ## Multi-color (AMS)
 

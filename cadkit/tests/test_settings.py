@@ -65,11 +65,13 @@ def test_printer_defaults_follow_settings(monkeypatch):
         p = Printer()
         assert (p.bed, p.bed_y, p.layer) == (250, 210, 0.16)
         assert Printer(bed=300).bed == 300  # explicit values still win
+        assert Printer(bed=300).bed_y is None  # a bed given alone is square, not 300 x 210
+        assert Printer(bed=300, bed_y=250).usable_y == 245
         assert A1.bed == 256  # the A1 stays the A1
     finally:
         monkeypatch.undo()
         S.reload()
-    assert Printer() == A1
+    assert Printer() == S.settings().printer()
 
 
 def test_rectangular_bed_has_two_usable_sides():

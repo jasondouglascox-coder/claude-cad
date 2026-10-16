@@ -14,7 +14,7 @@ ALL = sorted(slicers.SLICERS)
 
 def _plate(tmp_path, slicer, items, name="pl"):
     write_plates([Plate(name, 1, items)], tmp_path, tmp_path / "p.csv", lambda n: FIL.get(n, 1), slicer=slicer,
-                 color_changes=99)  # a block beside the deck swaps every layer; fine for a file test
+                 colors=4, color_changes=99)  # a block beside the deck swaps every layer; fine for a file test
     return tmp_path / f"{name}{slicer.project_suffix}"
 
 
@@ -38,7 +38,7 @@ def test_active_follows_settings(monkeypatch):
     finally:
         monkeypatch.undo()
         settings.reload()
-    assert slicers.active().name == "bambu"
+    assert slicers.active().name == settings.settings().slicer
 
 
 @pytest.mark.parametrize("name", ALL)
