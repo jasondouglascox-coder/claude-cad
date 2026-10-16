@@ -100,6 +100,16 @@ def assembled(p: Params, layer: str) -> Part:
 
 
 @lru_cache
+def whole(p: Params, layer: str) -> Part:
+    """The whole ring in one piece: hub disk and every petal, no seams, slots or keyhole (for one-piece prints)."""
+    layout.validate(p)
+    angles = layout.back_angles(p) if layer == "back" else layout.front_angles(p)
+    pet = petal(p, layer)
+    hub = Part(Cylinder(p.hub_r, thickness(p, layer), align=(Align.CENTER, Align.CENTER, Align.MIN)).solids())
+    return Part((hub + [Rot(0, 0, a) * pet for a in angles]).solids())
+
+
+@lru_cache
 def _shift(p: Params, layer: str) -> tuple:
     bb = (Rot(0, 0, -layout.boundaries(p, layer)[0]) * assembled(p, layer)).bounding_box()
     return (-bb.min.X, -bb.min.Y)

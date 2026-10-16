@@ -41,10 +41,11 @@ def _socket(p: Params, a: float) -> list:
 
 
 @lru_cache
-def assembled(p: Params) -> Compound:
-    """Centered on the flower axis, z = 0 at its underside."""
+def assembled(p: Params, sockets: bool = True) -> Compound:
+    """Centered on the flower axis, z = 0 at its underside. sockets=False for one-piece prints (no pins)."""
     body = Part(Cone(p.center_rb, p.center_r, p.center_t, align=(Align.CENTER, Align.CENTER, Align.MIN)).solids())
-    body = Part((body - [s for a in layout.pin_angles(p) for s in _socket(p, a)]).solids())
+    if sockets:
+        body = Part((body - [s for a in layout.pin_angles(p) for s in _socket(p, a)]).solids())
     seeds = [Pos(0, 0, p.center_t) * _seed(s) for s in layout.seeds(p)]
     brown = Compound(children=seeds)
     body.label, body.color = "center_black", BLACK
