@@ -1,0 +1,55 @@
+name: Print problem
+description: A part printed badly, needed supports, or didn't fit its neighbor
+labels: ["print-problem"]
+body:
+  - type: dropdown
+    id: project
+    attributes:
+      label: Project
+      options:
+        - examples/fit-coupon
+        - examples/candle-adapter
+        - examples/near-ceiling-track
+        - examples/sunflower-wall
+        - my own project (built on cadkit)
+    validations:
+      required: true
+  - type: input
+    id: part
+    attributes:
+      label: Part and plate
+      description: The part name and the plate file it came from.
+      placeholder: bracket on out/plates/brackets_2.3mf
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What went wrong
+      description: Warping, stringing over a bridge, a color change in the wrong place, too tight, too loose...
+    validations:
+      required: true
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Measurements
+      description: Caliper readings of what printed, against what `params.py` says it should be.
+  - type: textarea
+    id: photos
+    attributes:
+      label: Photos
+      description: Drag images here. A close-up of the problem and one of the whole part.
+  - type: textarea
+    id: setup
+    attributes:
+      label: Printer setup
+      description: Printer, nozzle, filament (brand and type), layer height, slicer and version, and any settings you changed from the plate file.
+      placeholder: Bambu A1, 0.4 mm nozzle, Bambu PLA Basic, 0.2 mm layers, Bambu Studio 2.3, no changes
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: This part holds weight, and the failure could drop something.

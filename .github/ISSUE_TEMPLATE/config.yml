@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and show-and-tell
+    url: https://github.com/jasondouglascox-coder/claude-cad/discussions
+    about: How do I...? Or show what you printed.
+  - name: Security vulnerability
+    url: https://github.com/jasondouglascox-coder/claude-cad/security/advisories/new
+    about: Report it privately, not as an issue.

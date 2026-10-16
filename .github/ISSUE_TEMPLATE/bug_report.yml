@@ -1,0 +1,55 @@
+name: Bug report
+description: A crash, a failing test, or a bad 3MF/STEP/render
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: project
+    attributes:
+      label: Where
+      options:
+        - cadkit
+        - examples/fit-coupon
+        - examples/candle-adapter
+        - examples/near-ceiling-track
+        - examples/sunflower-wall
+        - print-cad skill
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact commands, from a fresh clone if you can.
+      placeholder: |
+        cd examples/fit-coupon
+        uv sync
+        uv run pytest
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The full error or test output.
+      render: text
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: "`git rev-parse --short HEAD`"
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS and CPU, `uv --version`, Bambu Studio version (or "not installed").
+      placeholder: macOS 26 (Apple Silicon), uv 0.9.0, Bambu Studio 2.3
+    validations:
+      required: true

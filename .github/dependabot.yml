@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Python deps stay pinned by hand (build123d 0.13 is what the skill documents).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

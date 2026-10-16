@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every uv project in the repo. Add new examples here.
+        project:
+          - cadkit
+          - examples/fit-coupon
+          - examples/candle-adapter
+          - examples/near-ceiling-track
+          - examples/sunflower-wall
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: OpenCascade runtime libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglu1-mesa
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: ${{ matrix.project }}/uv.lock
+      - run: uv sync --locked
+      # Bambu Studio isn't on the runner, so its tests skip; slow tests run locally before a print.
+      - run: uv run pytest -n 4 -m "not slow"
+
+  # The one check branch protection requires, so the matrix can change without touching the ruleset.
+  all-tests:
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ needs.test.result }}" = success
