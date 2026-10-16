@@ -37,23 +37,44 @@ def test_overall_height(part):
     assert bb.max.Z == pytest.approx(P.height, abs=1e-3)
 
 
+def top_at(part, r):
+    """Height of the outside surface at radius r from the center (a thin vertical probe)."""
+    cx, cy = center(P)
+    probe = Pos(cx + r - 0.05, cy - 0.05, 0) * Box(0.1, 0.1, 2 * P.height, align=(Align.MIN,) * 3)
+    return (part & probe).bounding_box().max.Z
+
+
 def test_base_diameter(part):
-    (lo, hi), = gaps_along_x(part, P.base_t / 2)
+    (lo, hi), = gaps_along_x(part, P.edge_t / 2)
     assert hi - lo == pytest.approx(P.base_d, abs=0.02)
 
 
+def test_edge_is_thin(part):
+    assert top_at(part, P.base_d / 2 - 0.05) == pytest.approx(P.edge_t, abs=0.1)
+
+
+def test_flare_slopes_up_from_the_edge_to_the_collar(part):
+    """Walking in from the edge, the outside rises the whole way and reaches flare_h at the collar."""
+    r_out, r_in = P.base_d / 2 - 0.1, P.collar_d / 2 + 0.1
+    rs = [r_out - (r_out - r_in) * k / 8 for k in range(9)]
+    hs = [top_at(part, r) for r in rs]
+    assert all(b > a for a, b in zip(hs, hs[1:]))
+    assert P.edge_t < hs[0] < hs[1] and hs[-1] < P.flare_h
+    assert top_at(part, P.collar_d / 2 - 0.1) == pytest.approx(P.height, abs=1e-3)
+
+
 def test_candle_hole_diameter_and_wall(part):
-    """Above the fillet and below the chamfer: two collar walls with the candle hole between them."""
-    (a0, a1), (b0, b1) = gaps_along_x(part, P.base_t + P.root_fillet + 1)
+    """Above the flare and below the chamfer: two collar walls with the candle hole between them."""
+    (a0, a1), (b0, b1) = gaps_along_x(part, (P.flare_h + P.height) / 2)
     assert b0 - a1 == pytest.approx(P.candle_d, abs=0.02)
     assert b1 - a0 == pytest.approx(P.collar_d, abs=0.02)
 
 
 def test_candle_sits_depth_deep_on_the_floor(part):
-    """The hole is open down to the top of the base and no further."""
-    assert len(gaps_along_x(part, P.base_t + 0.1)) == 2
-    assert len(gaps_along_x(part, P.base_t - 0.1)) == 1
-    assert P.height - P.base_t == pytest.approx(P.depth)
+    """The hole is open down to the floor and no further."""
+    assert len(gaps_along_x(part, P.floor_t + 0.1)) == 2
+    assert len(gaps_along_x(part, P.floor_t - 0.1)) == 1
+    assert P.height - P.floor_t == pytest.approx(P.depth)
 
 
 def test_build_writes_a_black_bambu_plate(tmp_path):

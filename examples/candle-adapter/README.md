@@ -1,6 +1,7 @@
 # Candle adapter
 
-Hot-glue it into a flat chandelier cup; a 20 mm candle sits 15 mm deep in it. Black, one piece, no supports.
+Hot-glue it into a flat chandelier cup. A thin flared foot (0.8 mm at the edge) rises into a collar where a 20 mm
+candle sits 15 mm deep. Black, one piece, no supports.
 Sizes in `candle/params.py`; design in `docs/specs/candle-adapter.md`.
 
 ```bash

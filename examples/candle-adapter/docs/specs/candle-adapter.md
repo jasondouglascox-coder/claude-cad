@@ -12,4 +12,8 @@ All sizes live in `candle/params.py`.
 
 ## Amendments
 
-(none yet)
+- **2026-10-16: flared foot instead of a flat disc.** The user wanted the base as thin as possible and sloping up
+  from the ground. The 3 mm disc and 2 mm fillet are gone. The outside is now a revolved profile: 0.8 mm (4 layers)
+  at the Ø37 edge, rising on a spline (starting slope 0.45) that turns vertical into the Ø26 collar at 9 mm. The floor
+  under the candle is 1.2 mm, so the part is 16.2 mm tall. The flare was picked over a straight cone from rendered
+  options. The radius only shrinks going up, so there's still no overhang.
