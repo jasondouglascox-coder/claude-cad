@@ -80,6 +80,7 @@ def test_candle_sits_depth_deep_on_the_floor(part):
 def test_build_writes_a_black_bambu_plate(tmp_path):
     assert build.main(["--out", str(tmp_path)]) == 0
     assert (tmp_path / "step" / "candle_adapter.step").exists()
+    assert (tmp_path / "render" / "iso.png").exists() and (tmp_path / "render" / "section.png").exists()
     got = {n: f for n, f, _ in bambu3mf.read_filaments(tmp_path / "plates" / "candle_adapter_1.3mf")}
     assert got == {"candle_adapter": P.filament_black}
 
