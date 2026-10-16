@@ -7,7 +7,10 @@ filament per part. Tests prove every part prints flat with no supports, is water
 boundaries, and fits and assembles with its neighbors. Then Bambu Studio's own CLI checks the plates.
 
 It was built for, and battle-tested on, a 3D-printed HO model railroad that runs around a whole room near the
-ceiling. That project is the big example; the tool itself is generic.
+ceiling. That project is the big example; the tool itself is generic. A smaller one, a wall sunflower
+(`examples/sunflower-wall`), shows organic shapes and multi-color prints:
+
+<img src="examples/sunflower-wall/docs/images/16in_front.png" width="320" alt="16-inch 3D-printed sunflower render">
 
 ```
 .
@@ -20,7 +23,8 @@ ceiling. That project is the big example; the tool itself is generic.
 ├── cadkit/                        the library every project imports (its own uv project, with tests)
 ├── examples/
 │   ├── fit-coupon/                smallest complete project: start here, copy it to start your own
-│   └── near-ceiling-track/        everything at scale: an HO railroad shelf around a room, ~220 tests
+│   ├── near-ceiling-track/        everything at scale: an HO railroad shelf around a room, ~220 tests
+│   └── sunflower-wall/            a 16" wall sunflower kit and a 10" one-piece print, four AMS colors
 ├── CLAUDE.md                      working notes for Claude Code sessions in this repo
 ├── LICENSE                        MIT
 └── README.md
