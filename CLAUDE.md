@@ -11,6 +11,8 @@
 - `examples/fit-coupon/`: the smallest complete project; the template for new ones.
 - `examples/near-ceiling-track/`: the HO railroad (package `hotrain`). It has its own `CLAUDE.md`; read it when
   working there.
+- `examples/candle-adapter/`: a one-piece black adapter (package `candle`) that holds a 20 mm candle in a flat
+  chandelier cup.
 - `examples/sunflower-wall/`: a 400 mm wall sunflower (package `sunflower`): lofted arched petals in quarters, a
   Fibonacci seed head of ~1,100 diamond seeds, snap pins.
 

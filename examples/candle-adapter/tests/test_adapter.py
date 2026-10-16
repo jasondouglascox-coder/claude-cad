@@ -1,0 +1,74 @@
+"""Test first: the adapter prints flat with no supports and has the sizes asked for, derived from params."""
+import pytest
+from build123d import Align, Box, Pos
+
+from cadkit import bambu, bambu3mf
+from cadkit.checks import downward_faces, off_layer_z, open_edges, printable_problems
+from candle import build
+from candle.params import P
+from candle.parts import adapter, center
+
+
+@pytest.fixture(scope="module")
+def part():
+    return adapter(P)
+
+
+def gaps_along_x(part, z):
+    """Slice a thin probe through the center along X at height z: return the solid pieces' X extents."""
+    cx, cy = center(P)
+    probe = Pos(cx - P.base_d, cy - 0.05, z - 0.05) * Box(2 * P.base_d, 0.1, 0.1, align=(Align.MIN,) * 3)
+    return sorted(((b.min.X, b.max.X) for b in (s.bounding_box() for s in (part & probe).solids())))
+
+
+def test_prints_flat_watertight_on_layers(part):
+    assert printable_problems(part, P.printer) == []
+    assert open_edges(part) == 0
+    assert off_layer_z(part, P.printer) == []
+
+
+def test_nothing_faces_down_above_the_bed(part):
+    assert downward_faces(part) == []
+
+
+def test_overall_height(part):
+    bb = part.bounding_box()
+    assert bb.min.Z == pytest.approx(0, abs=1e-6)
+    assert bb.max.Z == pytest.approx(P.height, abs=1e-3)
+
+
+def test_base_diameter(part):
+    (lo, hi), = gaps_along_x(part, P.base_t / 2)
+    assert hi - lo == pytest.approx(P.base_d, abs=0.02)
+
+
+def test_candle_hole_diameter_and_wall(part):
+    """Above the fillet and below the chamfer: two collar walls with the candle hole between them."""
+    (a0, a1), (b0, b1) = gaps_along_x(part, P.base_t + P.root_fillet + 1)
+    assert b0 - a1 == pytest.approx(P.candle_d, abs=0.02)
+    assert b1 - a0 == pytest.approx(P.collar_d, abs=0.02)
+
+
+def test_candle_sits_depth_deep_on_the_floor(part):
+    """The hole is open down to the top of the base and no further."""
+    assert len(gaps_along_x(part, P.base_t + 0.1)) == 2
+    assert len(gaps_along_x(part, P.base_t - 0.1)) == 1
+    assert P.height - P.base_t == pytest.approx(P.depth)
+
+
+def test_build_writes_a_black_bambu_plate(tmp_path):
+    assert build.main(["--out", str(tmp_path)]) == 0
+    assert (tmp_path / "step" / "candle_adapter.step").exists()
+    got = {n: f for n, f, _ in bambu3mf.read_filaments(tmp_path / "plates" / "candle_adapter_1.3mf")}
+    assert got == {"candle_adapter": P.filament_black}
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_slices_it_in_black_only(tmp_path):
+    build.main(["--out", str(tmp_path)])
+    plate = tmp_path / "plates" / "candle_adapter_1.3mf"
+    back = bambu.roundtrip(plate)
+    assert bambu3mf.same_objects(back, plate)
+    report = bambu.slice_report(plate, tmp_path / "s.3mf")
+    assert [r[0] for r in report["layers"]] == [(P.filament_black,)]
