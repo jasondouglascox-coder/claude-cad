@@ -42,7 +42,7 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
 ## Printing
 - Every face that faces down is a pin-head ledge (about 1 mm) or a socket roof under 3 mm²; no supports.
 - Tops and color seams on 0.2 mm layers; petal plates are one color, the seed head has one change.
-- AMS: 1 orange, 2 yellow, 3 black, 4 brown (PLA). Orange is spare (try it on the back ring for depth).
+- AMS: 1 orange, 2 yellow, 3 black, 4 brown (PLA). Orange is the front petals' valley beads (amendment 2026-10-16).
 
 ## Amendments
 - 2026-10-15: First concept (seams following petal edges through a split seed head, 4 colors stacked by height,
@@ -66,3 +66,24 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
   rim, then its pyramid. Petals get 9 lengthwise vein grooves 0.4 mm deep that follow the petal's width, so
   they gather at the root and tip. Cross sections are now straight-segment polygons: a spline through them
   smoothed the grooves away.
+- 2026-10-16: A 10" one-piece version (`sunflower/small.py`) for the A1's bed: the same flower scaled across
+  (radii and widths only; thicknesses, petal_min and seed size stay), every part stacked in place and printed in
+  one go. Front petals are filled down to the bed (they'd otherwise start over the arching back petals). The seed
+  head sits on a hidden yellow riser just above the tallest yellow, so the black never shares a layer with
+  yellow; the riser flares out from the hub at 45 degrees (the head is wider than the hub). No pins: one keyhole
+  behind the first front petal's root, placed from `docs/measurements.md` so the flower hangs centered in its
+  20 3/8" gap (nail 8" down: 2 3/16" above the flower's center), with a 45-degree roof ending in a 0.7 mm bridge.
+  The round 250 mm flower leaves Bambu's prime tower only the bed's front-left corner (30 mm wide); with it there
+  the plate slices in 9.1 h, ~201 g (before the beads below).
+- 2026-10-16: Orange beads down the front petals' middle five valleys (both sizes), for depth from a few feet
+  (the user's idea: blend the only two warm colors there are). Each bead is the top 0.4 mm of the petal along
+  its valley, flush with the surface, starting at the top of the arch (r 98 mm on the 16") and running to r 130:
+  it widens from one line to 1.2 mm over its first 6 mm, then tapers back to one line. Mocked up first on one
+  petal against a thin single line in the middle five valleys and wide beads in all nine; Bambu put them at
+  11 / 21 / 14 layers shared with yellow. Chose the middle five, wide and tapered (14 layers, about +21 min and
+  +3.3 g per front plate), with the fade-in added so a bead doesn't start with a hard edge. Starting at the
+  arch's top instead of the head's edge keeps the swaps down. **This breaks "one color change per plate" on
+  purpose**: the AMS swaps on each layer the beads cross. Bead lengths scale on the 10"; widths don't (the
+  nozzle sets them). Sliced: a 16" front plate is 2.75 h, 59.4 g (orange on layers 29-42); the 10" is 9.2 h,
+  203 g (orange on layers 59-72, then black and brown), 16 swaps in all. The user liked the render: "it adds
+  the depth we were missing".

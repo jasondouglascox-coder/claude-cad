@@ -98,3 +98,64 @@ def test_printed_petal_keeps_its_vein_grooves():
         zs.append((pet & probe(r - 0.05, y - 0.05, 0, 0.1, 0.1, 20)).bounding_box().max.Z)
     dips = sum(1 for a, b, c in zip(zs, zs[1:], zs[2:]) if b < a - 0.02 and b < c - 0.02)
     assert dips >= P.petal_veins - 3  # the outer grooves sit past 0.8 of the half width
+
+
+def test_bead_width_fades_in_then_tapers_out():
+    r0, r1 = P.bead_r
+    w = lambda r: layout.bead_width(P, r)
+    assert w(r0 - 0.1) == 0 and w(r1 + 0.1) == 0
+    assert w(r0) == pytest.approx(P.bead_w_end) and w(r1) == pytest.approx(P.bead_w_end)
+    assert w(r0 + P.bead_fade) == pytest.approx(P.bead_w)
+    assert max(w(r0 + (r1 - r0) * i / 200) for i in range(201)) <= P.bead_w + 1e-9  # never wider
+
+
+@pytest.fixture(scope="module")
+def beads():
+    return quarter.beads(P)
+
+
+def _bead_r_mid():
+    r0, r1 = P.bead_r
+    return r0 + P.bead_fade + (r1 - r0 - P.bead_fade) / 2
+
+
+def test_one_orange_bead_down_each_middle_valley(beads):
+    r0, r1 = P.bead_r
+    assert len(beads.solids()) == len(P.bead_valleys)
+    for s in beads.solids():
+        bb = s.bounding_box()
+        assert bb.min.X == pytest.approx(r0, abs=0.05) and bb.max.X == pytest.approx(r1, abs=0.05)
+    r = _bead_r_mid()
+    hw = layout.half_width(P.front, r)
+    pieces = sorted((s.bounding_box() for s in (beads & probe(r - 0.05, -30, 0, 0.1, 60, 30)).solids()),
+                    key=lambda b: b.center().Y)
+    assert len(pieces) == len(P.bead_valleys)
+    for b, k in zip(pieces, P.bead_valleys):
+        assert b.center().Y == pytest.approx(layout.valley_u(P, k) * hw, abs=0.05)
+        assert b.size.Y == pytest.approx(layout.bead_width(P, r), abs=0.05)
+
+
+def test_beads_lie_flush_in_the_petal_top_on_yellow(beads):
+    pet = quarter.petal(P, "front")
+    r = _bead_r_mid()
+    hw = layout.half_width(P.front, r)
+    y = layout.valley_u(P, P.bead_valleys[len(P.bead_valleys) // 2]) * hw
+    b = (beads & probe(r - 0.05, y - 0.05, 0, 0.1, 0.1, 30)).bounding_box()
+    top = layout.petal_top(P, P.front, r, y, hw)
+    assert b.max.Z == pytest.approx(top, abs=0.05) and b.size.Z == pytest.approx(P.bead_t, abs=0.05)
+    assert (beads - pet).volume == pytest.approx(0, abs=1e-3)  # inside the petal's shape: flush
+    assert (Pos(0, 0, -0.1) * beads - pet).volume == pytest.approx(0, abs=1e-3)  # yellow right under every bead
+
+
+def test_front_quarter_prints_yellow_with_orange_beads(front):
+    q = quarter.painted(P, "front")
+    assert [b.label for b in q.children] == ["front_quarter", "front_beads"]
+    from cadkit.plates import is_multi_color
+    assert is_multi_color(q)  # else the plate writer makes the beads a second, floating object
+    yellow, orange = q.children
+    assert printable_problems(yellow, P.printer) == []
+    assert yellow.volume + orange.volume == pytest.approx(front.volume, rel=1e-4)
+    assert (yellow & orange).volume == pytest.approx(0, abs=1e-3)
+    assert len(orange.solids()) == len(P.bead_valleys) * P.petals // 4
+    assert (Pos(0, 0, -0.1) * orange - front).volume == pytest.approx(0, abs=1e-3)  # nothing over air
+    assert [b.label for b in quarter.painted(P, "back").children] == ["back_quarter"]

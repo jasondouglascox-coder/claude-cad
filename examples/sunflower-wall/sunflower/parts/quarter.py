@@ -7,7 +7,8 @@ recess for each pin and a keyhole for hanging.
 import math
 from functools import lru_cache
 
-from build123d import Align, Box, Cylinder, Face, Location, Part, Pos, Rot, SlotCenterToCenter, Wire, extrude, loft
+from build123d import (Align, Box, Compound, Cylinder, Face, Location, Part, Pos, Rot, SlotCenterToCenter, Wire, extrude,
+                       loft)
 
 from cadkit.shapes import poly
 from sunflower import layout
@@ -36,9 +37,8 @@ def outline(rg, n: int = 60):
     return poly(*(up + [(x, -y) for x, y in reversed(up[1:-1])]))
 
 
-@lru_cache
-def petal(p: Params, layer: str) -> Part:
-    """One petal along +X in its ring's frame (flat back at z = 0)."""
+def _lofted(p: Params, layer: str, dz: float = 0.0) -> Part:
+    """The petal's arched, veined body inside its outline, with the top lowered by dz."""
     rg = ring(p, layer)
     length = rg.r1 - rg.r0
     secs = []
@@ -47,12 +47,36 @@ def petal(p: Params, layer: str) -> Part:
         hw = max(layout.half_width(rg, r), 0.5)
         span = hw * 1.1 + 1.0  # section a bit wider than the petal; the outline trims it
         ys = [-span + 2 * span * j / CROSS for j in range(CROSS + 1)]
-        top = [(r, y, max(layout.petal_top(p, rg, r, y, hw), 0.2)) for y in ys]
+        top = [(r, y, max(layout.petal_top(p, rg, r, y, hw) - dz, 0.2)) for y in ys]
         # straight segments, not a spline: a spline through the vein points smooths the grooves away
         secs.append(Face(Wire.make_polygon([(r, -span, -1), (r, span, -1)] + top[::-1], close=True)))
-    flat = outline(rg)
-    body = Part((loft(secs) & extrude(flat, 30)).solids())
-    return Part((body + extrude(flat, p.petal_min)).solids())
+    return Part((loft(secs) & extrude(outline(rg), 30)).solids())
+
+
+@lru_cache
+def petal(p: Params, layer: str) -> Part:
+    """One petal along +X in its ring's frame (flat back at z = 0)."""
+    return Part((_lofted(p, layer) + extrude(outline(ring(p, layer)), p.petal_min)).solids())
+
+
+def _bead_strip(p: Params, k: int, n: int = 40):
+    """Footprint of the bead down valley k: on the valley line, layout.bead_width wide."""
+    r0, r1 = p.bead_r
+    u = layout.valley_u(p, k)
+    left, right = [], []
+    for i in range(n + 1):
+        r = r0 + (r1 - r0) * i / n
+        y, w = u * layout.half_width(p.front, r), layout.bead_width(p, r)
+        left.append((r, y + w / 2))
+        right.append((r, y - w / 2))
+    return poly(*(left + right[::-1]))
+
+
+@lru_cache
+def beads(p: Params) -> Part:
+    """One front petal's orange beads (petal frame): the top bead_t of the petal along each middle valley."""
+    skin = Part((petal(p, "front") - _lofted(p, "front", p.bead_t)).solids())
+    return Part([s for k in p.bead_valleys for s in (skin & extrude(_bead_strip(p, k), 30)).solids()])
 
 
 def _wedge(a0: float, gap: float):
@@ -115,12 +139,34 @@ def _shift(p: Params, layer: str) -> tuple:
     return (-bb.min.X, -bb.min.Y)
 
 
-def make(p: Params, layer: str) -> Part:
-    """Print orientation: flat back on the bed, the wedge in the +X +Y corner."""
+def _to_print(p: Params, layer: str) -> Location:
     sx, sy = _shift(p, layer)
-    part = Part((Pos(sx, sy, 0) * Rot(0, 0, -layout.boundaries(p, layer)[0]) * assembled(p, layer)).solids())
+    return Pos(sx, sy, 0) * Rot(0, 0, -layout.boundaries(p, layer)[0])
+
+
+def make(p: Params, layer: str) -> Part:
+    """Print orientation: flat back on the bed, the wedge in the +X +Y corner. One body, whatever its colors."""
+    part = Part((_to_print(p, layer) * assembled(p, layer)).solids())
     part.label = f"{layer}_quarter"
     return part
+
+
+@lru_cache
+def painted(p: Params, layer: str) -> Compound:
+    """make() split by color for the plate: the front quarter's yellow body with its orange beads cut out, then
+    the beads (they share layers with the yellow, so the AMS swaps on each of those layers). The back is all
+    yellow."""
+    whole = make(p, layer)
+    if layer == "back":
+        return Compound(children=[whole], label=whole.label)
+    a0 = layout.boundaries(p, layer)[0]
+    at = _to_print(p, layer)
+    orange = Part([s for a in layout.front_angles(p) if layout.in_quarter(a, a0)
+                   for s in (at * Rot(0, 0, a) * beads(p)).solids()])
+    yellow = Part((whole - orange).solids())
+    yellow.label, orange.label = whole.label, "front_beads"
+    yellow.color, orange.color = p.color(p.slot_petals), p.color(p.slot_beads)  # colored: one two-color object
+    return Compound(children=[yellow, orange], label=whole.label)
 
 
 def place(p: Params, layer: str, q: int) -> Location:

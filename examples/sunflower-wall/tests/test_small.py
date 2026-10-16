@@ -1,9 +1,10 @@
-"""The 10-inch flower printed in one go: every part stacked in place on one plate, three colors by height,
+"""The 10-inch flower printed in one go: every part stacked in place on one plate, colors by height (yellow with
+orange beads, then black, then brown),
 nothing over air, and a keyhole that hangs it centered in the user's wall gap."""
 import math
 
 import pytest
-from build123d import Compound
+from build123d import Axis, Compound, extrude
 
 from cadkit.checks import downward_faces, off_layer_z, printable_problems, unsupported
 from conftest import probe
@@ -30,22 +31,55 @@ def test_nail_height_comes_from_the_wall_measurements():
     assert small.NAIL_ABOVE_CENTER == pytest.approx((20.375 / 2 - 8) * 25.4)
 
 
-def test_prints_flat_on_the_bed_in_three_colors_by_height(piece):
-    yellow, black, brown = piece.children
+def test_prints_flat_on_the_bed_in_colors_by_height(piece):
+    yellow, orange, black, brown = piece.children
     assert printable_problems(yellow, S.printer) == []
-    assert [b.label for b in piece.children] == ["flower_yellow", "flower_black", "flower_brown"]
+    assert [b.label for b in piece.children] == ["flower_yellow", "flower_orange", "flower_black", "flower_brown"]
     for b in piece.children:
         assert off_layer_z(b, S.printer) == []
     assert black.bounding_box().min.Z == pytest.approx(yellow.bounding_box().max.Z)  # one change to black
     assert brown.bounding_box().min.Z == pytest.approx(black.bounding_box().max.Z)  # one change to brown
-    assert unsupported(black, yellow) == pytest.approx(0, abs=1e-6)
+    # the black's footprint sits on yellow; the bevel above it climbs out at 45 degrees (checked in the first test),
+    # which unsupported() would count as over air
+    footprint = extrude(black.faces().sort_by(Axis.Z)[0], S.printer.layer)
+    assert unsupported(footprint, yellow) == pytest.approx(0, abs=1e-6)
     assert unsupported(Compound(children=brown.solids()[::40]), black) == pytest.approx(0, abs=1e-6)
 
 
 def test_nothing_starts_over_air(piece):
-    """Front petals are filled down to the bed; the only roof is the keyhole's small top strip."""
-    for body in piece.children[:2]:
-        assert all(a < 3.0 for _, a in downward_faces(body)), downward_faces(body)
+    """Front petals are filled down to the bed and the riser flares out from the hub; the only roof is the keyhole's
+    top strip, a bridge as wide as the 45-degree roof leaves it."""
+    roof = small._layer(S, S.key_head_d / 2 - small.ROOF_LEFT / 2)
+    top_z = S.key_lip + small.KEY_HEAD_ROOM + roof
+    w = S.key_head_d - 2 * roof
+    assert 0 < w <= 1.0  # a bridge under a millimetre
+    faces = downward_faces(piece.children[0])
+    assert faces and all(z == pytest.approx(top_z) for z, _ in faces), faces
+    assert sum(a for _, a in faces) <= small.KEY_LEN * w + math.pi * (w / 2) ** 2 + 1e-3
+    black = piece.children[2]  # its only underside is its footprint, on the riser (previous test)
+    assert [z for z, _ in downward_faces(black)] == [pytest.approx(small.riser_top(S))]
+    assert downward_faces(piece.children[1]) == []
+
+
+def test_orange_beads_down_the_front_petals_under_the_black(piece):
+    """The 16-inch beads, scaled along the petal: they share layers with yellow only, and sit on it."""
+    from build123d import Pos
+    from sunflower.parts import quarter
+    yellow, orange, black, _ = piece.children
+    assert len(orange.solids()) == S.petals * len(S.bead_valleys)
+    assert orange.volume == pytest.approx(S.petals * quarter.beads(S).volume, rel=1e-4)
+    assert orange.bounding_box().max.Z < black.bounding_box().min.Z
+    assert (orange & yellow).volume == pytest.approx(0, abs=1e-3)
+    assert (Pos(0, 0, -0.1) * orange - yellow - orange).volume == pytest.approx(0, abs=1e-3)  # yellow under every bead
+
+
+def test_prime_tower_fits_in_a_bed_corner_clear_of_the_flower():
+    """The flower fills the bed; Bambu won't slice with its tower overlapping it."""
+    x, y, w = small.tower(S)
+    off = (S.printer.bed - S.diameter) / 2
+    c = off + S.diameter / 2
+    near = math.hypot(c - (x + w + small.TOWER_BRIM), c - (y + w + small.TOWER_BRIM))
+    assert near >= S.diameter / 2 + 1 and min(x, y) - small.TOWER_BRIM >= 0
 
 
 def _axis_probe(piece, z):
@@ -72,25 +106,32 @@ def test_keyhole_holds_the_nail_head_under_the_lip_and_stays_hidden(piece):
     from build123d import Pos
     cx, cy = small.center_xy(S)
     a = math.radians(small.key_angle(S))
-    x, y = cx + r_end * math.cos(a), cy + r_end * math.sin(a)
+    side = (S.key_shank_w + S.key_head_d) / 4  # beside the shank slot, under the head's room: where the lip is
+    x = cx + r_end * math.cos(a) - side * math.sin(a)
+    y = cy + r_end * math.sin(a) + side * math.cos(a)
     col = sorted((s.bounding_box() for s in (piece.children[0] & probe(x - 0.05, y - 0.05, 0, 0.1, 0.1, 60)).solids()),
                  key=lambda b: b.min.Z)
     assert col[-1].max.Z - col[-1].min.Z >= 2.0  # solid roof over the nail head
     assert col[0].max.Z == pytest.approx(S.key_lip)  # lip under it
 
 
-def test_plate_is_one_object_three_filaments():
+def test_plate_is_one_object_four_filaments():
     plan = small.plan(S)
     assert len(plan) == 1 and plan[0].qty == 1 and [n for n, _ in plan[0].items] == ["sunflower_10in"]
     f = small.filament_for(S)
-    assert (f("flower_yellow"), f("flower_black"), f("flower_brown")) == (S.slot_petals, S.slot_center, S.slot_seeds)
+    assert (f("flower_yellow"), f("flower_orange"), f("flower_black"), f("flower_brown")) == (
+        S.slot_petals, S.slot_beads, S.slot_center, S.slot_seeds)
 
 
 @pytest.mark.slow
-def test_bambu_slices_it_yellow_then_black_then_brown(tmp_path):
+def test_bambu_slices_it_yellow_and_orange_then_black_then_brown(tmp_path):
     from cadkit import bambu
     if bambu.find() is None:
         pytest.skip("Bambu Studio not installed")
     small.write(S, tmp_path)
     report = bambu.slice_report(tmp_path / "plates" / "sunflower_10in.3mf", tmp_path / "s.3mf")
-    assert [r[0] for r in report["layers"]] == [(S.slot_petals,), (S.slot_center,), (S.slot_seeds,)]
+    bands = [set(r[0]) for r in report["layers"]]
+    i = bands.index({S.slot_center})
+    assert {S.slot_petals, S.slot_beads} in bands[:i]
+    assert all(b <= {S.slot_petals, S.slot_beads} for b in bands[:i])
+    assert bands[i:] == [{S.slot_center}, {S.slot_seeds}]

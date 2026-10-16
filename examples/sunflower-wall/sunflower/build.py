@@ -3,14 +3,15 @@
 plates: out/plates/*.3mf (Bambu projects that open colored, your AMS filaments) + .step, out/plates.csv
 step:   out/step/*.step, one per part, plus sunflower_assembly.step (the whole flower) for Onshape
 render: out/render/*.png shaded previews of the assembled flower
+small:  out/small/: the 10" one-piece print (plates/sunflower_10in.3mf + .step, sunflower_10in.step, render/*.png)
 """
 import argparse
 import sys
 from pathlib import Path
 
-from build123d import Color, Compound, export_step
+from build123d import Compound, Shape, export_step
 
-from cadkit import bambu3mf
+from cadkit import bambu3mf, paint
 from cadkit.export import write_plates
 from cadkit.render import ISO, TOP, render
 from sunflower import assembly, layout
@@ -19,14 +20,23 @@ from sunflower.parts import center, pin, quarter
 from sunflower.plates import filament_for, plans
 
 
-def _hex(c: str) -> Color:
-    return Color(*(int(c[i:i + 2], 16) / 255 for i in (1, 3, 5)))
-
-
 def colors(p: Params) -> dict:
-    fil = {k + 1: _hex(c) for k, (_, c) in enumerate(p.filaments)}
     f = filament_for(p)
-    return {name: fil[f(name)] for name in ("back_quarter", "front_quarter", "pin", "center_black", "center_brown")}
+    return {name: p.color(f(name)) for name in ("back_quarter", "front_quarter", "front_beads", "pin", "center_black",
+                                            "center_brown")}
+
+
+def quarter_for_cad(p: Params, layer: str) -> Shape:
+    """One solid per quarter for CAD; the front one with its beads painted on."""
+    col = colors(p)
+    bodies = quarter.painted(p, layer).children
+    if len(bodies) == 1:
+        part = quarter.make(p, layer)  # not the painted child: a shape with a parent won't export
+        part.color = col[part.label]
+    else:
+        part = paint.painted(bodies[0], col[bodies[0].label], bodies[1], col[bodies[1].label])
+    part.label = f"{layer}_quarter"
+    return part
 
 
 def write_plate_files(p: Params, out: Path) -> None:
@@ -38,9 +48,8 @@ def write_steps(p: Params, out: Path) -> None:
     col = colors(p)
     (out / "step").mkdir(parents=True, exist_ok=True)
     for layer in ("back", "front"):
-        part = quarter.make(p, layer)
-        part.color = col[part.label]
-        export_step(part, str(out / "step" / f"{part.label}.step"))
+        part = quarter_for_cad(p, layer)
+        paint.export_step(part, str(out / "step" / f"{part.label}.step"))
     snap = pin.make(p)
     snap.color = col["pin"]
     export_step(snap, str(out / "step" / "pin.step"))
@@ -48,7 +57,7 @@ def write_steps(p: Params, out: Path) -> None:
     for b in head.children:
         b.color = col[b.label]
     export_step(head, str(out / "step" / "seed_head.step"))
-    export_step(assembled(p), str(out / "step" / "sunflower_assembly.step"))
+    paint.export_step(assembled(p), str(out / "step" / "sunflower_assembly.step"))
 
 
 def assembled(p: Params) -> Compound:
@@ -57,8 +66,7 @@ def assembled(p: Params) -> Compound:
     col = colors(p)
     kids = []
     for layer in ("back", "front"):
-        base = quarter.make(p, layer)
-        base.color = col[base.label]
+        base = quarter_for_cad(p, layer)
         for q in range(4):
             placed = quarter.place(p, layer, q) * base
             placed.label, placed.color = base.label, base.color
@@ -80,8 +88,11 @@ def assembled(p: Params) -> Compound:
 
 def write_renders(p: Params, out: Path) -> list[Path]:
     col = colors(p)
-    items = [(s, col[name.split("_")[0] + "_quarter" if name[:4] in ("back", "fron") else
-                  "pin" if name.startswith("pin") else name]) for name, s in assembly.placed_parts(p)]
+    items = [(s, col["pin" if name.startswith("pin") else name]) for name, s in assembly.placed_parts(p)
+             if name[:4] not in ("back", "fron")]
+    for layer in ("back", "front"):
+        for b in quarter.painted(p, layer).children:
+            items += [(quarter.place(p, layer, q) * b, col[b.label]) for q in range(4)]
     paths = []
     for name, view in (("front", TOP), ("iso", ISO), ("side", (0.0, -1.0, 0.12))):
         path = out / "render" / f"{name}.png"
@@ -90,9 +101,20 @@ def write_renders(p: Params, out: Path) -> list[Path]:
     return paths
 
 
+def write_small(out: Path) -> None:
+    from sunflower import small
+    s = small.params()
+    small.write(s, out)
+    piece = small.make(s)
+    paint.export_step(piece, str(out / "sunflower_10in.step"))
+    items = [(b, b.color) for b in piece.children]
+    for name, view in (("front", TOP), ("iso", ISO)):
+        render(items, out / "render" / f"{name}.png", view=view)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="sunflower.build")
-    ap.add_argument("what", nargs="?", default="all", choices=["all", "plates", "step", "render"])
+    ap.add_argument("what", nargs="?", default="all", choices=["all", "plates", "step", "render", "small"])
     ap.add_argument("--out", default="out")
     a = ap.parse_args(argv)
     out = Path(a.out)
@@ -103,6 +125,8 @@ def main(argv: list[str] | None = None) -> int:
         write_steps(P, out)
     if a.what in ("all", "render"):
         write_renders(P, out)
+    if a.what == "small":
+        write_small(out / "small")
     print(f"wrote {out}/ (plates.csv lists what to print)")
     return 0
 

@@ -1,5 +1,6 @@
 """The 10-inch flower, printed in one go: the same design scaled to the biggest the bed takes, every part stacked in
-place as one object, three colors by height (yellow, then black, then brown: two color changes).
+place as one object, colors by height: yellow with the front petals' orange beads (a swap on each layer the beads
+cross), then black, then brown.
 
 Changes from the 16-inch kit, only where a single print needs them:
 - the front petals are filled down to the bed (they'd otherwise start over air above the arching back petals);
@@ -13,7 +14,7 @@ import math
 from dataclasses import replace
 from pathlib import Path
 
-from build123d import Align, Color, Compound, Cylinder, Part, Pos, Rot, SlotCenterToCenter, extrude
+from build123d import Align, Color, Compound, Cone, Cylinder, Part, Pos, Rot, SlotCenterToCenter, extrude
 
 from cadkit import bambu3mf
 from cadkit.export import write_plates
@@ -27,10 +28,12 @@ GAP = (20 + 3 / 8) * INCH  # docs/measurements.md
 NAIL_DOWN = 8 * INCH
 NAIL_ABOVE_CENTER = GAP / 2 - NAIL_DOWN  # flower centered in the gap
 NAIL_D = 3.0  # nail shank
+TOWER_W, TOWER_BRIM = 30.0, 3.0  # prime tower width; the settings template's brim
+TOWER_MARGIN = 1.0  # tower brim to the bed edge
 KEY_LEN = 14.0  # entry hole to the slot's end
 KEY_HEAD_ROOM = 3.2  # nail head height the cavity takes before its roof
 ROOF_LEFT = 0.8  # flat strip left at the top of the 45-degree roof
-YELLOW, BLACK, BROWN = Color(0.96, 0.77, 0.09), center.BLACK, center.BROWN
+YELLOW, ORANGE, BLACK, BROWN = Color(0.96, 0.77, 0.09), Color(0.91, 0.53, 0.16), center.BLACK, center.BROWN
 
 
 def _layer(p: Params, z: float) -> float:
@@ -46,7 +49,8 @@ def params(base: Params = P, diameter: float | None = None) -> Params:
     return replace(base, back=ring(base.back), front=ring(base.front), hub_r=base.hub_r * s,
                    center_r=center_r, center_t=center_t, center_rb=center_r - center_t,
                    seed_gaps=tuple((r * s if r < 900 else r, g) for r, g in base.seed_gaps),
-                   seed_dome=_layer(base, base.seed_dome * s))
+                   seed_dome=_layer(base, base.seed_dome * s),
+                   bead_r=tuple(r * s for r in base.bead_r), bead_fade=base.bead_fade * s)
 
 
 def key_angle(p: Params) -> float:
@@ -78,17 +82,21 @@ def assembled(p: Params) -> Compound:
     """Centered on the flower axis, back on the wall at z = 0."""
     fill = [Rot(0, 0, a) * extrude(quarter.outline(p.front), p.back_t) for a in layout.front_angles(p)]
     base_top = p.back_t + p.front_t
-    riser = Pos(0, 0, base_top) * Cylinder(p.center_rb, riser_top(p) - base_top,
-                                           align=(Align.CENTER, Align.CENTER, Align.MIN))
-    yellow = quarter.whole(p, "back") + fill + [Pos(0, 0, p.back_t) * quarter.whole(p, "front"), riser]
-    yellow = Part((Part(yellow.solids()) - _keyhole(p)).solids())
+    flare = p.center_rb - p.hub_r  # the head is wider than the hub: flare out at 45 degrees, not over air
+    mn = (Align.CENTER, Align.CENTER, Align.MIN)
+    riser = [Pos(0, 0, base_top) * Cone(p.hub_r, p.center_rb, flare, align=mn),
+             Pos(0, 0, base_top + flare) * Cylinder(p.center_rb, riser_top(p) - base_top - flare, align=mn)]
+    yellow = quarter.whole(p, "back") + fill + [Pos(0, 0, p.back_t) * quarter.whole(p, "front")] + riser
+    orange = Part([s for a in layout.front_angles(p) for s in (Pos(0, 0, p.back_t) * Rot(0, 0, a) *
+                                                                quarter.beads(p)).solids()])
+    yellow = Part((Part(yellow.solids()) - _keyhole(p) - orange).solids())
     head_body, seeds = center.assembled(p, sockets=False).children
     black = Pos(0, 0, riser_top(p)) * head_body
     brown = Pos(0, 0, riser_top(p)) * seeds
-    for body, name, col in ((yellow, "flower_yellow", YELLOW), (black, "flower_black", BLACK),
-                            (brown, "flower_brown", BROWN)):
+    for body, name, col in ((yellow, "flower_yellow", YELLOW), (orange, "flower_orange", ORANGE),
+                            (black, "flower_black", BLACK), (brown, "flower_brown", BROWN)):
         body.label, body.color = name, col
-    return Compound(children=[yellow, black, brown], label="sunflower_10in")
+    return Compound(children=[yellow, orange, black, brown], label="sunflower_10in")
 
 
 def center_xy(p: Params) -> tuple:
@@ -109,7 +117,8 @@ def make(p: Params) -> Compound:
 
 
 def filament_for(p: Params):
-    slots = {"flower_yellow": p.slot_petals, "flower_black": p.slot_center, "flower_brown": p.slot_seeds}
+    slots = {"flower_yellow": p.slot_petals, "flower_orange": p.slot_beads, "flower_black": p.slot_center,
+             "flower_brown": p.slot_seeds}
     return lambda name: slots[name]
 
 
@@ -119,6 +128,14 @@ def plan(p: Params) -> list[Plate]:
     return [Plate("sunflower_10in", 1, [("sunflower_10in", Pos(off, off, 0) * make(p))])]
 
 
+def tower(p: Params) -> tuple:
+    """Prime tower (x, y, width) in the bed's front-left corner, the only room the round flower leaves."""
+    at = TOWER_BRIM + TOWER_MARGIN
+    return (at, at, TOWER_W)
+
+
 def write(p: Params, out: Path) -> None:
-    settings = bambu3mf.write_settings(Path(out) / "bambu_project_settings.config", list(p.filaments))
+    Path(out).mkdir(parents=True, exist_ok=True)
+    settings = bambu3mf.write_settings(Path(out) / "bambu_project_settings.config", list(p.filaments),
+                                       tower=tower(p))
     write_plates(plan(p), Path(out) / "plates", Path(out) / "plates.csv", filament_for(p), settings=settings)

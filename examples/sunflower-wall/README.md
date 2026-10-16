@@ -8,11 +8,18 @@ rings of yellow petals that arch back. Bambu A1 + AMS lite, 0.20 mm Standard, PL
 | Plate | Prints | Contents | Filament |
 |---|---|---|---|
 | `back_quarter.3mf` | 4 | back petal quarter + 3 snap pins (8 needed, 4 spare) | yellow (2) |
-| `front_quarter.3mf` | 4 | front petal quarter | yellow (2) |
+| `front_quarter.3mf` | 4 | front petal quarter | yellow (2) with orange (1) beads in the valleys: a swap on each of ~14 layers |
 | `seed_head.3mf` | 1 | seed head | black (3), then brown (4): one color change |
 
 AMS slots: 1 orange, 2 yellow, 3 black, 4 brown (`filaments` and `slot_*` in `sunflower/params.py`). The plates
 open already colored: File → Open Project.
+
+## The 10" one-piece print
+
+`uv run python -m sunflower.build small` writes `out/small/`: one plate, `plates/sunflower_10in.3mf`, with the
+whole flower (250 mm) stacked in place. It prints yellow with the orange beads, then black, then brown, with the
+prime tower in the bed's front-left corner. No assembly: hang it by the keyhole behind the first front petal, on
+a nail 2 3/16" above where the flower's center should be (`docs/measurements.md`).
 
 ## Assembly
 
@@ -34,6 +41,7 @@ uv sync
 uv run pytest -n 6 -m "not slow"          # ~2 min: printable, watertight, layers, fits, nothing overlaps
 uv run pytest -n 5                        # + the plate files and Bambu Studio slicing each plate (~10 min)
 uv run python -m sunflower.build          # out/plates, out/step, out/render
+uv run python -m sunflower.build small    # out/small: the 10" one-piece print
 ```
 
 Design and decisions: `docs/specs/2026-10-15-sunflower-design.md`.

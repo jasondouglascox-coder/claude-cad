@@ -68,6 +68,22 @@ def petal_top(p: Params, ring: Ring, r: float, y: float, hw: float, veins: bool 
     return z
 
 
+def valley_u(p: Params, k: int) -> float:
+    """Valley k's place across the petal, as a fraction of the half width (-1 to 1); the midrib is the middle one."""
+    return (2 * k + 1) / p.petal_veins - 1
+
+
+def bead_width(p: Params, r: float) -> float:
+    """Orange bead width at radius r: one line at the start, widening over bead_fade, then tapering back to one
+    line at the end; 0 outside the bead."""
+    r0, r1 = p.bead_r
+    if r < r0 or r > r1:
+        return 0.0
+    if r < r0 + p.bead_fade:
+        return p.bead_w_end + (p.bead_w - p.bead_w_end) * (r - r0) / p.bead_fade
+    return p.bead_w - (p.bead_w - p.bead_w_end) * (r - r0 - p.bead_fade) / (r1 - r0 - p.bead_fade)
+
+
 def midrib(ring: Ring, r: float) -> float:
     """Top of the petal along its midrib: smoothstep through the profile points."""
     pts = ring.profile

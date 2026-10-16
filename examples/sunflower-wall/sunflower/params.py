@@ -1,6 +1,8 @@
 """Every dimension in one place (mm). A design change is a one-line edit here; tests derive from these."""
 from dataclasses import dataclass, field
 
+from build123d import Color
+
 from cadkit import Printer
 
 
@@ -23,6 +25,13 @@ class Params:
     petal_min: float = 1.0  # thinnest petal anywhere (edges, tips): 5 layers
     petal_veins: int = 9  # lengthwise grooves across each petal
     vein_depth: float = 0.4  # two layers
+    # orange beads down the front petals' middle valleys: a warm shade that reads as depth from a few feet
+    bead_valleys: tuple = (2, 3, 4, 5, 6)  # the middle five of the nine valleys (0 and 8 at the edges)
+    bead_r: tuple = (98.0, 130.0)  # from the top of the arch outward: lower valleys would cost more color swaps
+    bead_w: float = 1.2  # widest: three lines
+    bead_w_end: float = 0.4  # one line where each bead fades in and where it tapers out
+    bead_fade: float = 6.0  # fade-in length
+    bead_t: float = 0.4  # two layers, flush with the petal top
     hub_r: float = 78.0  # hub disk under the seed head, split into quarter wedges
     back_t: float = 6.0  # back hub thickness; back petals stay below it
     front_t: float = 3.0  # front hub thickness; the seed head sits on it
@@ -69,7 +78,13 @@ class Params:
     slot_pins: int = 2
     slot_center: int = 3  # black
     slot_seeds: int = 4  # brown
+    slot_beads: int = 1  # orange
     printer: Printer = field(default_factory=Printer)
+
+    def color(self, slot: int) -> Color:
+        """Display color of AMS slot `slot` (from 1)."""
+        c = self.filaments[slot - 1][1]
+        return Color(*(int(c[i:i + 2], 16) / 255 for i in (1, 3, 5)))
 
     @property
     def pitch(self) -> float:
