@@ -27,3 +27,11 @@ def test_background_shows_outside_the_part(tmp_path):
     path = tmp_path / "c.png"
     render([(box(0, 0, 0, 40, 10, 2), RED)], path, view=(0, 0, 1), px=200, bg=(0, 255, 0))
     assert Image.open(path).convert("RGB").getpixel((100, 5)) == (0, 255, 0)
+
+
+def test_crop_trims_the_background_to_a_margin(tmp_path):
+    """A long thin part cropped: the picture takes the part's 4:1 shape (plus margin), not a square."""
+    path = tmp_path / "d.png"
+    render([(box(0, 0, 0, 40, 10, 2), RED)], path, view=(0, 0, 1), px=200, crop=True)
+    w, h = Image.open(path).size
+    assert w == 200 and 0.25 * w < h < 0.35 * w

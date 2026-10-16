@@ -5,7 +5,7 @@ description = "Parametric 3D-printable HO arch-deck ceiling shelf"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "build123d==0.13.0",
-    "cadkit[viewer]",
+    "cadkit[viewer,render]",
     "ocp-viewer>=1.1.3",
 ]
 

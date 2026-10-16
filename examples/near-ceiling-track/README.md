@@ -7,6 +7,16 @@ example for claude-cad: the generic tooling it uses (print checks, plate packing
 slicer checks) lives in [`cadkit`](../../cadkit), and the lessons it taught are in the
 [print-cad skill](../../.claude/skills/print-cad/references/lessons.md).
 
+<img src="docs/images/bay_above.png" width="49%" alt="One 16-inch deck-truss bay with ties and handrail, from above"> <img src="docs/images/bay_below.png" width="49%" alt="The same bay seen from the floor: truss panels, cross-frames and wall brackets">
+
+<img src="docs/images/inside_corner.png" width="49%" alt="Inside corner: pony-truss spans on bent rods and deep brackets"> <img src="docs/images/bridge_corner.png" width="49%" alt="Bridge corner: pony-truss spans with braided lines to a ceiling cleat">
+
+<img src="docs/images/room.png" width="40%" alt="The whole office from above, the track looping around near the ceiling">
+
+One straight bay from above and from the floor; the inside and bridge corners; and the whole room (front wall left
+out). The pictures are `uv run python -m hotrain.build render --run-style deck_truss` output (~11 min, most of it
+the room); refresh them after a visible change.
+
 - **What and why:** [docs/overview.md](docs/overview.md)
 - **Decisions:** [docs/specs/](docs/specs/), each with an Amendments log
 - **Wall measurements:** [docs/measurements.md](docs/measurements.md)
@@ -30,6 +40,7 @@ uv sync
 | `uv run python -m hotrain.build all --run-style deck_truss` | Every part (`out/step/*.step`), the run assembly, the fit test and `out/manifest.csv` |
 | `uv run python -m hotrain.build corners` | `out/corners/*.step`, both corner assemblies, and `out/corners_layout.csv` (where to mark anchors, brackets and ceiling cleats; rod cut lengths) |
 | `uv run python -m hotrain.build room --run-style deck_truss` | `out/step/office.step`: the whole room, colored (~200 MB) |
+| `uv run python -m hotrain.build render --run-style deck_truss` | `out/render/*.png`: shaded pictures of a bay, both corners and the room |
 | `uv run python -m hotrain.build check` | Interference check; exits 1 on any clash |
 
 Options:

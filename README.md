@@ -7,10 +7,10 @@ filament per part. Tests prove every part prints flat with no supports, is water
 boundaries, and fits and assembles with its neighbors. Then Bambu Studio's own CLI checks the plates.
 
 It was built for, and battle-tested on, a 3D-printed HO model railroad that runs around a whole room near the
-ceiling. That project is the big example; the tool itself is generic. A smaller one, a wall sunflower
-(`examples/sunflower-wall`), shows organic shapes and multi-color prints:
+ceiling (`examples/near-ceiling-track`). That project is the big example; the tool itself is generic. A smaller
+one, a wall sunflower (`examples/sunflower-wall`), shows organic shapes and multi-color prints:
 
-<img src="examples/sunflower-wall/docs/images/16in_front.png" width="320" alt="16-inch 3D-printed sunflower render">
+<img src="examples/near-ceiling-track/docs/images/bay_above.png" width="480" alt="One 16-inch deck-truss bay of the HO railroad shelf"> <img src="examples/sunflower-wall/docs/images/16in_front.png" width="320" alt="16-inch 3D-printed sunflower render">
 
 ```
 .

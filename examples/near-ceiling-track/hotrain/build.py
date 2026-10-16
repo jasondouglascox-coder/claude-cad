@@ -10,6 +10,7 @@
     uv run python -m hotrain.build show [room|run|inside|bridge|fit-test] [--run-style deck_truss] [--corner-style bowstring]   # OCP CAD Viewer
     uv run python -m hotrain.build glb          # out/glb/*.glb per section
     uv run python -m hotrain.build web          # out/web: phone/web 3D viewer page + glTF JSON models + manifest
+    uv run python -m hotrain.build render --run-style deck_truss   # out/render/*.png shaded previews
     uv run python -m hotrain.build check        # interference check, exit 1 on any clash
     uv run python -m hotrain.build starter --run-style deck_truss   # out/starter: one 16" bay + fit-test coupon
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
@@ -139,6 +140,36 @@ def cmd_corners(p: Params, out: Path, mesh: bool, preview: bool) -> None:
                 w.writerow([corner.name, item, how, f"{mm:.1f}", f"{mm / 25.4:.2f}"])
 
 
+# (name, view target, view direction toward the eye, tessellation tolerance)
+RENDERS = (
+    ("bay_below", "run", (0.45, 1.0, -0.4), 0.1),  # one 16" bay, seen from the floor on the room side
+    ("bay_above", "run", (0.45, 1.0, 0.55), 0.1),
+    ("inside_corner", "inside", (-0.6, 1.0, -0.35), 0.1),
+    ("bridge_corner", "bridge", (-0.6, 1.0, -0.35), 0.1),
+    ("room", "room", (0.35, 0.6, 1.0), 0.5),
+)
+
+
+def _leaves(shape: Shape, color=None) -> list:
+    """(solid, color) for every leaf of a colored Compound tree, each taking its nearest colored ancestor's color."""
+    color = shape.color or color
+    kids = list(shape.children) if isinstance(shape, Compound) else []
+    if not kids:
+        return [(shape, color)]
+    return [leaf for k in kids for leaf in _leaves(k, color)]
+
+
+def cmd_render(p: Params, out: Path) -> list[Path]:
+    from cadkit.render import render
+    from hotrain import view
+    paths = []
+    for name, tgt, eye, tol in RENDERS:
+        path = out / "render" / f"{name}.png"
+        render(_leaves(view.target(p, tgt)), path, view=eye, tol=tol, crop=True)
+        paths.append(path)
+    return paths
+
+
 def cmd_fit_test(p: Params, out: Path, mesh: bool, preview: bool) -> None:
     export(fit_test.make(p), out, "fit_test", mesh, preview)
 
@@ -156,7 +187,7 @@ def params_from_args(a: argparse.Namespace) -> Params:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="hotrain.build", description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["all", "parts", "assembly", "fit-test", "plates", "corners", "room", "show", "glb", "web",
-                                        "check", "starter"])
+                                        "check", "starter", "render"])
     ap.add_argument("target", nargs="?", default="room", help="for show: room | run | inside | bridge | fit-test")
     ap.add_argument("--out", default="out")
     ap.add_argument("--mesh", action="store_true")
@@ -196,6 +227,10 @@ def main(argv: list[str] | None = None) -> int:
     if a.command == "starter":
         d = cmd_starter(p, out)
         print(f"wrote {d}/ (plates.csv lists what to print and how many)")
+        return 0
+    if a.command == "render":
+        for path in cmd_render(p, out):
+            print(path)
         return 0
     if a.command == "show":
         from hotrain import view

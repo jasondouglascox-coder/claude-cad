@@ -43,8 +43,9 @@ def _rgb(color) -> np.ndarray:
 
 
 def render(items: list[tuple[Shape, Color]], path: Path, view: tuple = ISO, px: int = 1000, tol: float = 0.1,
-           bg: tuple = (201, 183, 156)) -> None:
-    """Orthographic view of (shape, color) items looking along -view, z-up (or y-up when looking straight down)."""
+           bg: tuple = (201, 183, 156), crop: bool = False) -> None:
+    """Orthographic view of (shape, color) items looking along -view, z-up (or y-up when looking straight down).
+    crop=True trims the square picture to the model plus its 2% margin (long runs come out wide, not square)."""
     v = np.array(view, float)
     v /= np.linalg.norm(v)
     up = np.array([0, 0, 1.0]) if abs(v[2]) < 0.9 else np.array([0, 1.0, 0])
@@ -79,5 +80,9 @@ def render(items: list[tuple[Shape, Color]], path: Path, view: tuple = ISO, px: 
     img = np.empty((px, px, 3), np.uint8)
     img[:] = bg
     _raster(sx, sy, z, col, px, zbuf, img)
+    if crop:
+        rows, cols = np.nonzero((zbuf > -1e18).any(axis=1))[0], np.nonzero((zbuf > -1e18).any(axis=0))[0]
+        m = round(px * 0.02)
+        img = img[max(rows[0] - m, 0):rows[-1] + m + 1, max(cols[0] - m, 0):cols[-1] + m + 1]
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(img).save(path)

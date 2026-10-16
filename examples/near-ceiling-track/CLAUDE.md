@@ -20,6 +20,7 @@ uv run python -m hotrain.build starter --run-style deck_truss
 uv run python -m hotrain.build show room --run-style deck_truss   # OCP viewer: start it and open the page first
 uv run python -m hotrain.build room --run-style deck_truss        # out/step/office.step for Onshape
 uv run python -m hotrain.build web --run-style deck_truss         # out/web: the shareable 3D room viewer
+uv run python -m hotrain.build render --run-style deck_truss      # out/render/*.png (~11 min); docs/images/ are copies
 ```
 
 - Straight runs use **`--run-style deck_truss`** (the chosen look); the params default is still `arch`. Corners
