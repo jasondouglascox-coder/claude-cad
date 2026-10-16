@@ -76,9 +76,8 @@ def test_orange_beads_down_the_front_petals_under_the_black(piece):
 def test_prime_tower_fits_in_a_bed_corner_clear_of_the_flower():
     """The flower fills the bed; Bambu won't slice with its tower overlapping it."""
     x, y, w = small.tower(S)
-    off = (S.printer.bed - S.diameter) / 2
-    c = off + S.diameter / 2
-    near = math.hypot(c - (x + w + small.TOWER_BRIM), c - (y + w + small.TOWER_BRIM))
+    cx, cy = small.bed_center(S)
+    near = math.hypot(cx - (x + w + small.TOWER_BRIM), cy - (y + w + small.TOWER_BRIM))
     assert near >= S.diameter / 2 + 1 and min(x, y) - small.TOWER_BRIM >= 0
 
 
@@ -124,12 +123,14 @@ def test_plate_is_one_object_four_filaments():
 
 
 @pytest.mark.slow
-def test_bambu_slices_it_yellow_and_orange_then_black_then_brown(tmp_path):
-    from cadkit import bambu
-    if bambu.find() is None:
-        pytest.skip("Bambu Studio not installed")
+def test_slicer_slices_it_yellow_and_orange_then_black_then_brown(tmp_path):
+    from cadkit import slicers
+    from cadkit.settings import settings
+    s = slicers.active()
+    if not s.available() or settings().colors < 4:
+        pytest.skip("needs a slicer that can run, and 4 colors")
     small.write(S, tmp_path)
-    report = bambu.slice_report(tmp_path / "plates" / "sunflower_10in.3mf", tmp_path / "s.3mf")
+    report = s.slice_report(tmp_path / "plates" / f"sunflower_10in{s.project_suffix}", tmp_path / "s.3mf")
     bands = [set(r[0]) for r in report["layers"]]
     i = bands.index({S.slot_center})
     assert {S.slot_petals, S.slot_beads} in bands[:i]

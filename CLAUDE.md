@@ -8,7 +8,13 @@
 - `cadkit/`: the shared library (its own uv project). Projects depend on it by path, editable. Generic code goes
   here, project code stays in the project. A helper two projects would both want belongs in cadkit, with a test in
   `cadkit/tests/`.
-- `examples/fit-coupon/`: the smallest complete project; the template for new ones.
+- `examples/fit-coupon/`: the smallest complete project; the template `cadkit.new` copies for new ones.
+- **The user's setup is settings, not code:** `cadkit.settings` (printer bed/layer/nozzle, colors, color-change
+  budget, slicer, projects folder) from `CADKIT_*` variables or an untracked `cadkit.toml`. With nothing set it's the
+  Bambu A1 + 4-color AMS + Bambu Studio setup everything was built on, and outputs must stay identical for it.
+  Check with `cd cadkit && uv run python -m cadkit.settings`. New projects go in `settings().projects`.
+- Slicers sit behind `cadkit.slicers` (Bambu built in); projects and tests use `slicers.active()`, never
+  `cadkit.bambu` directly. Adding one: `CONTRIBUTING.md`.
 - `examples/near-ceiling-track/`: the HO railroad (package `hotrain`). It has its own `CLAUDE.md`; read it when
   working there.
 - `examples/candle-adapter/`: a one-piece black adapter (package `candle`) that holds a 20 mm candle in a flat
@@ -32,10 +38,13 @@ cd examples/sunflower-wall && uv run pytest -n 6 -m "not slow"       # ~2 min; s
 - **Test first:** write the failing test, implement, then watch it pass. Tests derive expectations from `params.py`;
   no magic numbers.
 - **Print rules** are enforced by tests with `cadkit.checks`: flat, one solid, no supports, watertight; Z levels on
-  layer multiples; the upper color never over air; at most one color change per plate. Keep them green.
-- **When plate or 3MF output changes**, run the plates through Bambu Studio's CLI (`cadkit.bambu`): same filaments,
-  same geometry per object, one color change. Unit tests alone have missed three real slicer bugs.
-- **After a visible change**, render it (SVG/PNG or the viewer) and look at it before saying it's right.
+  layer multiples; the upper color never over air. Keep them green. **Color changes are a budget** (settings, default
+  one per plate): when a design needs more, say so with the cost and alternatives, and record the accepted number
+  per plate (`Plate(..., color_changes=n)`) and in the spec.
+- **When plate or 3MF output changes**, run the plates through the slicer's CLI (`cadkit.slicers.active()`): same
+  filaments, same geometry per object, the planned color changes. Unit tests alone have missed three real slicer bugs.
+- **After a visible change**, render it (SVG/PNG or the viewer) and look at it before saying it's right. Every
+  example's README opens with renders in `docs/images/` (a cadkit test checks); refresh them when the look changes.
 - **Before printing a new batch**, run an independent review of the changed parts: print orientation, bridges
   (`cadkit.checks.downward_faces`), thin walls, mating fits and assembly order.
 - `out/` is generated and gitignored. Never commit it.

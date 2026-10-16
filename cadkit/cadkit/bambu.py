@@ -7,7 +7,7 @@ Unit tests can't tell you what Bambu Studio will do with a file. These can:
 - `slice_report(src)`: Bambu slices plate 1 and reports grams per filament and which filaments print on which
   layers, e.g. a two-color ladder: brown layers 0-11, gray 12-18, one change.
 
-Set BAMBU_STUDIO to the executable if it isn't in the default place. The CLI writes result.json into its working
+Set CADKIT_SLICER_PATH (or BAMBU_STUDIO) to the executable if it isn't in the default place. The CLI writes result.json into its working
 directory, so it runs in a temp dir.
 """
 import os
@@ -18,18 +18,22 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-DEFAULT = {"Darwin": "/Applications/BambuStudio.app/Contents/MacOS/BambuStudio"}
+DEFAULT = {"Darwin": "/Applications/BambuStudio.app/Contents/MacOS/BambuStudio",
+           "Windows": r"C:\Program Files\Bambu Studio\bambu-studio.exe"}
 
 
 def find() -> Path | None:
-    p = os.environ.get("BAMBU_STUDIO") or DEFAULT.get(platform.system())
+    from cadkit.settings import settings
+    s = settings()
+    p = (s.slicer_path if s.slicer == "bambu" else None) or os.environ.get("BAMBU_STUDIO") \
+        or DEFAULT.get(platform.system())
     return Path(p) if p and Path(p).exists() else None
 
 
 def _run(args: list[str], timeout: int = 600) -> None:
     exe = find()
     if exe is None:
-        raise FileNotFoundError("Bambu Studio not found; set BAMBU_STUDIO to its executable")
+        raise FileNotFoundError("Bambu Studio not found; set CADKIT_SLICER_PATH (or BAMBU_STUDIO) to its executable")
     with tempfile.TemporaryDirectory() as cwd:
         r = subprocess.run([str(exe), *args], cwd=cwd, capture_output=True, text=True, timeout=timeout)
     if r.returncode:

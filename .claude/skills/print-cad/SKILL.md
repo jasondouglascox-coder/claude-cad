@@ -1,14 +1,17 @@
 ---
 name: print-cad
-description: Parametric, test-driven CAD for 3D-printed parts in Python (build123d + cadkit), exported as STEP for Onshape/other CAD and as Bambu Studio build plates that open already colored, with tests that prove the parts print, fit and assemble. Use when designing, changing, or adding printable parts, brackets, mounts, enclosures, jigs, models, multi-color (AMS) prints, build plates, or STEP files, even if the user doesn't say "build123d" or "CAD". Part of claude-cad; examples in examples/fit-coupon (small) and examples/near-ceiling-track (room-sized).
+description: Parametric, test-driven CAD for 3D-printed parts in Python (build123d + cadkit), exported as STEP for Onshape/other CAD and as build plates for the user's slicer (Bambu Studio opens them already colored; printer, colors and slicer come from the user's settings), with tests that prove the parts print, fit and assemble. Use when designing, changing, or adding printable parts, brackets, mounts, enclosures, jigs, models, multi-color (AMS) prints, build plates, or STEP files, even if the user doesn't say "build123d" or "CAD". Part of claude-cad; examples in examples/fit-coupon (small) and examples/near-ceiling-track (room-sized).
 ---
 
 # Parametric 3D-print CAD (build123d + cadkit)
 
 You design physical, 3D-printed things as Python code. The CAD tool (Onshape, FreeCAD, Fusion) is for looking, so
-export real B-rep **STEP**, not meshes. The slicer gets **3MF** build plates that open ready to print. The default
-printer is a Bambu A1 (256 × 256 mm bed, 0.4 mm nozzle, 0.2 mm layers) printing PETG; it's a `cadkit.Printer`, so
-change it in one place.
+export real B-rep **STEP**, not meshes. The slicer gets **3MF** build plates that open ready to print.
+
+**The user's setup comes from `cadkit.settings`**: printer bed, layer, nozzle, how many colors, which slicer, and
+where projects live, from `CADKIT_*` variables or an untracked `cadkit.toml`. Run `uv run python -m cadkit.settings`
+(in `cadkit/`) before designing, and design for what it says. Nothing set means a Bambu A1 (256 × 256 mm, 0.4 mm
+nozzle, 0.2 mm layers) with a 4-color AMS lite and Bambu Studio. Never edit cadkit to fit someone's printer.
 
 Read before you start:
 
@@ -17,9 +20,13 @@ Read before you start:
   supports and bridges, checking a file through Bambu Studio's own CLI.
 - `references/lessons.md` when planning: what went wrong on a room-sized build and the rule it turned into.
 
-Use **cadkit** (`cadkit/` in the claude-cad repo) instead of rewriting its pieces: print checks, clash finder,
-two-color paint, plate packing, Bambu plate writer, slicer checks, viewer. `examples/fit-coupon/` is the smallest
-complete project (copy it to start one); `examples/near-ceiling-track/` shows everything at scale.
+Use **cadkit** (`cadkit/` in the claude-cad repo) instead of rewriting its pieces: settings, print checks, clash
+finder, two-color paint, plate packing, color budgets, slicer interface and checks, renders, viewer.
+`examples/fit-coupon/` is the smallest complete project; `examples/near-ceiling-track/` shows everything at scale.
+
+**New projects** go in the user's projects folder (`settings().projects`, default `examples/`; it may be outside
+git): `uv run --project <repo>/cadkit python -m cadkit.new <name>` copies the template, renames the package and
+wires up cadkit.
 
 ## Project layout
 
@@ -37,6 +44,7 @@ complete project (copy it to start one); `examples/near-ceiling-track/` shows ev
   <pkg>/build.py          CLI: all | parts | plates | check | show ...; plates via cadkit.export.write_plates
   tests/                  pytest, one file per part + layout/assembly/plates/build
   docs/specs/             design spec, with an "Amendments" section per change of decision
+  docs/images/            renders shown at the top of README.md (copies of `build render` output)
   docs/measurements.md    real-world measurements, each with where it was measured from
   out/                    generated, gitignored
 ```
@@ -73,13 +81,16 @@ the background.
 6. **Look at it.** Render previews (`cadkit.render.render`: shaded, colored PNG, `cadkit[render]` extra; or
    `cadkit.export.write_svg` → `rsvg-convert` → PNG for hidden lines) or the viewer, and look before
    saying a part is right. Eyes catch things tests don't: a stray tip poking out of a corner passed every test.
-7. **Check what the slicer sees.** When plate or 3MF code changes, run the plates through Bambu Studio's CLI
-   (`cadkit.bambu.roundtrip`, `slice_report`): same filament per part, same geometry per object, one color change
-   per plate. Unit tests passed while Bambu showed every part green and three different ladders as one.
+7. **Check what the slicer sees.** When plate or 3MF code changes, run the plates through the slicer
+   (`cadkit.slicers.active()`: `roundtrip`, `slice_report`): same filament per part, same geometry per object, the
+   color changes you planned. Unit tests passed while Bambu showed every part green and three different ladders as
+   one. If the user's slicer can't run (none installed, or no CLI), say that this check was skipped.
 8. **Independent review before printing.** A fresh reviewer agent checks print orientation, overhangs and bridges
    (`cadkit.checks.downward_faces`), thin walls, mating fits and assembly order, and must prove each finding with a
    probe. Fix real findings test-first.
-9. Commit after each chunk of work.
+9. **Show it.** Every project's README opens with renders from its `build render` (or `build`) copied into
+   `docs/images/`; refresh them after a visible change.
+10. Commit after each chunk of work.
 
 ## Design rules
 
@@ -102,10 +113,12 @@ the background.
   across the splits.
 - **Z levels on layer multiples.** Tops, color seams and inlays at multiples of the layer height (0.2 mm), or the
   slicer splits a layer.
-- **Multi-color (AMS) prints: one color change per plate.** Make color regions separable by height: one color up to
-  a Z, the other above it. Model a two-color part as a Compound of two colored, labeled bodies (e.g. `x_wood`,
-  `x_steel`). Two-color parts never share a plate with single-color parts (`cadkit.plates.pack` does this).
-  Filaments per color live in params and match the user's AMS slots.
+- **Multi-color (AMS) prints: keep color changes few.** The budget is the user's (`settings().color_changes`,
+  default 1 per plate; `settings().colors` filaments, 1 = no AMS). Make color regions separable by height: one
+  color up to a Z, the other above it. Model a multi-color part as a Compound of colored, labeled bodies (e.g.
+  `x_wood`, `x_steel`); multi-color parts don't share plates with single-color ones (`cadkit.plates.pack`). When a
+  design needs more swaps or colors than the budget, say so up front with the cost and the alternatives (see
+  `references/printing.md`), and let the user choose. Filaments per color live in params.
 - **Parameters, not numbers.** A user's change should be a one-line edit in `params.py`, and tests derive their
   expectations from params.
 - **Validate inputs loudly** (e.g. `validate_bays` raises with the bad value and the allowed range).
@@ -117,8 +130,10 @@ the background.
 - `out/step/*.step`: one per distinct part, labeled (`shape.label`) so CAD shows real names. In assemblies, label
   base shapes by part type, since STEP dedups shared shapes and per-instance names collide. Two-color parts are
   one painted solid (`cadkit.paint`). A whole room is ~200 MB; upload the plain STEP to Onshape, not a zip.
-- `out/plates/*.3mf` + `.step` and `plates.csv` (plate, quantity, contents) from `cadkit.export.write_plates`:
-  each 3MF is a Bambu Studio project with a filament per part, so it opens colored (File → Open Project).
+- `out/plates/*.3mf` + `.step` and `plates.csv` (plate, quantity, contents) from `cadkit.export.write_plates`,
+  written by the user's slicer (`cadkit.slicers`): for Bambu Studio a project with a filament per part, so it opens
+  colored (File → Open Project); other slicers load the geometry.
+- `out/render/*.png` shaded previews (`cadkit.render`), copied to `docs/images/` for the README.
 - `out/manifest.csv` (part, quantity), and for things that mount: a measurement sheet (CSV, mm and inches) for
   marking walls and ceilings, and cut lengths for any stock.
 

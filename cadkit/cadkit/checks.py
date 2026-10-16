@@ -4,11 +4,13 @@ from collections import Counter
 import numpy as np
 from build123d import Align, Box, Pos, Shape
 
-from cadkit.printer import A1, Printer
+from cadkit.printer import Printer, default
 
 
-def printable_problems(part: Shape, printer: Printer = A1) -> list[str]:
-    """Why this part can't go straight to the printer as exported (print orientation). Empty list = fine."""
+def printable_problems(part: Shape, printer: Printer | None = None) -> list[str]:
+    """Why this part can't go straight to the printer as exported (print orientation). Empty list = fine.
+    printer: default = the one in your settings."""
+    printer = printer or default()
     probs = []
     if not part.is_valid:
         probs.append("invalid solid")
@@ -19,8 +21,9 @@ def printable_problems(part: Shape, printer: Printer = A1) -> list[str]:
         probs.append(f"not on the bed: min Z = {bb.min.Z:.3f}")
     if bb.min.X < -1e-6 or bb.min.Y < -1e-6:
         probs.append("extends into negative X/Y")
-    if bb.max.X > printer.usable or bb.max.Y > printer.usable:
-        probs.append(f"footprint {bb.max.X:.1f} x {bb.max.Y:.1f} mm exceeds {printer.usable:.0f} mm")
+    if bb.max.X > printer.usable_x or bb.max.Y > printer.usable_y:
+        probs.append(f"footprint {bb.max.X:.1f} x {bb.max.Y:.1f} mm exceeds the usable bed "
+                     f"{printer.usable_x:.0f} x {printer.usable_y:.0f} mm")
     return probs
 
 
@@ -42,8 +45,9 @@ def open_edges(shape: Shape, tol: float = 1e-4) -> int:
     return bad
 
 
-def off_layer_z(shape: Shape, printer: Printer = A1) -> list[float]:
+def off_layer_z(shape: Shape, printer: Printer | None = None) -> list[float]:
     """Z of every horizontal face that isn't on a layer boundary (a slicer splits that layer)."""
+    printer = printer or default()
     out = set()
     for f in shape.faces():
         n = f.normal_at()
@@ -73,3 +77,28 @@ def downward_faces(part: Shape) -> list[tuple[float, float]]:
         if n.Z < -1 + 1e-9 and f.center().Z > 1e-6:
             out.append((round(f.center().Z, 4), round(f.area, 3)))
     return sorted(out)
+
+
+ADVICE = ("Options: split the colors by height (one color up to a Z, the next above it, one swap per seam); print "
+          "the detail as a separate part and glue it on; drop a color; or accept the cost for this plate "
+          "(color_changes= in write_plates, or CADKIT_COLOR_CHANGES).")
+
+
+def color_problems(items: list, colors: int | None = None, changes: int | None = None,
+                   printer: Printer | None = None) -> list[str]:
+    """What a plate's [(name, shape)] asks of the printer beyond your setup: more colors than it has, or more swaps
+    than the budget (settings: colors, color_changes). Each message says what to do instead. Empty list = fine."""
+    from cadkit.plates import color_changes, colors_used
+    from cadkit.settings import settings
+    colors = settings().colors if colors is None else colors
+    changes = settings().color_changes if changes is None else changes
+    probs = []
+    n = colors_used(items)
+    if n > colors:
+        probs.append(f"{n} colors, but the printer has {colors} (CADKIT_COLORS). With 1, everything prints on "
+                     f"filament 1 in its shape. " + ADVICE)
+    k = color_changes(items, printer)
+    if colors > 1 and k > changes:
+        probs.append(f"{k} color changes, over the budget of {changes} (CADKIT_COLOR_CHANGES): each costs time and "
+                     f"purged filament. " + ADVICE)
+    return probs

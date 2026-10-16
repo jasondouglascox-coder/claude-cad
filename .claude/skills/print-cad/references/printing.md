@@ -1,12 +1,27 @@
 # Printing, plates and slicers
 
 What the slicer needs and how to prove it gets it. Everything here was learned on a Bambu A1 with an AMS lite and
-Bambu Studio 2.08; `cadkit` implements it.
+Bambu Studio 2.08; `cadkit` implements it, and the user's own setup comes from `cadkit.settings`.
+
+## The user's setup comes from settings
+
+Printer, colors, slicer and projects folder are the user's, not the code's: `CADKIT_*` environment variables or
+an untracked `cadkit.toml` (`cadkit.toml.example` lists every key). Check what's in effect before designing:
+
+```bash
+cd cadkit && uv run python -m cadkit.settings     # every value and where it came from
+```
+
+Nothing set = a Bambu A1 (256 × 256 mm, 0.4 nozzle, 0.2 layers), 4 AMS colors, Bambu Studio, projects in
+`examples/`. Never edit cadkit to fit a printer; if a value is missing from settings, add the setting.
 
 ## The printer is a parameter
 
-`cadkit.Printer(bed=256, margin=5, layer=0.2, nozzle=0.4)`, default `cadkit.A1`. Put one in the project's params
-(`printer` field or property) and pass it to `checks.printable_problems`, `checks.off_layer_z` and `plates.pack`.
+`cadkit.Printer()` takes its defaults from settings (bed, bed_y for rectangular beds, margin, layer, nozzle);
+`cadkit.A1` is the literal A1. Put one in the project's params (`printer: Printer = field(default_factory=Printer)`)
+and pass it to `checks.printable_problems`, `checks.off_layer_z` and `plates.pack` (they default to it anyway).
+Size long parts against `printer.usable_x`/`usable_y`; a part bigger than the user's bed should fail its test with
+the footprint and the bed, and you split it.
 
 ## Print flat, no supports
 
@@ -29,9 +44,20 @@ A seam at 2.3 mm with 0.2 mm layers makes the slicer split a layer, and the colo
 
 ## Multi-color (AMS)
 
-- **One color change per plate.** Color swaps on an AMS lite take a while and waste filament. Make color regions
-  separable by height (lower color up to Z, upper above) and keep two-color parts off single-color plates
-  (`plates.pack` does both: it pools two-color parts onto their own plates).
+- **Color changes are a budget, not a law.** Each swap costs time and purged filament. The budget per plate is
+  `settings().color_changes` (default 1) and the printer's colors are `settings().colors` (default 4; 1 = no AMS).
+  - Default to the cheapest layout: color regions separable by height (lower color up to Z, upper above: one swap
+    per seam), multi-color parts off single-color plates (`plates.pack` does that).
+  - `plates.color_changes(items)` counts a plate's swaps layer by layer; colors side by side in the same layers
+    swap every layer. `checks.color_problems(items)` says what's over the user's limits, with the options.
+  - **When a design wants more swaps or colors than the setup allows, tell the user before building it:** the
+    count, roughly what it costs, and the alternatives (split by height, print the detail separately and glue it,
+    drop a color, relief instead of color). If they accept, record it in the spec and pass `Plate(...,
+    color_changes=n)` for that plate so the build stops warning. `write_plates` warns on any other plate over budget.
+  - **One-color printers:** with `colors = 1`, `write_plates` puts every body on filament 1 and packing mixes
+    everything; design so the part still reads in one color (raised marks, texture), and say so.
+  - A plate needing a filament past `colors` stops with the options; tests check filaments through
+    `settings().filament(n)` so they pass on any setup.
 - **Model:** a two-color part is a `Compound` of two bodies, lower color first, each with `.color` and a `.label`
   that says its role (`ladder_wood`, `ladder_steel`). The label picks the filament.
 - **The upper color rests on the lower one:** `checks.unsupported(upper, lower) == 0`. Build it in, too: clip the
@@ -40,6 +66,20 @@ A seam at 2.3 mm with 0.2 mm layers makes the slicer split a layer, and the colo
   writes the face colors so Onshape shows one part, two colors.
 - **Filaments:** keep the AMS slot per color in params (`filament_gray = 1`, `filament_brown = 2`). Ask the user
   which slot holds what; their screenshot of a hand-colored project tells you.
+
+## Slicers
+
+`cadkit.slicers.active()` is the user's slicer (`settings().slicer`): `bambu` (built in) or `none` (plates only,
+slicer checks skipped). Others plug in through `cadkit/slicers/` (see CONTRIBUTING.md). Projects and tests use the
+interface, never a slicer module directly:
+
+```python
+from cadkit import slicers
+s = slicers.active()
+s.read_filaments(path); s.roundtrip(path); s.same_objects(a, b); s.slice_report(path)
+```
+
+Mark live slicer tests `@pytest.mark.slow` and `skipif(not slicers.active().available())`.
 
 ## Bambu Studio 3MF: plates that open colored
 
@@ -66,7 +106,8 @@ fine. Open the files with File → Open Project (or "open as project" when asked
 
 ## Check it the way the slicer reads it
 
-Unit tests can't tell you what the slicer does with a file. Bambu Studio has a CLI; `cadkit.bambu` drives it:
+Unit tests can't tell you what the slicer does with a file. Bambu Studio has a CLI; `cadkit.bambu` drives it
+(`cadkit.slicers` wraps it as the `bambu` slicer; projects use the wrapper):
 
 ```python
 from cadkit import bambu, bambu3mf
@@ -80,7 +121,8 @@ r = bambu.slice_report("out/plates/p1.3mf")            # {"grams": {1: 0.6, 2: 1
 - The CLI writes `result.json` into its working directory; `cadkit.bambu` runs it in a temp dir.
 - Bambu saves 32-bit floats, so compare sizes within a tolerance (`same_objects`), never by rounding: 60.15 comes
   back as 60.149…, which rounds to 60.1 instead of 60.2 and reports a false mismatch.
-- Make the slicer test `@pytest.mark.slow` and `skipif(bambu.find() is None)`, so the suite runs without it.
+- Make the slicer test `@pytest.mark.slow` and `skipif(not slicers.active().available())`, so the suite runs
+  without one.
 
 ## Before the first real print
 

@@ -2,7 +2,8 @@
 import pytest
 from build123d import Align, Box, Pos
 
-from cadkit import bambu, bambu3mf
+from cadkit import slicers
+from cadkit.settings import settings
 from cadkit.checks import downward_faces, off_layer_z, open_edges, printable_problems
 from candle import build
 from candle.params import P
@@ -77,20 +78,22 @@ def test_candle_sits_depth_deep_on_the_floor(part):
     assert P.height - P.floor_t == pytest.approx(P.depth)
 
 
-def test_build_writes_a_black_bambu_plate(tmp_path):
+def test_build_writes_a_black_plate(tmp_path):
     assert build.main(["--out", str(tmp_path)]) == 0
     assert (tmp_path / "step" / "candle_adapter.step").exists()
     assert (tmp_path / "render" / "iso.png").exists() and (tmp_path / "render" / "section.png").exists()
-    got = {n: f for n, f, _ in bambu3mf.read_filaments(tmp_path / "plates" / "candle_adapter_1.3mf")}
-    assert got == {"candle_adapter": P.filament_black}
+    s = slicers.active()
+    got = {n: f for n, f, _ in s.read_filaments(tmp_path / "plates" / f"candle_adapter_1{s.project_suffix}")}
+    assert got == {"candle_adapter": settings().filament(P.filament_black)}
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
-def test_bambu_slices_it_in_black_only(tmp_path):
+@pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
+def test_slicer_slices_it_in_black_only(tmp_path):
     build.main(["--out", str(tmp_path)])
-    plate = tmp_path / "plates" / "candle_adapter_1.3mf"
-    back = bambu.roundtrip(plate)
-    assert bambu3mf.same_objects(back, plate)
-    report = bambu.slice_report(plate, tmp_path / "s.3mf")
-    assert [r[0] for r in report["layers"]] == [(P.filament_black,)]
+    s = slicers.active()
+    plate = tmp_path / "plates" / f"candle_adapter_1{s.project_suffix}"
+    back = s.roundtrip(plate)
+    assert s.same_objects(back, plate)
+    report = s.slice_report(plate, tmp_path / "s.3mf")
+    assert [r[0] for r in report["layers"]] == [(settings().filament(P.filament_black),)]

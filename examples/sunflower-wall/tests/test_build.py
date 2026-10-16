@@ -1,7 +1,8 @@
-"""Plates: what to print and how many, files that open colored in Bambu Studio, and what the slicer makes of them."""
+"""Plates: what to print and how many, files that open colored in the slicer, and what the slicer makes of them."""
 import pytest
 
-from cadkit import bambu, bambu3mf
+from cadkit import slicers
+from cadkit.settings import settings
 from sunflower import build, plates
 from sunflower.params import P
 
@@ -36,12 +37,15 @@ def out(tmp_path_factory):
 
 @pytest.mark.slow
 def test_plates_open_colored_with_the_users_filaments(out):
-    got = {name: parts for name, _, parts in bambu3mf.read_filaments(out / "plates" / "seed_head.3mf")}
-    assert got["center"] == {"center_black": P.slot_center, "center_brown": P.slot_seeds}
-    front = bambu3mf.read_filaments(out / "plates" / "front_quarter.3mf")
-    assert front == [("front_quarter", P.slot_petals, {"front_quarter": P.slot_petals, "front_beads": P.slot_beads})]
-    back = bambu3mf.read_filaments(out / "plates" / "back_quarter.3mf")
-    assert sorted(f for _, f, _ in back) == [P.slot_petals] * 4
+    s, f = slicers.active(), settings().filament
+    plate = lambda name: out / "plates" / f"{name}{s.project_suffix}"
+    got = {name: parts for name, _, parts in s.read_filaments(plate("seed_head"))}
+    assert got["center"] == {"center_black": f(P.slot_center), "center_brown": f(P.slot_seeds)}
+    front = s.read_filaments(plate("front_quarter"))
+    assert front == [("front_quarter", f(P.slot_petals),
+                      {"front_quarter": f(P.slot_petals), "front_beads": f(P.slot_beads)})]
+    back = s.read_filaments(plate("back_quarter"))
+    assert sorted(fil for _, fil, _ in back) == [f(P.slot_petals)] * 4
     import json, zipfile
     proj = json.loads(zipfile.ZipFile(out / "plates" / "back_quarter.3mf").read("Metadata/project_settings.config"))
     assert proj["filament_colour"] == [c for _, c in P.filaments]
@@ -50,17 +54,19 @@ def test_plates_open_colored_with_the_users_filaments(out):
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+@pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
+@pytest.mark.skipif(settings().colors < 4, reason="designed for 4 colors")
 @pytest.mark.parametrize("name,bands", [
     ("back_quarter", [{P.slot_petals}]),
     # the beads share layers with the yellow: a swap on each of those layers (spec amendment, 2026-10-16)
     ("front_quarter", [{P.slot_petals}, {P.slot_petals, P.slot_beads}, {P.slot_petals}]),
     ("seed_head", [{P.slot_center}, {P.slot_seeds}])])
-def test_bambu_slices_each_plate_in_its_colors(out, tmp_path, name, bands):
-    src = out / "plates" / f"{name}.3mf"
-    back = bambu.roundtrip(src, tmp_path / "rt.3mf")
-    assert bambu3mf.same_objects(back, src)
-    report = bambu.slice_report(src, tmp_path / "s.3mf")
+def test_slicer_slices_each_plate_in_its_colors(out, tmp_path, name, bands):
+    s = slicers.active()
+    src = out / "plates" / f"{name}{s.project_suffix}"
+    back = s.roundtrip(src, tmp_path / f"rt{s.project_suffix}")
+    assert s.same_objects(back, src)
+    report = s.slice_report(src, tmp_path / "s.3mf")
     assert [set(r[0]) for r in report["layers"]] == bands
 
 

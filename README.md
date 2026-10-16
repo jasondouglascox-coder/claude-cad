@@ -1,5 +1,12 @@
 # claude-cad
 
+> [!IMPORTANT]
+> ## Requires Claude Opus 5.5 or higher
+> **Use High effort or above.** The results here (geometry that prints first time, plates that open colored, tests
+> that catch real slicer bugs) come from Opus 5.5 at High or higher effort. Smaller models or lower effort settings
+> miss steps and produce parts that look right but don't print or fit. In Claude Code, pick the model and effort
+> before you start (`/model`).
+
 **Parametric, test-driven CAD for 3D printing, done with [Claude Code](https://claude.com/claude-code).** Parts are
 Python ([build123d](https://github.com/gumyr/build123d)). The build exports real CAD (**STEP**) for
 Onshape/FreeCAD/Fusion, and build plates for the slicer (**3MF**) that open in Bambu Studio already colored, one
@@ -18,14 +25,18 @@ one, a wall sunflower (`examples/sunflower-wall`), shows organic shapes and mult
 │   ├── SKILL.md                   workflow, project layout, design rules, outputs, viewing
 │   └── references/
 │       ├── build123d-patterns.md  tested snippets and traps (build123d 0.13)
-│       ├── printing.md            supports, layers, AMS colors, Bambu project 3MF, checking with the slicer's CLI
+│       ├── printing.md            settings, supports, layers, color budgets, slicers, checking with the slicer's CLI
 │       └── lessons.md             what went wrong on a room-sized build, and the rule each became
 ├── cadkit/                        the library every project imports (its own uv project, with tests)
 ├── examples/
-│   ├── fit-coupon/                smallest complete project: start here, copy it to start your own
+│   ├── fit-coupon/                smallest complete project: start here; the template for `cadkit.new`
+│   ├── candle-adapter/            one black part, glued into a chandelier cup
 │   ├── near-ceiling-track/        everything at scale: an HO railroad shelf around a room, ~220 tests
 │   └── sunflower-wall/            a 16" wall sunflower kit and a 10" one-piece print, four AMS colors
+├── docs/specs/                    decisions about the tool itself
+├── cadkit.toml.example            every setting for your printer/slicer/folder; copy to cadkit.toml (ignored)
 ├── CLAUDE.md                      working notes for Claude Code sessions in this repo
+├── CONTRIBUTING.md                how to add a slicer or a setting
 ├── LICENSE                        MIT
 └── README.md
 ```
@@ -40,26 +51,30 @@ one, a wall sunflower (`examples/sunflower-wall`), shows organic shapes and mult
 
   | Module | What it does |
   |---|---|
-  | `cadkit.printer` | `Printer(bed, margin, layer, nozzle)`; `A1` default |
+  | `cadkit.settings` | your setup (printer, colors, slicer, projects folder) from `CADKIT_*` variables or `cadkit.toml` |
+  | `cadkit.printer` | `Printer(bed, bed_y, margin, layer, nozzle)`, defaults from your settings; `A1` |
   | `cadkit.shapes` | `rect`, `poly` (always counter-clockwise), `grow`, `bowtie` keys, `dovetail` jigsaw tabs |
   | `cadkit.checks` | `printable_problems`, `open_edges` (watertight), `off_layer_z`, `unsupported` (upper color over air), `downward_faces` (bridges) |
   | `cadkit.clash` | pairwise interference with a bounding-box prefilter |
   | `cadkit.paint` | two-color parts as one solid with face colors in the STEP; split bodies for viewers |
-  | `cadkit.plates` | MaxRects bed packing; two-color parts on their own plates (one color change each) |
+  | `cadkit.plates` | MaxRects bed packing (square or rectangular beds); multi-color parts on their own plates; `color_changes` counts a plate's swaps |
   | `cadkit.bambu3mf` | Bambu Studio project 3MF with a filament per part, plus readers for checking files |
   | `cadkit.bambu` | drive Bambu Studio's CLI: round-trip a plate, slice it, report filament per layer |
+  | `cadkit.slicers` | one interface for any slicer: Bambu Studio built in, others [by PR](CONTRIBUTING.md#adding-a-slicer) |
+  | `cadkit.render` | shaded, colored PNG previews (the pictures in every README) |
+  | `cadkit.new` | start a project from the template in your projects folder |
   | `cadkit.export` | painted STEP plates + 3MF + `plates.csv`; hidden-line SVG previews |
   | `cadkit.view` | send shapes to OCP CAD Viewer |
 
-- **Two examples**: a fit-test coupon (tune your printer's clearances, and the template for a new project) and the
-  railroad, which uses everything.
+- **Four examples**, each with pictures: a fit-test coupon (tune your printer's clearances, and the template for a
+  new project), a candle adapter, a wall sunflower, and the railroad, which uses everything.
 
 ## Requirements
 
 | What | Why | Get it |
 |---|---|---|
 | [uv](https://docs.astral.sh/uv/getting-started/installation/) | Installs Python 3.12 and every dependency per project | `curl -LsSf https://astral.sh/uv/install.sh \| sh` (macOS/Linux) or `brew install uv` |
-| A slicer | Printing | Bambu Studio: tested, plates open colored. Other 3MF slicers should load the geometry; set colors by hand |
+| A slicer | Printing | Bambu Studio: tested, plates open colored and get sliced by the tests. Others (PrusaSlicer, Orca, Cura) load the geometry; set colors by hand, or [add yours](CONTRIBUTING.md#adding-a-slicer) |
 | CAD that imports STEP (optional) | Measuring and fine detail | Onshape (free plan), FreeCAD, Fusion |
 | `rsvg-convert` (optional) | Turning SVG previews into PNGs | `brew install librsvg` / `apt install librsvg2-bin` |
 | [Claude Code](https://claude.com/claude-code) | Using the skill | — |
@@ -73,12 +88,37 @@ is why every project pins 3.12. A newer system Python doesn't matter, because uv
 git clone https://github.com/jasondouglascox-coder/claude-cad.git
 cd claude-cad/examples/fit-coupon
 uv sync                                  # first run downloads Python 3.12 + build123d (~1-2 min)
-uv run pytest                            # 7 tests; the slicer test runs only if Bambu Studio is installed
+uv run pytest                            # 7 tests; the slicer test runs only if your slicer is installed
 uv run python -m fitcoupon.build         # out/plates/fit_coupon_1.3mf (+ STEP, plates.csv)
 ```
 
 Open `out/plates/fit_coupon_1.3mf` in Bambu Studio (File → Open Project): gray plate, orange marks, one color
-change. Print it, try the peg in each hole, and use the clearance that slides.
+change. Print it, try the peg in each hole, and use the clearance that slides. Not on a Bambu A1? Set up your
+printer first (next section); it takes a minute.
+
+## Your setup
+
+Nothing to edit in the code: describe your printer with environment variables, or copy
+[`cadkit.toml.example`](cadkit.toml.example) to `cadkit.toml` (ignored by git, so `git pull` never conflicts) or to
+`~/.config/cadkit/cadkit.toml`. With nothing set you get the setup this was built on: a Bambu A1, a 4-color AMS lite,
+Bambu Studio.
+
+| Setting | Env var | Default |
+|---|---|---|
+| Bed (mm) | `CADKIT_BED` (square) or `CADKIT_BED_X` + `CADKIT_BED_Y` | 256 × 256 |
+| Layer, first layer, nozzle (mm) | `CADKIT_LAYER`, `CADKIT_FIRST_LAYER`, `CADKIT_NOZZLE` | 0.2, 0.2, 0.4 |
+| Colors the printer can use | `CADKIT_COLORS` (1 = no AMS: everything on filament 1) | 4 |
+| Color changes per plate before a warning | `CADKIT_COLOR_CHANGES` | 1 |
+| Slicer | `CADKIT_SLICER` (`bambu`, or `none` to skip slicer checks), `CADKIT_SLICER_PATH` | `bambu` |
+| Where new projects go | `CADKIT_PROJECTS` (any folder, in git or not) | `examples/` |
+
+```bash
+cd cadkit && uv run python -m cadkit.settings      # what's in effect, and where each value came from
+```
+
+Packing, print checks and plate files follow these settings. A part bigger than your bed fails its test with the
+numbers, so Claude splits it. When a design wants more colors or swaps than you set, the build warns and Claude
+offers alternatives: split the colors by height, print a detail separately and glue it, or drop a color.
 
 ## Start your own project
 
@@ -86,8 +126,9 @@ change. Print it, try the peg in each hole, and use the clearance that slides.
   thing: *"use print-cad to design a wall bracket for my router, 2 screws, prints flat"*. Expect sketches and 2–3
   options first, then a spec, then parts built test-first with renders, then plates checked through the slicer and
   an independent review before you print.
-- **By hand:** copy `examples/fit-coupon` next to it, rename the package, and keep the layout: `params.py`,
-  `parts.py` (or `parts/`), `build.py`, `tests/`. Point `[tool.uv.sources] cadkit` at this repo's `cadkit/`.
+- **By hand:** `cd cadkit && uv run python -m cadkit.new my-bracket` copies the fit-coupon template into your
+  projects folder (`CADKIT_PROJECTS`; default `examples/`), renames the package and points it at this cadkit. Keep
+  the layout: `params.py`, `parts.py` (or `parts/`), `build.py`, `tests/`, pictures in `docs/images/`.
 
 ### Installing the skill for all your projects
 
@@ -109,10 +150,11 @@ ln -s "$PWD/.claude/skills/print-cad" ~/.claude/skills/print-cad
   tuned by a printed fit-test coupon.
 - **The assembly clash test is the backbone.** It includes the environment (walls, ceiling, doors, even walls you
   don't draw), moving envelopes and the hardware, and it has a variant that must fail.
-- **Multi-color without the waiting.** Two-color parts change color once, at a layer boundary, and never share a
-  plate with single-color parts. The 3MF has one object with a filament per part; the STEP has one painted solid.
-- **The slicer is the last test.** Plates round-trip through Bambu Studio's CLI and get sliced: same filaments, same
-  geometry, one color change. Three real bugs got past green unit tests and were caught only this way.
+- **Multi-color without the waiting.** Color changes are a budget you set (default one per plate): two-color parts
+  change once, at a layer boundary, and never share a plate with single-color parts. Over budget, the build says so
+  and suggests alternatives. The 3MF has one object with a filament per part; the STEP has one painted solid.
+- **The slicer is the last test.** Plates round-trip through the slicer's CLI and get sliced: same filaments, same
+  geometry, the planned color changes. Three real bugs got past green unit tests and were caught only this way.
 - **Look before you trust.** Preview renders and a 3D viewer, because some mistakes pass every test.
 
 The full story of each rule is in [lessons.md](.claude/skills/print-cad/references/lessons.md).

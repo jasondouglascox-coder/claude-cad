@@ -22,7 +22,7 @@ def check_plate(plate):
     for s in shapes:
         bb = s.bounding_box()
         assert bb.min.Z == pytest.approx(0, abs=1e-6)
-        assert bb.min.X >= 0 and bb.min.Y >= 0 and bb.max.X <= P.bed and bb.max.Y <= P.bed
+        assert bb.min.X >= 0 and bb.min.Y >= 0 and bb.max.X <= P.bed and bb.max.Y <= P.bed_y
     for a, b in itertools.combinations(shapes, 2):
         ba, bb = a.bounding_box(), b.bounding_box()
         apart = (ba.max.X + plates.GAP <= bb.min.X or bb.max.X + plates.GAP <= ba.min.X

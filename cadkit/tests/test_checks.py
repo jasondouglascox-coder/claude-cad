@@ -17,6 +17,12 @@ def test_printable_box_and_each_problem():
     assert printable_problems(box(0, 0, 0, 300, 20, 3), Printer(bed=350)) == []
 
 
+def test_rectangular_bed_checks_each_side():
+    bed = Printer(bed=250, bed_y=210, margin=5)
+    assert printable_problems(box(0, 0, 0, 240, 20, 3), bed) == []
+    assert "exceeds" in printable_problems(box(0, 0, 0, 20, 240, 3), bed)[0]
+
+
 def test_clockwise_points_still_extrude_up():
     part = extrude(poly((0, 0), (0, 10), (10, 10), (10, 0)), 2)  # clockwise
     assert part.bounding_box().min.Z == pytest.approx(0) and len(part.solids()) == 1

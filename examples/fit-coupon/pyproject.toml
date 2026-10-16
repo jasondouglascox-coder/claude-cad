@@ -5,7 +5,7 @@ description = "Fit-test coupon: tune a printer's hole clearance before printing 
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "build123d==0.13.0",
-    "cadkit",
+    "cadkit[render]",
 ]
 
 [tool.uv.sources]

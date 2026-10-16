@@ -2,7 +2,8 @@
 import pytest
 from build123d import Align, Box, Pos
 
-from cadkit import bambu, bambu3mf
+from cadkit import slicers
+from cadkit.settings import settings
 from cadkit.checks import off_layer_z, open_edges, printable_problems, unsupported
 from fitcoupon import build
 from fitcoupon.parts import coupon, hole_x, peg
@@ -39,15 +40,20 @@ def test_hole_is_peg_plus_clearance(parts, k):
     assert pieces[1].min.X - pieces[0].max.X == pytest.approx(P.peg_d + P.clearances[k], abs=0.02)
 
 
-def test_build_writes_a_colored_bambu_plate(tmp_path):
+def test_build_writes_a_colored_plate(tmp_path):
     assert build.main(["--out", str(tmp_path)]) == 0
-    got = dict((n, parts) for n, _, parts in bambu3mf.read_filaments(tmp_path / "plates" / "fit_coupon_1.3mf"))
-    assert got["coupon"] == {"coupon_base": 1, "coupon_marks": 2}
+    assert (tmp_path / "render" / "iso.png").exists()
+    s = slicers.active()
+    got = dict((n, parts) for n, _, parts in s.read_filaments(tmp_path / "plates" / f"fit_coupon_1{s.project_suffix}"))
+    f = settings().filament
+    assert got["coupon"] == {"coupon_base": f(1), "coupon_marks": f(2)}
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
-def test_bambu_slices_it_with_one_color_change(tmp_path):
+@pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
+def test_slicer_slices_it_with_one_color_change(tmp_path):
     build.main(["--out", str(tmp_path)])
-    report = bambu.slice_report(tmp_path / "plates" / "fit_coupon_1.3mf", tmp_path / "s.3mf")
-    assert [r[0] for r in report["layers"]] == [(1,), (2,)]
+    s = slicers.active()
+    report = s.slice_report(tmp_path / "plates" / f"fit_coupon_1{s.project_suffix}", tmp_path / "s.3mf")
+    bands = [(1,), (2,)] if settings().colors > 1 else [(1,)]
+    assert [r[0] for r in report["layers"]] == bands

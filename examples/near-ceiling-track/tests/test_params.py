@@ -11,7 +11,7 @@ def test_derived_dimensions():
     assert P.rail_top == pytest.approx(P.tie_h + P.tie_plate_h + P.rail_height)
     assert round(P.tie_h / 0.2, 6) == round(P.tie_h / 0.2)  # color seam on a layer boundary
     assert P.bracket_depth == pytest.approx(3 * INCH + 4)
-    assert P.bed_usable == pytest.approx(251)
+    assert P.bed_usable == pytest.approx(P.printer.usable)  # 251 on the A1
 
 
 def test_bay_limits_fit_the_bed():

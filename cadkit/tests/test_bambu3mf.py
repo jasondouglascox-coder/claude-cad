@@ -17,7 +17,7 @@ filament = lambda name: FIL.get(name, 1)
 
 
 def _write(tmp_path, items, name="pl"):
-    write_plates([Plate(name, 1, items)], tmp_path, tmp_path / "p.csv", filament)
+    write_plates([Plate(name, 1, items)], tmp_path, tmp_path / "p.csv", filament, color_changes=99)
     return tmp_path / f"{name}.3mf"
 
 
@@ -132,7 +132,7 @@ def _three_color():
 
 def test_three_color_part_is_one_object_with_three_parts(tmp_path):
     fil = {"f_low": 2, "f_mid": 3, "f_top": 4}
-    write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get)
+    write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get, color_changes=2)
     assert bambu3mf.read_filaments(tmp_path / "pl.3mf") == [("flower", 2, fil)]
 
 
@@ -141,6 +141,7 @@ def test_three_color_part_is_one_object_with_three_parts(tmp_path):
 def test_bambu_slices_three_colors_in_height_order(tmp_path):
     fil = {"f_low": 2, "f_mid": 3, "f_top": 4}
     s = bambu3mf.write_settings(tmp_path / "s.config", PLA4)
-    write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get, settings=s)
+    write_plates([Plate("pl", 1, [("flower", _three_color())])], tmp_path, tmp_path / "p.csv", fil.get, settings=s,
+                 color_changes=2)
     report = bambu.slice_report(tmp_path / "pl.3mf", tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (3,), (4,)]

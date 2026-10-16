@@ -18,7 +18,7 @@ from build123d import Align, Color, Compound, Cone, Cylinder, Part, Pos, Rot, Sl
 
 from cadkit import bambu3mf
 from cadkit.export import write_plates
-from cadkit.plates import Plate
+from cadkit.plates import Plate, color_changes
 from sunflower import layout
 from sunflower.params import P, Params, Ring
 from sunflower.parts import center, quarter
@@ -122,10 +122,17 @@ def filament_for(p: Params):
     return lambda name: slots[name]
 
 
+def bed_center(p: Params) -> tuple[float, float]:
+    """The flower's center: the middle of the bed (either shape)."""
+    return p.printer.bed / 2, (p.printer.bed_y or p.printer.bed) / 2
+
+
 def plan(p: Params) -> list[Plate]:
     """The whole flower on one plate, centered on the bed."""
-    off = (p.printer.bed - p.diameter) / 2
-    return [Plate("sunflower_10in", 1, [("sunflower_10in", Pos(off, off, 0) * make(p))])]
+    cx, cy = bed_center(p)
+    items = [("sunflower_10in", Pos(cx - p.diameter / 2, cy - p.diameter / 2, 0) * make(p))]
+    # the beads swap on every layer they cross, then black, then brown: accepted in the spec (beads amendment)
+    return [Plate("sunflower_10in", 1, items, color_changes=color_changes(items, key=lambda n, b: filament_for(p)(n)))]
 
 
 def tower(p: Params) -> tuple:

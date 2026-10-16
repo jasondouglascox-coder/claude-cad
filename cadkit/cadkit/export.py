@@ -1,13 +1,15 @@
 """Write what the CAD tool and the slicer need: STEP (with painted face colors), SVG previews, and build plates
-as STEP + Bambu Studio 3MF + a quantity sheet."""
+as STEP + the slicer's project file (cadkit.slicers; Bambu Studio 3MF by default) + a quantity sheet."""
 import csv
+import warnings
 from pathlib import Path
 from typing import Callable
 
 from build123d import Compound, ExportSVG, LineType, Shape
 
-from cadkit import bambu3mf, paint
+from cadkit import paint
 from cadkit.plates import Plate, is_multi_color
+from cadkit.plates import color_changes as count_changes
 
 TOP = ((0, 0, 1), (0, 1, 0))  # (view direction toward the eye, up): flat parts from above
 FRONT = ((0, -1, 0), (0, 0, 1))
@@ -34,11 +36,26 @@ def write_svg(shape: Shape, path: Path, view: tuple = TOP) -> None:
 
 
 def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for: Callable[[str], int],
-                 preview_dir: Path | None = None, settings: Path = bambu3mf.SETTINGS) -> None:
-    """Each plate as STEP (painted) + Bambu Studio project 3MF + an optional SVG, and csv_path listing what to print
-    and how many. settings: Bambu project settings (bambu3mf.write_settings for your filaments).
+                 preview_dir: Path | None = None, settings: Path | None = None, slicer=None,
+                 colors: int | None = None, color_changes: int | None = None) -> None:
+    """Each plate as STEP (painted) + the slicer's project file + an optional SVG, and csv_path listing what to print
+    and how many. slicer: default the one in your settings (cadkit.slicers.active()). settings: the slicer's project
+    settings (for Bambu, bambu3mf.write_settings for your filaments); default its template.
     filament_for(body label) -> filament number; multi-color parts are one object with a part per color
-    body, so the upper color can't drop onto the bed."""
+    body, so the upper color can't drop onto the bed.
+
+    colors (default: settings) is how many filaments the printer can use: with 1, every body goes on filament 1;
+    a plate needing a filament past it stops with the options. A plate with more color swaps than color_changes
+    (default: settings) still gets written, with a warning saying what to do instead; pass the number a design
+    accepts."""
+    from cadkit import slicers
+    from cadkit.checks import ADVICE
+    from cadkit.settings import settings as cfg
+    slicer = slicer or slicers.active()
+    colors = cfg().colors if colors is None else colors
+    budget = cfg().color_changes if color_changes is None else color_changes
+    if colors == 1:
+        filament_for = lambda name: 1  # a one-color printer: everything on filament 1
     folder.mkdir(parents=True, exist_ok=True)
     rows = []
     for pl in plates:
@@ -55,7 +72,16 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
             else:
                 for body in (s.children if isinstance(s, Compound) and s.children else [s]):
                     objects.append((s.label, [(s.label, body, filament_for(s.label))]))
-        bambu3mf.write(folder / f"{pl.name}.3mf", objects, settings)
+        over = sorted({f for _, parts in objects for _, _, f in parts if f > colors})
+        if over:
+            raise ValueError(f"plate {pl.name}: filament {', '.join(map(str, over))}, but the printer has {colors} "
+                             f"colors (CADKIT_COLORS). Set CADKIT_COLORS=1 to print everything in one color, or "
+                             f"change the project's filament numbers. " + ADVICE)
+        swaps = count_changes(pl.items, key=lambda name, body: filament_for(name)) if colors > 1 else 0
+        allowed = budget if pl.color_changes is None else pl.color_changes
+        if swaps > allowed:
+            warnings.warn(f"{pl.name}: {swaps} color changes, over the budget of {allowed}. " + ADVICE, stacklevel=2)
+        slicer.write_project(folder / f"{pl.name}{slicer.project_suffix}", objects, settings)
         if preview_dir is not None:
             write_svg(comp, preview_dir / f"plate_{pl.name}.svg", TOP)
         counts = {}

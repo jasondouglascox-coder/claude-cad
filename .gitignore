@@ -8,3 +8,6 @@ __pycache__/
 
 # Claude Code per-user settings
 .claude/settings.local.json
+
+# Your setup (see cadkit.toml.example); never committed, so git pull never conflicts
+cadkit.toml

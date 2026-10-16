@@ -149,3 +149,8 @@ plates and packing, and the bus cradle.
   would sit 1.54 mm below the railhead, inside the 1.6 mm deep-flange limit.
 - The fit coupon's three groove samples now give 0.05 / 0.1 / 0.15 mm play per side against the real base. If the
   rail won't go under the lips on any of them, raise `shoulder_h` to 0.8.
+- **2026-10-16, the bed comes from settings.** `bed`, `bed_y` and `bed_margin` in params now default to the user's
+  `cadkit.settings` (`CADKIT_BED...` or `cadkit.toml`) instead of a hard-coded 256 mm; with nothing set they are
+  still the A1's 256 × 256 and 5 mm, so every plate is unchanged. `bed_usable` is the shorter side. Half spans and
+  ladders are still sized for the A1: on a smaller bed the fit tests fail with the numbers. Slicer tests go
+  through `cadkit.slicers.active()` and skip when no slicer is installed.

@@ -1,0 +1,26 @@
+# Your setup. Copy this file to cadkit.toml (at the repo root, gitignored) or ~/.config/cadkit/cadkit.toml,
+# uncomment what differs from the defaults, and check with:
+#     cd cadkit && uv run python -m cadkit.settings
+# Every key also has an environment variable, which wins over this file (shown after each key).
+
+[printer]
+# bed = 256            # CADKIT_BED: square bed side, mm (sets bed_x and bed_y)
+# bed_x = 256          # CADKIT_BED_X: bed width, mm (Prusa MK4: 250, Ender 3: 220)
+# bed_y = 256          # CADKIT_BED_Y: bed depth, mm (Prusa MK4: 210)
+# margin = 5           # CADKIT_MARGIN: kept clear across the bed, half on each edge
+# layer = 0.2          # CADKIT_LAYER: layer height; tops and color seams land on multiples of it
+# first_layer = 0.2    # CADKIT_FIRST_LAYER: when it differs from layer
+# nozzle = 0.4         # CADKIT_NOZZLE
+
+[colors]
+# count = 4            # CADKIT_COLORS: filaments one print can use (AMS lite: 4; no AMS: 1, everything on filament 1)
+# changes = 1          # CADKIT_COLOR_CHANGES: color swaps per plate before the build warns
+
+[slicer]
+# name = "bambu"       # CADKIT_SLICER: bambu, or none (plates only, slicer checks skipped); see CONTRIBUTING.md
+# path = "/Applications/BambuStudio.app/Contents/MacOS/BambuStudio"   # CADKIT_SLICER_PATH: the slicer's executable
+# settings = "my_project_settings.config"   # CADKIT_SLICER_SETTINGS: project-settings template (Bambu: save a
+#                                            # project from your printer, unzip it, take Metadata/project_settings.config)
+
+[projects]
+# dir = "~/prints"     # CADKIT_PROJECTS: where `python -m cadkit.new` creates projects (default: examples/)

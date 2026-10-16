@@ -1,7 +1,8 @@
 """Every dimension in the project. Units: millimetres. Parts read these; nothing else hard-codes a size."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from cadkit import Printer
+from cadkit.settings import settings
 
 INCH = 25.4
 
@@ -193,9 +194,11 @@ class Params:
     fit_slide: float = 0.20
     fit_snap: float = 0.05
 
-    # printer (Bambu A1)
-    bed: float = 256.0
-    bed_margin: float = 5.0
+    # printer: yours, from cadkit.settings (CADKIT_BED... or cadkit.toml); with nothing set, the A1's 256 x 256 mm.
+    # Half spans and ladders are sized to fit bed_usable; a smaller bed fails the fit tests with the numbers.
+    bed: float = field(default_factory=lambda: settings().bed_x)
+    bed_y: float = field(default_factory=lambda: settings().bed_y)
+    bed_margin: float = field(default_factory=lambda: settings().margin)
     # Bambu Studio filament per print color (the plate 3MFs assign them per part). The user's AMS: 1 gray PETG,
     # 2 brown PETG; the white PLA for the ceiling cleats goes in 3 when they print.
     filament_gray: int = 1
@@ -245,11 +248,12 @@ class Params:
 
     @property
     def bed_usable(self) -> float:
-        return self.bed - self.bed_margin
+        """The usable square: the shorter side."""
+        return min(self.bed, self.bed_y) - self.bed_margin
 
     @property
     def printer(self) -> Printer:
-        return Printer(bed=self.bed, margin=self.bed_margin)
+        return Printer(bed=self.bed, bed_y=None if self.bed_y == self.bed else self.bed_y, margin=self.bed_margin)
 
 
 P = Params()

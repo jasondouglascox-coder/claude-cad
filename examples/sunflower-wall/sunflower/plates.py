@@ -1,6 +1,6 @@
 """What to print: three plate designs (back quarter + 3 pins x4: 8 needed, 4 spare; front quarter with its orange
 beads x4, seed head x1)."""
-from cadkit.plates import Plate, pack
+from cadkit.plates import Plate, color_changes, pack
 from sunflower.params import Params
 from sunflower.parts import center, pin, quarter
 
@@ -22,5 +22,7 @@ def plans(p: Params) -> list[Plate]:
         beds = pack(items, p.printer)
         if len(beds) != 1:
             raise ValueError(f"{name} needs {len(beds)} beds; it should fit on one")
-        out.append(Plate(name, qty, beds[0]))
+        # the front plate's orange beads swap on every layer they cross: accepted in the spec (beads amendment)
+        accept = color_changes(beds[0], key=lambda n, b: filament_for(p)(n)) if name == "front_quarter" else None
+        out.append(Plate(name, qty, beds[0], color_changes=accept))
     return out

@@ -87,3 +87,8 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
   nozzle sets them). Sliced: a 16" front plate is 2.75 h, 59.4 g (orange on layers 29-42); the 10" is 9.2 h,
   203 g (orange on layers 59-72, then black and brown), 16 swaps in all. The user liked the render: "it adds
   the depth we were missing".
+- **2026-10-16, color budget per plate.** cadkit now warns when a plate swaps colors more than the user's budget
+  (`CADKIT_COLOR_CHANGES`, default 1). The bead swaps above are accepted, so `front_quarter` and `sunflower_10in`
+  carry `Plate(color_changes=...)` set to what their beads cost (cadkit counts 16 and 18; Bambu sliced the 10" at
+  16). The other plates stay held to the budget. The 10" flower centers on the bed's middle, rectangular beds
+  included; its slicer tests skip on setups with fewer than 4 colors.

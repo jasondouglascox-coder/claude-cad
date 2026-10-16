@@ -147,7 +147,7 @@ def test_deck_halves_nest_on_one_plate(bay):
     a, b = pair.solids()
     bb = pair.bounding_box()
     assert bb.min.Z == pytest.approx(0, abs=1e-6)
-    assert bb.size.X <= D.bed - 2 * D.bed_margin and bb.size.Y <= D.bed - 2 * D.bed_margin
+    assert max(bb.size.X, bb.size.Y) <= D.bed_usable - D.bed_margin  # packed either way round, a margin to spare
     assert a.distance_to(b) >= plates.GAP - 1e-3
 
 

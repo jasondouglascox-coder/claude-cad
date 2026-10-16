@@ -23,7 +23,7 @@ def test_starter_parts_watertight_flat_on_bed(starter):
         for name, s in pl.items:
             bb = s.bounding_box()
             assert bb.min.Z == pytest.approx(0, abs=1e-6), name
-            assert 0 <= bb.min.X and bb.max.X <= P.bed and 0 <= bb.min.Y and bb.max.Y <= P.bed, name
+            assert 0 <= bb.min.X and bb.max.X <= P.printer.bed and 0 <= bb.min.Y and bb.max.Y <= P.bed_y, name
             bodies = s.children if plates.is_two_color(s) else [s]
             for b in bodies:
                 assert b.is_valid, name
