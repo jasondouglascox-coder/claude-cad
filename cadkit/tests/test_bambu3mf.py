@@ -88,6 +88,15 @@ def test_filament_settings_set_type_and_color_per_slot(tmp_path):
     assert got["head_wrap_detect_zone"] == base["head_wrap_detect_zone"]
 
 
+def test_settings_move_the_prime_tower(tmp_path):
+    """A print that fills the bed leaves only a corner for the prime tower; the default spot would overlap it."""
+    got = json.loads(bambu3mf.write_settings(tmp_path / "s.config", PLA4, tower=(4.0, 5.0, 30.0)).read_text())
+    assert (got["wipe_tower_x"], got["wipe_tower_y"], got["prime_tower_width"]) == (["4.0"], ["5.0"], "30.0")
+    base = json.loads(bambu3mf.SETTINGS.read_text())
+    plain = json.loads(bambu3mf.write_settings(tmp_path / "p.config", PLA4).read_text())
+    assert plain["wipe_tower_x"] == base["wipe_tower_x"] and plain["prime_tower_width"] == base["prime_tower_width"]
+
+
 def test_filament_settings_need_a_type_the_template_has(tmp_path):
     with pytest.raises(ValueError, match="ABS"):
         bambu3mf.write_settings(tmp_path / "s.config", [("ABS", "#000000")] * 4)

@@ -65,10 +65,14 @@ def _object_file(parts: list[tuple[str, Shape, int]], ids: list[int], key: str) 
 _NOT_PER_FILAMENT = {"printable_area", "head_wrap_detect_zone", "filament_self_index"}
 
 
-def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SETTINGS) -> Path:
+def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SETTINGS,
+                   tower: tuple[float, float, float] | None = None) -> Path:
     """Project settings for your own AMS set: filaments[i] = (type, "#RRGGBB") for slot i + 1. Each slot copies every
     per-filament setting (temperatures, speeds, preset id) from the first template slot of that type, then takes
-    its color. The template's slot count stays (Bambu's flush matrix is sized for it)."""
+    its color. The template's slot count stays (Bambu's flush matrix is sized for it).
+
+    tower = (x, y, width): the prime tower's front-left corner on the bed and its width, for prints that leave no
+    room at the template's spot (Bambu refuses to slice when the tower overlaps the print)."""
     cfg = json.loads(Path(base).read_text())
     types = cfg["filament_type"]
     n = len(types)
@@ -84,6 +88,9 @@ def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SE
             cfg[key] = [val[i] for i in src]
     for key in ("filament_colour", "filament_multi_colour"):
         cfg[key] = [c for _, c in filaments]
+    if tower is not None:
+        x, y, w = tower
+        cfg["wipe_tower_x"], cfg["wipe_tower_y"], cfg["prime_tower_width"] = [str(x)], [str(y)], str(w)
     path = Path(path)
     path.write_text(json.dumps(cfg, indent=4))
     return path
