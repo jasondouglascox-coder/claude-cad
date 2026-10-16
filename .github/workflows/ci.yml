@@ -17,7 +17,7 @@ jobs:
   test:
     name: ${{ matrix.project }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -28,6 +28,12 @@ jobs:
           - examples/candle-adapter
           - examples/near-ceiling-track
           - examples/sunflower-wall
+        include:
+          - pytest: -n 4 -m "not slow"
+          # Each xdist worker builds the whole flower, so one process. The 10" one-piece tests (test_small.py)
+          # peak at ~20 GB and ~40 min, past a 16 GB runner; run them locally.
+          - project: examples/sunflower-wall
+            pytest: -p no:xdist -m "not slow" --ignore=tests/test_small.py
     defaults:
       run:
         working-directory: ${{ matrix.project }}
@@ -41,7 +47,7 @@ jobs:
           cache-dependency-glob: ${{ matrix.project }}/uv.lock
       - run: uv sync --locked
       # Bambu Studio isn't on the runner, so its tests skip; slow tests run locally before a print.
-      - run: uv run pytest -n 4 -m "not slow"
+      - run: uv run pytest ${{ matrix.pytest }} --durations=10
 
   # The one check branch protection requires, so the matrix can change without touching the ruleset.
   all-tests:

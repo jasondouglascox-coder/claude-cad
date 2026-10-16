@@ -42,10 +42,11 @@ cd cadkit && uv sync && uv run pytest -n 4
 cd examples/fit-coupon && uv sync && uv run pytest
 cd examples/candle-adapter && uv sync && uv run pytest
 cd examples/near-ceiling-track && uv sync && uv run pytest -n 4 -m "not slow"   # full suite ~25 min
-cd examples/sunflower-wall && uv sync && uv run pytest -n 4 -m "not slow"
+cd examples/sunflower-wall && uv sync && uv run pytest -p no:xdist -m "not slow"   # ~50 min, ~20 GB peak
 ```
 
-Heavy suites use a lot of memory per worker. Lower `-n` if your machine starts swapping.
+Heavy suites use a lot of memory per worker, because each worker builds its own whole-model fixtures. Lower `-n`
+if your machine starts swapping.
 
 Bambu Studio is optional. Tests that drive its CLI skip when it isn't installed.
 
@@ -74,7 +75,9 @@ Copy `examples/fit-coupon`, rename the package, and keep its layout (`params.py`
 
 ### CI
 
-Every PR runs each project's `-m "not slow"` suite on Linux. A PR merges only once CI is green. Workflows on a
+Every PR runs each project's `-m "not slow"` suite on Linux. The sunflower's 10" one-piece tests
+(`examples/sunflower-wall/tests/test_small.py`) need more memory than a CI runner has. If you touch the sunflower
+or cadkit, run them locally and say so in the PR. A PR merges only once CI is green. Workflows on a
 first-time contributor's PR wait for maintainer approval before they run.
 
 ### Commit messages
