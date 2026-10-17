@@ -27,9 +27,10 @@ def placed_parts(p: Params = P, bays: list[float] = L.BAYS, ends: tuple = L.RUN_
     key = named(keystone.make(p), "keystone")
     for i, (x0, b) in enumerate(zip(xs, bays)):
         half = named(arch_half.make(p, b), f"arch_half_{b:.1f}mm")
+        first = named(arch_half.make(p, b, start=True), f"arch_half_{b:.1f}mm_start") if arch_half.mirrored(p) else half
         for y in p.rail_ys:
-            out.append((f"bay{i}_{side(y)}_arch_start", arch_half.place(p, x0, b, y, end=False) * half))
-            out.append((f"bay{i}_{side(y)}_arch_end", arch_half.place(p, x0, b, y, end=True) * half))
+            out.append((f"bay{i}_{side(y)}_arch_start", arch_half.place_half(p, x0, b, y, start=True) * first))
+            out.append((f"bay{i}_{side(y)}_arch_end", arch_half.place_half(p, x0, b, y, start=False) * half))
             out.append((f"bay{i}_{side(y)}_keystone", keystone.place(p, x0 + b / 2, y) * key))
         for k, u in enumerate(L.post_us(p, b)):
             d = L.cf_depth(p, b, u)

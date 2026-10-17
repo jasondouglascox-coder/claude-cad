@@ -115,12 +115,22 @@ uv run python -m hotrain.build wire-test   # out/wire_test: plates, plates.csv, 
   swap once, at the tie tops.
 - Measure the wire with calipers and set `wire_d` in `hotrain/params.py` before printing.
 
+## Rivets
+
+<img src="docs/images/rivets_closeup.png" width="45%" alt="Close-up of a deck truss end: rows of small round rivet heads along the chords, end post and diagonals; the concrete pier is bare">
+
+The deck truss has gray rivet heads on its room face: 0.8 mm dots, two layers proud, in rows along every member.
+The pier stays bare. Each panel prints one normal half and one mirror-image half (`…_start`), so both halves show
+their rivets to the room. Set `rivet_d = 0` in `hotrain/params.py` for flat panels. The corner trusses have none
+yet: their room face prints against the bed.
+
 ## Install a straight bay
 
 1. **Brackets** at each pier: #8 screws into studs, or self-drilling drywall anchors where there's no stud. Level
    them with the ±¼" slots, then tighten.
 2. **On the bench:**
-   - Join each side's two truss halves with the bow-tie keys.
+   - Join each side's two truss halves with the bow-tie keys: one `arch_half_…` and one `arch_half_…_start` (its
+     mirror image), **rivet side out toward the room**. Both panels of a bay are built the same way.
    - Slide the cross-frames up onto both panels at the posts. They only go in from below.
    - Glue the cross-frames (and optionally the keys), making one rigid box.
 3. **Hang the box:** drop it into the brackets. The half-lap notches seat and the latches click.

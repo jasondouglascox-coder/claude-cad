@@ -77,6 +77,10 @@ class Params:
     dt_key_head: float = 8.0
     dt_key_waist: float = 4.5
     dt_lap: float = 1.0  # members overlap so joints are areas (3MF-safe)
+    rivet_d: float = 0.8  # deck truss rivet heads on the room face: smallest round bump the 0.4 nozzle prints
+    rivet_h: float = 0.4  # two 0.2 mm layers (snapped to your layers)
+    rivet_pitch: float = 2.5  # along each member row
+    rivet_margin: float = 0.2  # heads stay this far inside a member's edges
     pier_cap_h: float = 4.0  # concrete-look pier: ledge under the top chord
     pier_cap_out: float = 1.5
     pier_batter: float = 2.5  # pier face flares out this much at the bottom

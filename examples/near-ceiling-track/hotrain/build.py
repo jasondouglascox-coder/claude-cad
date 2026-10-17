@@ -59,7 +59,12 @@ def part_list(p: Params, bays: list[float], ends: tuple = L.RUN_ENDS) -> list[tu
     rows = []
     for b, n in sorted(Counter(round(b, 3) for b in bays).items()):
         tag = f"{b:.1f}mm"
-        rows.append((f"arch_half_{tag}", arch_half.make(p, b), 4 * n, f"{n} bay(s) of {b:.1f} mm; 2 panels x 2 halves"))
+        if arch_half.mirrored(p):  # deck truss: an end half and a mirror-image start half per panel
+            rows.append((f"arch_half_{tag}", arch_half.make(p, b), 2 * n, f"{n} bay(s) of {b:.1f} mm; end halves"))
+            rows.append((f"arch_half_{tag}_start", arch_half.make(p, b, start=True), 2 * n,
+                         f"{n} bay(s) of {b:.1f} mm; start halves (mirror image, rivets to the room)"))
+        else:
+            rows.append((f"arch_half_{tag}", arch_half.make(p, b), 4 * n, f"{n} bay(s) of {b:.1f} mm; 2 panels x 2 halves"))
         for k, u in enumerate(L.post_us(p, b)):
             d = L.cf_depth(p, b, u)
             rows.append((f"cross_frame_{tag}_{k}", cross_frame.make(p, d), 2 * n, f"post {k + 1} from each pier"))

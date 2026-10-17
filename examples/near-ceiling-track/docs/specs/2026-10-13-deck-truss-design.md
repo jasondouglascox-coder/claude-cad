@@ -154,3 +154,25 @@ plates and packing, and the bus cradle.
   still the A1's 256 × 256 and 5 mm, so every plate is unchanged. `bed_usable` is the shorter side. Half spans and
   ladders are still sized for the A1: on a smaller bed the fit tests fail with the numbers. Slicer tests go
   through `cadkit.slicers.active()` and skip when no slicer is installed.
+
+## Amendments (2026-10-17): rivet heads
+
+- **Rivet heads on the room face**, gray bumps for realism: 0.8 mm across, 0.4 mm (two layers) proud, at 2.5 mm
+  along each member.
+  - Two rows along each chord and the end post, one along each vertical, diagonal and the mid-bay post, and a grid
+    on the splice plate. The concrete-look pier stays bare.
+  - A head is kept only where the whole dot (plus 0.2 mm) stands on the member, and never touches another head.
+  - None within the cross-frames' slots at each post: they grip both panels there, and the assembly clash test
+    caught heads inside them. The verticals sit behind the cross-frames, so they carry none.
+  - Real HO heads are about 0.3 mm, too small for the 0.4 mm nozzle; 0.8 mm is the smallest that prints round.
+    Bambu prints them: the slow test slices a pair of halves up to the rivet tops.
+- **Each panel prints a mirror-image start half.** The halves print rivets-up. The start half used to be the end
+  half turned 180°, which would have put its rivets on the wall side.
+  - Each bay is now 2 end halves + 2 start halves (`arch_half_<bay>` and `arch_half_<bay>_start`), and each half-span
+    plate prints one of each. The plate list and counts are otherwise unchanged.
+  - Placed, the mirrored start half fills exactly the space the old one did (tested), so brackets, latches,
+    cross-frames and keys are unchanged.
+- The arch style and the corner trusses get no rivets. A corner frame prints its outer (room) face down, because
+  its U-ledges must face up. Riveting it would mean printing the ledges as separate glued strips; that's deferred
+  until the user has seen the straight trusses.
+

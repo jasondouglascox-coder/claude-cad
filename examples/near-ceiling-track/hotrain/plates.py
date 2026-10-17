@@ -17,18 +17,29 @@ from hotrain.parts import arch_half, bracket, cross_frame, end_pier, handrail, k
 
 @lru_cache(maxsize=None)
 def nested_arch_pair(p: Params, bay_len: float) -> Compound:
-    """Two arch halves head-to-tail (one turned 180°), as close as GAP allows."""
+    """A panel's two halves on one plate as close as GAP allows: the end half and the start half (the deck truss's
+    mirror image; the arch's same half), the second head-to-tail or upright, whichever packs tighter."""
+    tag = f"arch_half_{bay_len:.1f}mm"
     a = _zeroed(arch_half.make(p, bay_len))
-    w, h = a.bounding_box().size.X, a.bounding_box().size.Y
-    low = _zeroed(Rot(0, 0, 180) * a)
-    lo, hi = 0.0, h + GAP + 1
-    for _ in range(14):  # binary search the smallest lift that keeps GAP clearance
-        mid = (lo + hi) / 2
-        if (Pos(0, mid, 0) * a).distance_to(low) >= GAP:
-            hi = mid
-        else:
-            lo = mid
-    return Compound(children=[low, Pos(0, hi, 0) * a])
+    a.label = tag
+    b = _zeroed(arch_half.make(p, bay_len, start=True))
+    b.label = tag + ("_start" if arch_half.mirrored(p) else "")
+    best = None
+    for low in (_zeroed(Rot(0, 0, 180) * b), b):
+        h = a.bounding_box().size.Y
+        lo, hi = 0.0, h + GAP + 1
+        for _ in range(14):  # binary search the smallest lift that keeps GAP clearance
+            mid = (lo + hi) / 2
+            if (Pos(0, mid, 0) * a).distance_to(low) >= GAP:
+                hi = mid
+            else:
+                lo = mid
+        if best is None or hi < best[0]:
+            best = (hi, low)
+    hi, low = best
+    up = Pos(0, hi, 0) * a
+    up.label, low.label = a.label, b.label
+    return Compound(children=[low, up])
 
 
 def pack(p: Params, items: list[tuple[str, Shape]]) -> list[list[tuple[str, Shape]]]:
