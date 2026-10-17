@@ -77,3 +77,17 @@ def test_corner_plates_valid_and_complete():
                 got.update(n for n, _ in pl.items)
         assert got == expected
     assert any(pl.name == "rod_jig" for pl in pls)
+
+
+@pytest.mark.slow
+def test_corner_plates_keep_pla_off_petg_and_swap_at_most_once():
+    """The white PLA ceiling cleats print on their own bed: PLA and PETG want different temperatures, and white
+    beside gray in the same layers would swap filament every layer."""
+    from cadkit.plates import color_changes, is_multi_color
+    from hotrain.build import filament
+    for pl in plates.corner_plates(P):
+        labels = [b.label for _, s in pl.items for b in (s.children if is_multi_color(s) else [s])]
+        names = [n for n, s in pl.items if not is_multi_color(s)] + [l for l in labels if l.endswith(("_wood", "_steel"))]
+        fils = {filament(P, n) for n in names}
+        assert P.filament_white not in fils or fils == {P.filament_white}, pl.name
+        assert color_changes(pl.items, P.printer, key=lambda n, b: filament(P, n)) <= 1, pl.name

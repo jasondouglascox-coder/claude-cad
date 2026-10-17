@@ -78,7 +78,8 @@ A whole-room file takes a few minutes to translate.
   `filament_gray`, `filament_brown` and `filament_white` in `hotrain/params.py` if the slots move.
 - Tie-ladder and corner-deck plates are two-color: each part is one object, brown "wood" and gray "steel" parts.
   One color change per plate, at the tie tops.
-- Every other plate is single-color gray. The ceiling cleats are white PLA.
+- Every other plate is single-color gray, except `bridge_corner_cleats`: the two ceiling cleats, alone in white
+  PLA (PLA prints cooler than PETG, so it never shares a bed with gray).
 
 ## Install a straight bay
 

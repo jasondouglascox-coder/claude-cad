@@ -207,3 +207,12 @@ The bus leaves the viaduct's wall-side cradle at each corner anchor and runs und
   - Everything is on the room side, so the corner can be re-levelled with the screws in. The cleat prints on its side with no supports.
   - All floor beams are now standard. `floor_beam_drop` and the picture cable are no longer used, and the layout sheet's rows
     are now "ceiling anchor".
+
+## 16. Amendment (2026-10-16): ceiling cleats on their own plate
+
+- The two white PLA ceiling cleats (`ceiling_anchor`) were packed with the bridge corner's gray PETG frames and floor
+  beams (`bridge_corner_3`). PLA and PETG want different nozzle and bed temperatures, and white beside gray in the
+  same layers would have swapped filament on nearly every layer (cadkit's new color-budget check counted ~30).
+- `corner_plates` now packs the cleats separately: plate `bridge_corner_cleats` (white PLA only, printed once). The
+  gray corner plates repack without them. A test keeps PLA off PETG plates and every corner plate to at most one
+  color change.

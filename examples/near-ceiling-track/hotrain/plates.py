@@ -150,14 +150,22 @@ def corner_kit(p: Params, corner) -> list[tuple[str, Shape]]:
 
 
 def corner_plates(p: Params = P) -> list[Plate]:
-    """Plates for the three inside corners (printed 3x), the bridge corner, and the rod-bending jig."""
+    """Plates for the three inside corners (printed 3x), the bridge corner, and the rod-bending jig. The white PLA
+    ceiling cleats get their own plate: PLA and PETG print at different temperatures, and white beside gray in the
+    same layers would swap filament every layer."""
     from hotrain import corner_layout as CL
     from hotrain.parts import rod_jig
     out = []
     for corner, qty in ((CL.inside_corner(), 3), (CL.bridge_corner(), 1)):
-        packed = pack(p, corner_kit(p, corner))
+        kit = corner_kit(p, corner)
+        petg = [it for it in kit if not it[0].startswith("ceiling_anchor")]
+        pla = [it for it in kit if it[0].startswith("ceiling_anchor")]
+        packed = pack(p, petg)
         for n, pl in enumerate(packed):
             name = f"{corner.name}_corner" + (f"_{n + 1}" if len(packed) > 1 else "")
             out.append(Plate(name, qty, pl))
+        cleats = pack(p, pla) if pla else []
+        out += [Plate(f"{corner.name}_corner_cleats" + (f"_{n + 1}" if len(cleats) > 1 else ""), qty, pl)
+                for n, pl in enumerate(cleats)]
     out.append(Plate("rod_jig", 1, pack(p, [("rod_jig", rod_jig.make(p))])[0]))
     return out
