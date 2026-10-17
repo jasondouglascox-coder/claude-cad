@@ -45,6 +45,12 @@ def is_multi_color(s: Shape) -> bool:
 is_two_color = is_multi_color  # the original name
 
 
+def bodies(s: Compound) -> list[Shape]:
+    """A multi-color part's bodies where the part is now. Moving or turning a Compound (a packer placing it) moves
+    the Compound only: its children keep their first place, so apply the Compound's location to each."""
+    return [s.location * c for c in s.children]
+
+
 def _color(name: str, body: Shape):
     col = getattr(body, "color", None)
     return None if col is None else tuple(round(c, 3) for c in tuple(col)[:3])
@@ -58,7 +64,7 @@ def _bands(x, key=None) -> list[tuple[float, float, object]]:
     items = x if isinstance(x, list) else [(getattr(x, "label", ""), x)]
     out = []
     for name, s in items:
-        for label, b in ([(c.label, c) for c in s.children] if is_multi_color(s) else [(name, s)]):
+        for label, b in ([(c.label, c) for c in bodies(s)] if is_multi_color(s) else [(name, s)]):
             bb = b.bounding_box()
             out.append((bb.min.Z, bb.max.Z, key(label, b)))
     return out

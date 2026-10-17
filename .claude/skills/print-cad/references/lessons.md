@@ -56,6 +56,19 @@ From building `examples/near-ceiling-track`: a 3D-printed HO railroad shelf arou
 - **Ask for the reference file.** One project the user colored by hand in Bambu Studio showed the exact format, AMS
   slots and preset names, which turned guesswork into a template.
 
+## Slicer truths the B-rep can't show (wire-rail curve, 2026-10-16)
+
+- **Slice every plate, not just one, and read the G-code where it matters.**
+  - A one-line (0.4 mm) lip passed every model test, and Bambu's classic walls left it out completely.
+  - Arachne walls print sub-line features as fat beads that spill into seats and keep-outs.
+  - Size printed features at two lines or more. Check the G-code's top layer and line positions against the
+    keep-outs (G2/G3 arcs carry their centres in I/J).
+- **Mesh tolerance is millimetres only if you ask for it.** build123d's `tessellate` is relative to edge size, so a
+  long gentle arc was chorded 0.14 mm off. `cadkit.bambu3mf.mesh` now meshes with an absolute deflection.
+- **A moved Compound's children don't move.** `Pos(...) * compound` moves the compound; `.children` keep their old
+  place. Every two-color part on a packed plate was written at the same spot until `cadkit.plates.bodies()`
+  applied the location. A roundtrip "same objects" check can't see it; only slicing a multi-part plate did.
+
 ## Tooling and process
 
 - **Long suites run in the background.** Mark minutes-long tests slow, use pytest-xdist, iterate on `-m "not slow"`,

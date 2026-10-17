@@ -8,7 +8,7 @@ from typing import Callable
 from build123d import Compound, ExportSVG, LineType, Shape
 
 from cadkit import paint
-from cadkit.plates import Plate, is_multi_color
+from cadkit.plates import Plate, bodies, is_multi_color
 from cadkit.plates import color_changes as count_changes
 
 TOP = ((0, 0, 1), (0, 1, 0))  # (view direction toward the eye, up): flat parts from above
@@ -68,9 +68,9 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
         objects = []
         for s in children:
             if is_multi_color(s):
-                objects.append((s.label, [(b.label, b, filament_for(b.label)) for b in s.children]))
+                objects.append((s.label, [(b.label, b, filament_for(b.label)) for b in bodies(s)]))
             else:
-                for body in (s.children if isinstance(s, Compound) and s.children else [s]):
+                for body in (bodies(s) if isinstance(s, Compound) and s.children else [s]):
                     objects.append((s.label, [(s.label, body, filament_for(s.label))]))
         over = sorted({f for _, parts in objects for _, _, f in parts if f > colors})
         if over:

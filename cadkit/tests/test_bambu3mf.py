@@ -145,3 +145,39 @@ def test_bambu_slices_three_colors_in_height_order(tmp_path):
                  colors=4, color_changes=2)
     report = bambu.slice_report(tmp_path / "pl.3mf", tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (3,), (4,)]
+
+
+def test_mesh_holds_curves_to_tol_in_mm_on_big_arcs():
+    """tol is millimetres, not a fraction of each edge: an 18° arc of a 550 mm radius stays within 0.02 mm of true
+    (build123d's own tessellate is relative, which put a corner deck's rails 0.14 mm inside its curve)."""
+    import math
+    from build123d import Axis, Plane, Rectangle, revolve
+    ring = revolve(Plane.XZ * Pos(551, 1) * Rectangle(2, 2), Axis.Z, 18)
+    v, t = bambu3mf.mesh(ring, tol=0.01)
+    cen = v[t].mean(axis=1)
+    rad = np.hypot(cen[:, 0], cen[:, 1])
+    assert rad.min() >= 550 - 0.02, f"triangles {550 - rad.min():.3f} mm inside the inner face"
+
+
+def test_moved_two_color_parts_are_written_where_they_were_placed(tmp_path, two_color):
+    """A packer moves (and turns) each two-color Compound; its bodies must follow. They kept their first place once,
+    so every ladder on a plate landed on the same spot and Bambu refused to slice ("gcode path conflicts")."""
+    from build123d import Rot
+    a = Pos(10, 10, 0) * two_color()
+    b = Pos(150, 120, 0) * (Rot(0, 0, 90) * two_color())
+    path = _write(tmp_path, [("deck", a), ("deck2", b)])
+    box_of = lambda lo, hi: tuple(round(float(q), 1) for q in (*lo, *hi))
+    written = sorted(box_of(v.min(axis=0), v.max(axis=0)) for v, _ in bambu3mf.read_meshes(path).values())
+    placed = sorted(box_of((bb.min.X, bb.min.Y, bb.min.Z), (bb.max.X, bb.max.Y, bb.max.Z))
+                    for part in (a, b) for body in part.children
+                    for bb in [(part.location * body).bounding_box()])
+    assert written == placed
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_slices_a_plate_of_moved_two_color_parts(tmp_path, two_color):
+    from build123d import Rot
+    items = [("deck", Pos(10, 10, 0) * two_color()), ("deck2", Pos(150, 120, 0) * (Rot(0, 0, 90) * two_color()))]
+    report = bambu.slice_report(_write(tmp_path, items), tmp_path / "s.3mf")
+    assert [r[0] for r in report["layers"]] == [(2,), (1,)]
