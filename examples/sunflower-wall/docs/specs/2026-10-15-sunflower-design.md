@@ -92,3 +92,8 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
   carry `Plate(color_changes=...)` set to what their beads cost (cadkit counts 16 and 18; Bambu sliced the 10" at
   16). The other plates stay held to the budget. The 10" flower centers on the bed's middle, rectangular beds
   included; its slicer tests skip on setups with fewer than 4 colors.
+- **MakerWorld (2026-10-16):** one model with two print profiles, each a sliced project with every plate
+  (`build makerworld`): `sunflower_16in` (back quarter, front quarter, seed head; "(print 4)" where it applies) and
+  `sunflower_10in`. They can't share a file, because the 10" keeps its prime tower in the front-left corner. The
+  16" plates now pack around the A1's back-left prime-tower corner (cadkit); the plate list didn't change.
+

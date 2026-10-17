@@ -133,6 +133,8 @@ the background.
 - `out/plates/*.3mf` + `.step` and `plates.csv` (plate, quantity, contents) from `cadkit.export.write_plates`,
   written by the user's slicer (`cadkit.slicers`): for Bambu Studio a project with a filament per part, so it opens
   colored (File → Open Project); other slicers load the geometry.
+- `out/makerworld/*.3mf`: one sliced project per print profile (every plate, its G-code and thumbnail), to share on
+  MakerWorld; see "Sharing on MakerWorld" in `references/printing.md`. The user uploads.
 - `out/render/*.png` shaded previews (`cadkit.render`), copied to `docs/images/` for the README.
 - `out/manifest.csv` (part, quantity), and for things that mount: a measurement sheet (CSV, mm and inches) for
   marking walls and ceilings, and cut lengths for any stock.

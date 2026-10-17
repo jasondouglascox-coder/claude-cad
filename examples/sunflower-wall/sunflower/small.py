@@ -141,8 +141,9 @@ def tower(p: Params) -> tuple:
     return (at, at, TOWER_W)
 
 
-def write(p: Params, out: Path) -> None:
+def write(p: Params, out: Path, combined: str | None = None) -> None:
     Path(out).mkdir(parents=True, exist_ok=True)
     settings = bambu3mf.write_settings(Path(out) / "bambu_project_settings.config", list(p.filaments),
                                        tower=tower(p))
-    write_plates(plan(p), Path(out) / "plates", Path(out) / "plates.csv", filament_for(p), settings=settings)
+    write_plates(plan(p), Path(out) / "plates", Path(out) / "plates.csv", filament_for(p), settings=settings,
+                 combined=combined)

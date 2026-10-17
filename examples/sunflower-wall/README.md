@@ -49,6 +49,7 @@ uv run pytest -n 6 -m "not slow"          # ~2 min: printable, watertight, layer
 uv run pytest -n 5                        # + the plate files and Bambu Studio slicing each plate (~10 min)
 uv run python -m sunflower.build          # out/plates, out/step, out/render
 uv run python -m sunflower.build small    # out/small: the 10" one-piece print
+uv run python -m sunflower.build makerworld   # out/makerworld: sunflower_16in + sunflower_10in, sliced, to upload
 ```
 
 Design and decisions: `docs/specs/2026-10-15-sunflower-design.md`. The pictures in `docs/images/` are

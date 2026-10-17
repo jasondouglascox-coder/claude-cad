@@ -16,6 +16,7 @@ is not from Bambu Lab, load geometry data and color data only") and every part l
 Check a file the way the slicer reads it with cadkit.bambu (round trip and slice through Bambu Studio's CLI).
 """
 import json
+import math
 import uuid
 import zipfile
 from pathlib import Path
@@ -102,38 +103,77 @@ def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SE
 
 def write(path: Path, objects: list[tuple[str, list[tuple[str, Shape, int]]]], settings: Path = SETTINGS) -> None:
     """objects: (name, [(part name, shape in bed coordinates, filament number), ...]); one plate per file."""
+    write_plates_project(path, [("", objects)], settings)
+
+
+GRID = 1.2  # Bambu lays plates out every 1.2 beds, left to right then down (measured on a MakerWorld project)
+
+
+def _bed(settings: Path) -> tuple[float, float]:
+    pts = [tuple(float(v) for v in p.split("x")) for p in json.loads(Path(settings).read_text())["printable_area"]]
+    return max(x for x, _ in pts), max(y for _, y in pts)
+
+
+def plate_offsets(n: int, bed: tuple[float, float]) -> list[tuple[float, float]]:
+    """Where Bambu puts plates 1..n on its virtual bed: ceil(sqrt(n)) columns, rows going down."""
+    cols = math.ceil(math.sqrt(n)) if n > 1 else 1
+    return [((i % cols) * GRID * bed[0], -(i // cols) * GRID * bed[1]) for i in range(n)]
+
+
+def _settings_for(settings: Path, n: int) -> str:
+    """The project settings for n plates: Bambu keeps a prime-tower spot per plate, so every plate gets the first one
+    (the corner cadkit.plates.pack keeps free). One plate: the file as it is."""
+    text = Path(settings).read_text()
+    if n == 1:
+        return text
+    cfg = json.loads(text)
+    for key in ("wipe_tower_x", "wipe_tower_y"):
+        if isinstance(cfg.get(key), list) and cfg[key]:
+            cfg[key] = cfg[key][:1] * n
+    return json.dumps(cfg, indent=4)
+
+
+def write_plates_project(path: Path, plates: list[tuple[str, list]], settings: Path = SETTINGS) -> None:
+    """One Bambu project with every plate: plates = [(plate name, objects as write() takes them)], each object in its
+    plate's bed coordinates. Bambu opens it with a tab per plate; it's the file MakerWorld takes."""
+    offsets = plate_offsets(len(plates), _bed(settings)) if len(plates) > 1 else [(0.0, 0.0)]
     model = [f'<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" {NS}>',
              f' <metadata name="Application">BambuStudio-{VERSION}</metadata>',
              ' <metadata name="BambuStudio:3mfVersion">1</metadata>', " <resources>"]
     rels, files, build_items = [], {}, []
     cfg = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"]
-    plate = ["  <plate>", '    <metadata key="plater_id" value="1"/>', '    <metadata key="plater_name" value=""/>',
-             '    <metadata key="locked" value="false"/>']
-    last = 0  # one id sequence for meshes and objects across the package, as Bambu Studio writes it: it keys
-    #           meshes by id alone, so a repeated id makes it reuse another object's mesh
-    for k, (name, parts) in enumerate(objects, start=1):
-        ids = list(range(last + 1, last + 1 + len(parts)))
-        oid, last, fname = ids[-1] + 1, ids[-1] + 1, f"/3D/Objects/object_{k}.model"
-        files[fname[1:]] = _object_file(parts, ids, f"{path.name}/{k}")
-        rels.append(f' <Relationship Target="{fname}" Id="rel-{k}" '
-                    'Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>')
-        model.append(f'  <object id="{oid}" p:UUID="{_uuid(path.name, k)}" type="model">\n   <components>')
-        model += [f'    <component p:path="{fname}" objectid="{i}" p:UUID="{_uuid(path.name, k, "c", i)}" '
-                  f'transform="{IDENTITY}"/>' for i in ids]
-        model.append("   </components>\n  </object>")
-        build_items.append(f'  <item objectid="{oid}" p:UUID="{_uuid(path.name, k, "item")}" '
-                           f'transform="{IDENTITY}" printable="1"/>')
-        cfg += [f'  <object id="{oid}">', f'    <metadata key="name" value={quoteattr(name)}/>',
-                f'    <metadata key="extruder" value="{parts[0][2]}"/>']
-        for i, (pname, _, fil) in zip(ids, parts):
-            cfg += [f'    <part id="{i}" subtype="normal_part">', f'      <metadata key="name" value={quoteattr(pname)}/>',
-                    f'      <metadata key="extruder" value="{fil}"/>', "    </part>"]
-        cfg.append("  </object>")
-        plate += ["    <model_instance>", f'      <metadata key="object_id" value="{oid}"/>',
-                  '      <metadata key="instance_id" value="0"/>', f'      <metadata key="identify_id" value="{k}"/>',
-                  "    </model_instance>"]
+    plate_cfg = []
+    last, k = 0, 0  # one id sequence for meshes and objects across the package, as Bambu Studio writes it: it keys
+    #                 meshes by id alone, so a repeated id makes it reuse another object's mesh
+    for pi, ((pname, objects), (dx, dy)) in enumerate(zip(plates, offsets), start=1):
+        place = IDENTITY if (dx, dy) == (0.0, 0.0) else f"1 0 0 0 1 0 0 0 1 {dx:g} {dy:g} 0"
+        plate = ["  <plate>", f'    <metadata key="plater_id" value="{pi}"/>',
+                 f'    <metadata key="plater_name" value={quoteattr(pname)}/>', '    <metadata key="locked" value="false"/>']
+        for name, parts in objects:
+            k += 1
+            ids = list(range(last + 1, last + 1 + len(parts)))
+            oid, last, fname = ids[-1] + 1, ids[-1] + 1, f"/3D/Objects/object_{k}.model"
+            files[fname[1:]] = _object_file(parts, ids, f"{path.name}/{k}")
+            rels.append(f' <Relationship Target="{fname}" Id="rel-{k}" '
+                        'Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>')
+            model.append(f'  <object id="{oid}" p:UUID="{_uuid(path.name, k)}" type="model">\n   <components>')
+            model += [f'    <component p:path="{fname}" objectid="{i}" p:UUID="{_uuid(path.name, k, "c", i)}" '
+                      f'transform="{IDENTITY}"/>' for i in ids]
+            model.append("   </components>\n  </object>")
+            build_items.append(f'  <item objectid="{oid}" p:UUID="{_uuid(path.name, k, "item")}" '
+                               f'transform="{place}" printable="1"/>')
+            cfg += [f'  <object id="{oid}">', f'    <metadata key="name" value={quoteattr(name)}/>',
+                    f'    <metadata key="extruder" value="{parts[0][2]}"/>']
+            for i, (part, _, fil) in zip(ids, parts):
+                cfg += [f'    <part id="{i}" subtype="normal_part">', f'      <metadata key="name" value={quoteattr(part)}/>',
+                        f'      <metadata key="extruder" value="{fil}"/>', "    </part>"]
+            cfg.append("  </object>")
+            plate += ["    <model_instance>", f'      <metadata key="object_id" value="{oid}"/>',
+                      '      <metadata key="instance_id" value="0"/>', f'      <metadata key="identify_id" value="{k}"/>',
+                      "    </model_instance>"]
+        plate_cfg += plate + ["  </plate>"]
     model += [" </resources>", f' <build p:UUID="{_uuid(path.name, "build")}">'] + build_items + [" </build>", "</model>"]
-    cfg += plate + ["  </plate>", "</config>"]
+    cfg += plate_cfg + ["</config>"]
     rel_head = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                 '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n')
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
@@ -149,7 +189,7 @@ def write(path: Path, objects: list[tuple[str, list[tuple[str, Shape, int]]]], s
         for n, text in files.items():
             z.writestr(n, text)
         z.writestr("Metadata/model_settings.config", "\n".join(cfg))
-        z.writestr("Metadata/project_settings.config", Path(settings).read_text())
+        z.writestr("Metadata/project_settings.config", _settings_for(settings, len(plates)))
 
 
 # ---- reading a 3MF back (tests, and checking what Bambu Studio saved) ---------------------------------------
@@ -171,6 +211,30 @@ def read_filaments(path: Path) -> list[tuple[str, int, dict]]:
         parts = {_meta(pt)["name"]: int(_meta(pt).get("extruder", meta["extruder"])) for pt in o.findall("part")}
         out.append((meta["name"], int(meta["extruder"]), parts))
     return out
+
+
+def _plates(path: Path) -> list[tuple[str, list[str]]]:
+    """[(plate name, [object ids])] in plate order."""
+    cfg = ET.fromstring(zipfile.ZipFile(path).read("Metadata/model_settings.config"))
+    out = []
+    for pl in cfg.iter("plate"):
+        ids = [_meta(mi)["object_id"] for mi in pl.findall("model_instance")]
+        out.append((int(_meta(pl)["plater_id"]), _meta(pl).get("plater_name", ""), ids))
+    return [(name, ids) for _, name, ids in sorted(out)]
+
+
+def read_plates(path: Path) -> list[tuple[str, list[str]]]:
+    """[(plate name, [object names on it])], in plate order."""
+    cfg = ET.fromstring(zipfile.ZipFile(path).read("Metadata/model_settings.config"))
+    names = {o.get("id"): _meta(o)["name"] for o in cfg.iter("object")}
+    return [(name, [names[i] for i in ids]) for name, ids in _plates(path)]
+
+
+def read_plate_offsets(path: Path) -> list[tuple[str, tuple[float, float]]]:
+    """[(plate name, (x, y) translation of its first object's build item)]: where the plate sits on Bambu's grid."""
+    root = ET.fromstring(zipfile.ZipFile(path).read("3D/3dmodel.model"))
+    move = {it.get("objectid"): [float(v) for v in it.get("transform").split()][9:11] for it in root.iter(f"{CORE}item")}
+    return [(name, (round(move[ids[0]][0], 3), round(move[ids[0]][1], 3))) for name, ids in _plates(path)]
 
 
 def read_meshes(path: Path) -> dict[str, tuple[np.ndarray, np.ndarray]]:

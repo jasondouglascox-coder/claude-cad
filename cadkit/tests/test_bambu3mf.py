@@ -197,3 +197,83 @@ def test_bambu_slices_a_full_plate_of_two_color_parts(tmp_path, two_color):
     (pl, *_) = pack([(f"deck{i}", two_color(60.0)) for i in range(80)], A1, colors=4)  # a full first bed
     report = bambu.slice_report(_write(tmp_path, pl), tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (1,)]
+
+
+# --- one project file with every plate (Bambu's multi-plate project, what MakerWorld takes) -----------------
+def _kit(two_color):
+    return [Plate("decks", 1, [("deck", Pos(10, 10, 0) * two_color()), ("deck2", Pos(10, 40, 0) * two_color())]),
+            Plate("block", 1, [("block", box(100, 100, 0, 20, 20, 5))]),
+            Plate("pegs", 3, [("peg", box(20, 20, 0, 5, 5, 8)), ("peg2", box(40, 20, 0, 5, 5, 8))])]
+
+
+def test_combined_project_holds_every_plate_with_its_parts(tmp_path, two_color):
+    write_plates(_kit(two_color), tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit")
+    path = tmp_path / "kit.3mf"
+    assert bambu3mf.read_plates(path) == [("decks", ["deck", "deck2"]), ("block", ["block"]),
+                                          ("pegs (print 3)", ["peg", "peg2"])]
+    fil = {name: parts for name, _, parts in bambu3mf.read_filaments(path)}
+    assert fil["deck"] == {"deck_wood": 2, "deck_steel": 1} and fil["peg"] == {"peg": 1}
+    for name in ("decks", "block", "pegs"):  # the single-plate files are still written
+        assert (tmp_path / f"{name}.3mf").exists()
+
+
+def test_combined_plates_sit_in_bambus_plate_grid(tmp_path, two_color):
+    """Bambu lays plates out left to right, then down, every 1.2 beds (measured on a MakerWorld project)."""
+    write_plates(_kit(two_color), tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit")
+    w = 256 * 1.2
+    cells = {name: xy for name, xy in bambu3mf.read_plate_offsets(tmp_path / "kit.3mf")}
+    assert cells == {"decks": (0.0, 0.0), "block": (w, 0.0), "pegs (print 3)": (0.0, -w)}
+
+
+def test_one_plate_kit_is_the_plain_project(tmp_path, two_color):
+    kit = _kit(two_color)[:1]
+    write_plates(kit, tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit")
+    assert bambu3mf.read_plates(tmp_path / "kit.3mf") == [("decks", ["deck", "deck2"])]
+    assert bambu3mf.read_plate_offsets(tmp_path / "kit.3mf") == [("decks", (0.0, 0.0))]
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_keeps_and_slices_every_plate_of_a_combined_project(tmp_path, two_color):
+    write_plates(_kit(two_color), tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit")
+    src = tmp_path / "kit.3mf"
+    back = bambu.roundtrip(src, tmp_path / "rt.3mf")
+    assert bambu3mf.read_plates(back) == bambu3mf.read_plates(src)
+    assert bambu3mf.same_objects(back, src)
+    reports = bambu.slice_all(src, tmp_path / "s.3mf")
+    assert [[r[0] for r in rep["layers"]] for rep in reports] == [[(2,), (1,)], [(1,)], [(1,)]]
+    names = zipfile.ZipFile(tmp_path / "s.3mf").namelist()
+    assert {f"Metadata/plate_{i}.png" for i in (1, 2, 3)} <= set(names)  # the thumbnails MakerWorld shows
+
+
+def test_combined_project_puts_every_plates_tower_in_the_kept_corner(tmp_path, two_color):
+    """Bambu keeps a prime-tower spot per plate (lists in the project settings); every plate gets the one the packer
+    keeps free."""
+    write_plates(_kit(two_color), tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit")
+    proj = json.loads(zipfile.ZipFile(tmp_path / "kit.3mf").read("Metadata/project_settings.config"))
+    tmpl = json.loads(bambu3mf.SETTINGS.read_text())
+    assert proj["wipe_tower_x"] == tmpl["wipe_tower_x"][:1] * 3 and proj["wipe_tower_y"] == tmpl["wipe_tower_y"][:1] * 3
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_slices_a_two_color_plate_that_is_not_the_first(tmp_path, two_color):
+    from cadkit import A1
+    from cadkit.plates import pack
+    full = pack([(f"deck{i}", two_color(60.0)) for i in range(80)], A1, colors=4)[0]  # a full bed, tower corner free
+    kit = [Plate("block", 1, [("block", box(100, 100, 0, 20, 20, 5))]), Plate("decks", 1, full)]
+    write_plates(kit, tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit")
+    reports = bambu.slice_all(tmp_path / "kit.3mf", tmp_path / "s.3mf")
+    assert [[r[0] for r in rep["layers"]] for rep in reports] == [[(1,)], [(2,), (1,)]]
+
+
+def test_a_round_part_near_the_tower_corner_does_not_warn(tmp_path):
+    """Only real overlap warns: a disc's bounding box reaches the tower corner, the disc doesn't (the 10" flower)."""
+    import warnings
+    from build123d import Align, Color, Compound, Cylinder
+    lo = Pos(128, 118, 0) * Cylinder(95, 2.4, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    hi = Pos(128, 118, 2.4) * Cylinder(20, 0.6, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    lo.label, lo.color, hi.label, hi.color = "deck_wood", Color(0.4, 0.3, 0.2), "deck_steel", Color(0.6, 0.6, 0.6)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        _write(tmp_path, [("disc", Compound(children=[lo, hi], label="disc"))])

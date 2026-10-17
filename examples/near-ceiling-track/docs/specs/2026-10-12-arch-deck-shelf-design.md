@@ -217,4 +217,7 @@ Only after this passes: batch-print the run.
   `tower_keepout`, on the A1 template x 31-78, y 210-257 mm). Before this, Bambu refused all five two-color plates
   and the starter's ladder plate ("gcode path conflicts" with the tower). The plate list didn't change. A slow test
   slices every two-color plate.
+- Every kit is also written as one project with every plate (`near_ceiling_track`, `starter`, `wire_test`), and
+  `build makerworld` slices five print profiles for one MakerWorld model: starter bay (deck truss, arch), corners
+  (pony, bowstring), wire-rail test.
 

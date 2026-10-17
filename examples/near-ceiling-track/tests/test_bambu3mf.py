@@ -43,7 +43,7 @@ def test_starter_ladders_survive_the_slicer(tmp_path):
     segs = L.segments(D, [16 * INCH])
     items = [(f"ladder_{k:02d}", Pos(0, 50 * k, 0) * tie_ladder.make_colored(D, [16 * INCH], s))
              for k, s in enumerate(segs)]
-    path = _write(tmp_path, items + [("bracket", Pos(0, 160, 0) * bracket.make(D))])
+    path = _write(tmp_path, items + [("bracket", Pos(90, 160, 0) * bracket.make(D))])  # clear of the prime tower
     s = slicers.active()
     back = s.roundtrip(path, tmp_path / f"rt{s.project_suffix}")
     assert s.same_objects(back, path)
@@ -52,6 +52,5 @@ def test_starter_ladders_survive_the_slicer(tmp_path):
         assert len({sz for n, sz in bambu3mf.object_sizes(back) if n.startswith("ladder")}) == 3
     assert sorted(s.read_filaments(back)) == sorted(s.read_filaments(path))
     # and it slices: every two-color ladder was once written on the same spot ("gcode path conflicts")
-    only = _write(tmp_path, items, "ladders")  # (the bracket above sits where the prime tower goes)
-    rep = s.slice_report(only, tmp_path / f"s{s.project_suffix}")
+    rep = s.slice_report(path, tmp_path / f"s{s.project_suffix}")
     assert {f for fils, _, _ in rep["layers"] for f in fils} == {D.filament_brown, D.filament_gray}

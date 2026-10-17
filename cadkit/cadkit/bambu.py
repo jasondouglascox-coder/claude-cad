@@ -57,6 +57,25 @@ def slice_report(src: Path, dst: Path | None = None) -> dict:
     return parse_slice_info(zipfile.ZipFile(dst).read("Metadata/slice_info.config"))
 
 
+def slice_all(src: Path, dst: Path | None = None) -> list[dict]:
+    """Slice every plate and save the project with each plate's G-code and thumbnails (what MakerWorld shows).
+    Returns one slice_report-style dict per plate, in plate order."""
+    src = Path(src).resolve()
+    dst = Path(dst or src.with_suffix(".sliced.3mf")).resolve()
+    _run(["--slice", "0", "--export-3mf", str(dst), str(src)])
+    return parse_slice_info_plates(zipfile.ZipFile(dst).read("Metadata/slice_info.config"))
+
+
+def parse_slice_info_plates(xml: bytes | str) -> list[dict]:
+    """Metadata/slice_info.config -> [{"grams", "layers"}] per plate, in plate order."""
+    info = ET.fromstring(xml)
+    out = []
+    for pl in info.iter("plate"):
+        idx = next((int(m.get("value")) for m in pl.findall("metadata") if m.get("key") == "index"), len(out) + 1)
+        out.append((idx, parse_slice_info(ET.tostring(pl))))
+    return [rep for _, rep in sorted(out, key=lambda t: t[0])]
+
+
 def parse_slice_info(xml: bytes | str) -> dict:
     """Metadata/slice_info.config -> {"grams", "layers"}. A filament set that prints in several bands lists
     them all in one element, comma separated: layer_ranges="0 2,14 15"."""

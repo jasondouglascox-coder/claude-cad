@@ -83,7 +83,7 @@ def test_one_color_plates_use_the_tower_corner(two_color):
 
 def test_pack_takes_the_keep_out_from_the_slicer(two_color, monkeypatch):
     from cadkit import slicers
-    monkeypatch.setattr(slicers.get("bambu").__class__, "tower_keepout", lambda self, settings=None: TOWER)
+    monkeypatch.setattr(slicers.get("bambu").__class__, "tower_keepout", lambda self, settings=None, pad=3.0: TOWER)
     monkeypatch.setattr(slicers, "active", lambda: slicers.get("bambu"))
     pls = pack([(f"deck{i}", two_color(60.0)) for i in range(30)], A1, colors=4)
     assert all(not _overlaps(s, TOWER) for pl in pls for _, s in pl)

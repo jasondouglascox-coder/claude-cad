@@ -82,3 +82,12 @@ def test_bambu_tower_keepout_covers_where_the_tower_prints():
 
 def test_a_slicer_without_a_tower_keeps_nothing_out():
     assert slicers.get("none").tower_keepout() is None
+
+
+def test_bambu_tower_footprint_without_the_pad():
+    """The packer keeps 3 mm extra around the tower; the overlap warning checks the tower itself (the 10" flower's
+    petals come within that pad of its front-left tower, and Bambu slices it)."""
+    s = slicers.get("bambu")
+    x0, y0, x1, y1 = s.tower_keepout(pad=0.0)
+    p0, q0, p1, q1 = s.tower_keepout()
+    assert (x0 - p0, y0 - q0, p1 - x1, q1 - y1) == pytest.approx((3.0, 3.0, 3.0, 3.0))

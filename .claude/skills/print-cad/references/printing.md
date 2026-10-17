@@ -108,6 +108,37 @@ so `cadkit.bambu3mf.write` writes that:
 Placement: items are packed inside the bed from the margin; if Bambu's own arrangement is wanted, Arrange (A) is
 fine. Open the files with File → Open Project (or "open as project" when asked).
 
+- **Prime tower.** Every plate that changes color gets a prime tower, and Bambu refuses to slice a plate with a
+  part where it prints ("gcode path conflicts found between WipeTower and …").
+  - `cadkit.plates.pack` keeps that corner free on multi-color plates: `slicers.active().tower_keepout()`, read from
+    `wipe_tower_x/y` and `prime_tower_width`; on the A1 template it's x 31-78, y 210-257.
+  - A plate that needs the corner (a round 10" flower) moves the tower with `bambu3mf.write_settings(tower=...)`.
+- **Every plate in one project:** `write_plates(..., combined="kit")` also writes `kit.3mf`, a tab per plate.
+  - Plates printed more than once are named "(print n)".
+  - Bambu lays plates out every 1.2 beds, left to right then down, about √n columns. The tower spot is a list
+    with one entry per plate, and cadkit repeats the kept corner for each.
+  - One file shares one set of project settings. Plates that need different settings (0.08 vs 0.2 mm layers,
+    another tower corner) go in separate files.
+  - A one-plate file is byte-for-byte the plain project.
+
+## Sharing on MakerWorld
+
+One model per project, one **print profile** per variant (a profile is one project 3MF holding all its plates):
+the railroad's starter bay in each style, its corners, the wire-rail test; the sunflower's 16" and 10". A visitor
+picks a profile and gets every plate it needs.
+
+1. **Build the profiles sliced:** a `build makerworld` command writes `out/makerworld/<profile>.3mf` through
+   `slicers.active().slice_all` (Bambu: `--slice 0`). Every plate then carries its G-code and the
+   `Metadata/plate_N.png` thumbnail MakerWorld shows. A slow test checks each plate has both.
+2. **Name the plates** for the visitor ("front_quarter (print 4)"). Say in the description which plates are
+   alternatives and what each needs: filaments per AMS slot, layer height when it isn't 0.2 mm, glue or hardware.
+3. **Photos:** the README renders (`docs/images/`) for the cover, plus a photo of the real print once there is one.
+   MakerWorld favors real photos.
+4. **Check before uploading:** open each profile in Bambu Studio. The colors should be right, there should be no
+   conflict warnings, and the plate count and order should match the description.
+5. **The user uploads.** Publishing is theirs: prepare the files, renders and description text, and never post or
+   upload on their behalf. They also pick the license.
+
 ## Check it the way the slicer reads it
 
 Unit tests can't tell you what the slicer does with a file. Bambu Studio has a CLI; `cadkit.bambu` drives it

@@ -44,10 +44,22 @@ class Slicer:
         bambu3mf.write(path, objects, settings or cfg().slicer_settings or self.default_settings())
         return Path(path)
 
-    def tower_keepout(self, settings: Path | None = None) -> tuple[float, float, float, float] | None:
-        """(x0, y0, x1, y1) on the bed where this slicer prints a prime/wipe tower on plates that change color, so the
-        packer keeps multi-color parts out of it. None: no tower (or the slicer places its own)."""
+    def tower_keepout(self, settings: Path | None = None, pad: float = 3.0) -> tuple[float, float, float, float] | None:
+        """(x0, y0, x1, y1) on the bed where this slicer prints a prime/wipe tower on plates that change color, grown by
+        pad mm, so the packer keeps multi-color parts out of it. None: no tower (or the slicer places its own)."""
         return None
+
+    def write_combined(self, path: Path, plates: list[tuple[str, Objects]], settings: Path | None = None) -> Path:
+        """One project file with every plate, [(plate name, objects)]: the file to share (MakerWorld). Override with
+        your slicer's multi-plate format; the default is Bambu's, which OrcaSlicer also opens."""
+        from cadkit.settings import settings as cfg
+        bambu3mf.write_plates_project(path, plates, settings or cfg().slicer_settings or self.default_settings())
+        return Path(path)
+
+    def slice_all(self, src: Path, dst: Path | None = None) -> list[dict]:
+        """Slice every plate of a combined project and save it with the G-code and thumbnails; one slice_report-style
+        dict per plate."""
+        raise Unavailable(f"{self.name}: can't slice (not installed, or not implemented)")
 
     def read_filaments(self, path: Path) -> list[tuple[str, int, dict]]:
         """[(object, its filament, {part: filament})], read back from a project file this slicer wrote or saved."""

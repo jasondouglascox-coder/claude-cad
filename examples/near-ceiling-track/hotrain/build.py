@@ -14,6 +14,7 @@
     uv run python -m hotrain.build check        # interference check, exit 1 on any clash
     uv run python -m hotrain.build starter --run-style deck_truss   # out/starter: one 16" bay + fit-test coupon
     uv run python -m hotrain.build wire-test    # out/wire_test: stainless wire rail curve test plates (0.08 mm layers)
+    uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project per print profile, to upload
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
 """
 import argparse
@@ -103,9 +104,11 @@ def filament(p: Params, name: str) -> int:
 
 
 def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = None, p: Params = P,
-                 settings: Path | None = None) -> None:
-    """Each plate as STEP (painted) + Bambu Studio 3MF (a filament per color body) + the quantity sheet."""
-    cad_export.write_plates(pls, d, csv_path, lambda name: filament(p, name), preview_dir, settings=settings)
+                 settings: Path | None = None, combined: str | None = None) -> None:
+    """Each plate as STEP (painted) + Bambu Studio 3MF (a filament per color body) + the quantity sheet; with
+    combined, also one project holding every plate (combined + .3mf)."""
+    cad_export.write_plates(pls, d, csv_path, lambda name: filament(p, name), preview_dir, settings=settings,
+                            combined=combined)
 
 
 def fine_layer_settings(p: Params, path: Path) -> Path | None:
@@ -126,15 +129,52 @@ def fine_layer_settings(p: Params, path: Path) -> Path | None:
 
 def cmd_plates(p: Params, bays: list[float], out: Path, preview: bool) -> None:
     write_plates(plates.plates(p, bays) + plates.corner_plates(p), out / "plates", out / "plates.csv",
-                 out / "preview" if preview else None, p=p)
+                 out / "preview" if preview else None, p=p, combined="near_ceiling_track")
 
 
 def cmd_starter(p: Params, out: Path, bay_in: float = 16.0) -> Path:
     """One free-standing straight bay (two brackets, both end piers) plus the fit-test coupon: out/starter/."""
-    from hotrain.plates import Plate
     d = out / "starter"
-    pls = plates.all_in_one(p, [bay_in * INCH]) + [Plate("fit_test", 1, [("fit_test", fit_test.make(p))])]
-    write_plates(pls, d, d / "plates.csv", p=p)
+    write_plates(starter_plates(p, bay_in), d, d / "plates.csv", p=p, combined="starter")
+    return d
+
+
+def starter_plates(p: Params, bay_in: float = 16.0) -> list:
+    from hotrain.plates import Plate
+    return plates.all_in_one(p, [bay_in * INCH]) + [Plate("fit_test", 1, [("fit_test", fit_test.make(p))])]
+
+
+def makerworld_profiles(p: Params, d: Path) -> dict:
+    """MakerWorld print profiles: {file name: (plates, slicer settings or None)}. The track variants a visitor can
+    print without this room: a starter bay in each run style, the corners in each style, the wire-rail test."""
+    from hotrain.plates import Plate
+    D = replace(p, run_style="deck_truss")
+    out = {"starter_deck_truss": (starter_plates(D), None),
+           "starter_arch": (starter_plates(replace(p, run_style="arch")), None)}
+    for style in ("pony", "bowstring"):
+        out[f"corners_{style}"] = (plates.corner_plates(replace(D, corner_style=style)), None)
+    out["wire_rail_test"] = (plates.wire_test_plates(p), fine_layer_settings(p, d / "fine_layers.json"))
+    return out
+
+
+def cmd_makerworld(p: Params, out: Path) -> Path:
+    """One sliced project per print profile in out/makerworld/: every plate with its G-code and thumbnail, the files to
+    upload to MakerWorld (as print profiles of one model). The upload itself is yours."""
+    from concurrent.futures import ThreadPoolExecutor
+    from cadkit import slicers
+    s = slicers.active()
+    d = out / "makerworld"
+    work = d / "work"
+    profiles = makerworld_profiles(p, work)
+    for name, (pls, settings) in profiles.items():
+        write_plates(pls, work / name, work / name / "plates.csv", p=p, settings=settings, combined=name)
+
+    def finish(name):
+        return name, s.slice_all(work / name / f"{name}{s.project_suffix}", d / f"{name}{s.project_suffix}")
+
+    with ThreadPoolExecutor(len(profiles)) as ex:  # one slicer process per profile
+        for name, reports in ex.map(finish, profiles):
+            print(f"{name}: {len(reports)} plates sliced")
     return d
 
 
@@ -149,7 +189,7 @@ def cmd_wire_test(p: Params, out: Path) -> Path:
     fine = fine_layer_settings(p, d / "fine_layers.json")
     if fine is None:
         print(f"set the slicer's layer height to {p.wire_layer} mm ({p.wire_first_layer} mm first layer) by hand")
-    write_plates(plates.wire_test_plates(p), d, d / "plates.csv", p=p, settings=fine)
+    write_plates(plates.wire_test_plates(p), d, d / "plates.csv", p=p, settings=fine, combined="wire_test")
     b = wire_curve.bodies(p)
     steel, black = Color(0.78, 0.8, 0.83), Color(0.12, 0.12, 0.12)
     wheels = wire_curve.wheelset(p, p.wheel_d_rp25, 0.0)
@@ -230,7 +270,7 @@ def params_from_args(a: argparse.Namespace) -> Params:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="hotrain.build", description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["all", "parts", "assembly", "fit-test", "plates", "corners", "room", "show", "glb", "web",
-                                        "check", "starter", "render", "wire-test"])
+                                        "check", "starter", "render", "wire-test", "makerworld"])
     ap.add_argument("target", nargs="?", default="room", help="for show: room | run | inside | bridge | fit-test")
     ap.add_argument("--out", default="out")
     ap.add_argument("--mesh", action="store_true")
@@ -270,6 +310,10 @@ def main(argv: list[str] | None = None) -> int:
     if a.command == "starter":
         d = cmd_starter(p, out)
         print(f"wrote {d}/ (plates.csv lists what to print and how many)")
+        return 0
+    if a.command == "makerworld":
+        d = cmd_makerworld(p, out)
+        print(f"wrote {d}/: one sliced project per print profile, ready to upload")
         return 0
     if a.command == "wire-test":
         d = cmd_wire_test(p, out)

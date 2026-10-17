@@ -80,6 +80,23 @@ A whole-room file takes a few minutes to translate.
   One color change per plate, at the tie tops.
 - Every other plate is single-color gray, except `bridge_corner_cleats`: the two ceiling cleats, alone in white
   PLA (PLA prints cooler than PETG, so it never shares a bed with gray).
+- Each kit also comes as **one project with every plate** (a tab per plate): `out/plates/near_ceiling_track.3mf`,
+  `out/starter/starter.3mf`, `out/wire_test/wire_test.3mf`. Plates printed more than once say "(print n)".
+- Brown/gray plates leave the back-left corner free for Bambu's prime tower.
+
+## Share it on MakerWorld
+
+```bash
+uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project per print profile
+```
+
+One model, five print profiles:
+- `starter_deck_truss` and `starter_arch`: a 16" bay plus the fit test;
+- `corners_pony` and `corners_bowstring`;
+- `wire_rail_test`, at 0.08 mm layers.
+
+Every plate is sliced, with its G-code and a thumbnail. Open each in Bambu Studio to check it, then upload. The
+checklist is in the print-cad skill (`references/printing.md`, "Sharing on MakerWorld").
 
 ## Try stainless wire rail (experiment)
 

@@ -4,6 +4,8 @@ plates: out/plates/*.3mf (Bambu projects that open colored, your AMS filaments) 
 step:   out/step/*.step, one per part, plus sunflower_assembly.step (the whole flower) for Onshape
 render: out/render/*.png shaded previews of the assembled flower
 small:  out/small/: the 10" one-piece print (plates/sunflower_10in.3mf + .step, sunflower_10in.step, render/*.png)
+makerworld: out/makerworld/sunflower_16in.3mf + sunflower_10in.3mf: the two print profiles, sliced (every plate with
+        its G-code and thumbnail), ready to upload to MakerWorld. The upload is yours.
 """
 import argparse
 import sys
@@ -39,9 +41,27 @@ def quarter_for_cad(p: Params, layer: str) -> Shape:
     return part
 
 
-def write_plate_files(p: Params, out: Path) -> None:
+def write_plate_files(p: Params, out: Path, combined: str | None = None) -> None:
+    out.mkdir(parents=True, exist_ok=True)
     settings = bambu3mf.write_settings(out / "bambu_project_settings.config", list(p.filaments))
-    write_plates(plans(p), out / "plates", out / "plates.csv", filament_for(p), settings=settings)
+    write_plates(plans(p), out / "plates", out / "plates.csv", filament_for(p), settings=settings, combined=combined)
+
+
+def write_makerworld(out: Path) -> Path:
+    """Both print profiles as one sliced project each in out/makerworld/ (the 10" keeps its own prime-tower corner,
+    so the two can't share a file)."""
+    from concurrent.futures import ThreadPoolExecutor
+    from cadkit import slicers
+    from sunflower import small
+    s, d = slicers.active(), out / "makerworld"
+    work = d / "work"
+    write_plate_files(P, work / "sunflower_16in", combined="sunflower_16in")
+    small.write(small.params(), work / "sunflower_10in", combined="sunflower_10in")
+    srcs = {n: work / n / "plates" / f"{n}{s.project_suffix}" for n in ("sunflower_16in", "sunflower_10in")}
+    with ThreadPoolExecutor(2) as ex:
+        for n, reports in zip(srcs, ex.map(lambda n: s.slice_all(srcs[n], d / f"{n}{s.project_suffix}"), srcs)):
+            print(f"{n}: {len(reports)} plates sliced")
+    return d
 
 
 def write_steps(p: Params, out: Path) -> None:
@@ -114,7 +134,8 @@ def write_small(out: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="sunflower.build")
-    ap.add_argument("what", nargs="?", default="all", choices=["all", "plates", "step", "render", "small"])
+    ap.add_argument("what", nargs="?", default="all", choices=["all", "plates", "step", "render", "small",
+                                                                    "makerworld"])
     ap.add_argument("--out", default="out")
     a = ap.parse_args(argv)
     out = Path(a.out)
@@ -127,6 +148,9 @@ def main(argv: list[str] | None = None) -> int:
         write_renders(P, out)
     if a.what == "small":
         write_small(out / "small")
+    if a.what == "makerworld":
+        print(f"wrote {write_makerworld(out)}/: one sliced project per print profile, ready to upload")
+        return 0
     print(f"wrote {out}/ (plates.csv lists what to print)")
     return 0
 
