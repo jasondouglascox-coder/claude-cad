@@ -13,6 +13,7 @@
     uv run python -m hotrain.build render --run-style deck_truss   # out/render/*.png shaded previews
     uv run python -m hotrain.build check        # interference check, exit 1 on any clash
     uv run python -m hotrain.build starter --run-style deck_truss   # out/starter: one 16" bay + fit-test coupon
+    uv run python -m hotrain.build wire-test    # out/wire_test: stainless wire rail curve test plates (0.08 mm layers)
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
 """
 import argparse
@@ -101,9 +102,26 @@ def filament(p: Params, name: str) -> int:
     return p.filament_gray
 
 
-def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = None, p: Params = P) -> None:
+def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = None, p: Params = P,
+                 settings: Path | None = None) -> None:
     """Each plate as STEP (painted) + Bambu Studio 3MF (a filament per color body) + the quantity sheet."""
-    cad_export.write_plates(pls, d, csv_path, lambda name: filament(p, name), preview_dir)
+    cad_export.write_plates(pls, d, csv_path, lambda name: filament(p, name), preview_dir, settings=settings)
+
+
+def fine_layer_settings(p: Params, path: Path) -> Path | None:
+    """Your slicer settings at the wire web's fine layers (Bambu Studio). None for another slicer: set the layer
+    height there by hand."""
+    import json
+    from cadkit import slicers
+    from cadkit.settings import settings as cfg
+    s = slicers.active()
+    if s.name != "bambu":
+        return None
+    conf = json.loads(Path(cfg().slicer_settings or s.default_settings()).read_text())
+    conf["layer_height"], conf["initial_layer_print_height"] = str(p.wire_layer), str(p.wire_first_layer)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(conf, indent=4))
+    return path
 
 
 def cmd_plates(p: Params, bays: list[float], out: Path, preview: bool) -> None:
@@ -117,6 +135,31 @@ def cmd_starter(p: Params, out: Path, bay_in: float = 16.0) -> Path:
     d = out / "starter"
     pls = plates.all_in_one(p, [bay_in * INCH]) + [Plate("fit_test", 1, [("fit_test", fit_test.make(p))])]
     write_plates(pls, d, d / "plates.csv", p=p)
+    return d
+
+
+def cmd_wire_test(p: Params, out: Path) -> Path:
+    """The stainless wire rail curve test: plates at fine layers, STEP of a piece with wires and a wheelset, and a
+    render: out/wire_test/."""
+    from build123d import Color
+    from cadkit.render import render
+    from hotrain.parts import wire_curve
+    from hotrain.room import IRON, TIE_BROWN
+    d = out / "wire_test"
+    fine = fine_layer_settings(p, d / "fine_layers.json")
+    if fine is None:
+        print(f"set the slicer's layer height to {p.wire_layer} mm ({p.wire_first_layer} mm first layer) by hand")
+    write_plates(plates.wire_test_plates(p), d, d / "plates.csv", p=p, settings=fine)
+    b = wire_curve.bodies(p)
+    steel, black = Color(0.78, 0.8, 0.83), Color(0.12, 0.12, 0.12)
+    wheels = wire_curve.wheelset(p, p.wheel_d_rp25, 0.0)
+    items = ([(b["wood"], TIE_BROWN), (b["steel"], IRON)] + [(w, steel) for w in wire_curve.wires(p)]
+             + [(w, black) for w in wheels[:2]] + [(wheels[2], steel)])
+    render(items, d / "render" / "wire_curve_test.png", view=(0.25, -1.0, 0.7), px=1600, tol=0.02, crop=True)
+    for i, (s, c) in enumerate(items):
+        s.label, s.color = ("wire_curve_wood", "wire_curve_steel", "wire", "wire", "wheel", "wheel", "axle")[i], c
+    export(Compound(children=[s for s, _ in items], label="wire_curve_test_assembly"), out, "wire_curve_test_assembly",
+           False, False, subdir="wire_test")
     return d
 
 
@@ -187,7 +230,7 @@ def params_from_args(a: argparse.Namespace) -> Params:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="hotrain.build", description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["all", "parts", "assembly", "fit-test", "plates", "corners", "room", "show", "glb", "web",
-                                        "check", "starter", "render"])
+                                        "check", "starter", "render", "wire-test"])
     ap.add_argument("target", nargs="?", default="room", help="for show: room | run | inside | bridge | fit-test")
     ap.add_argument("--out", default="out")
     ap.add_argument("--mesh", action="store_true")
@@ -227,6 +270,10 @@ def main(argv: list[str] | None = None) -> int:
     if a.command == "starter":
         d = cmd_starter(p, out)
         print(f"wrote {d}/ (plates.csv lists what to print and how many)")
+        return 0
+    if a.command == "wire-test":
+        d = cmd_wire_test(p, out)
+        print(f"wrote {d}/ (plates.csv lists what to print; the plates open at {p.wire_layer} mm layers)")
         return 0
     if a.command == "render":
         for path in cmd_render(p, out):

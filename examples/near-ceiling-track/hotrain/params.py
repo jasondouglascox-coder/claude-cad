@@ -190,6 +190,28 @@ class Params:
     portal_gap: float = 0.4
     deep_reach_margin: float = 12.0
 
+    # stainless wire rail on a printed web: the curve test piece (docs/specs/2026-10-16-wire-rail-design.md).
+    # Wire equators sit `gauge` apart; the wire top is rail_top.
+    wire_d: float = 0.0508 * INCH  # 16 AWG 304 stainless (1.29 mm): set from caliper readings along the spool
+    wire_seat_fit: float = 0.05  # cradle radius over the wire's: slides in, glued
+    wire_base_w: float = 0.100 * INCH  # web foot on the runner
+    wire_lip_w: float = 0.9  # field lip top: two nozzle lines (Bambu's classic walls drop a one-line wall)
+    wire_step_gap: float = 0.05  # the gauge-side step under the wire stays this far inside the gauge face
+    tread_keepout: float = 0.008 * INCH  # under the tread nothing but wire within this of the wire top
+    wheel_n: float = 0.110 * INCH  # RP-25 Code 110 tire width
+    wheel_t: float = 0.030 * INCH  # RP-25 flange width at the gaging point
+    wheel_p: float = 0.010 * INCH  # RP-25 gaging point below the tread
+    wheel_d_rp25: float = 0.025 * INCH  # RP-25 Code 110 flange depth
+    wheel_b: float = 0.573 * INCH  # NMRA S-4.2 (Jun 2026) HO back-to-back target
+    wheel_dia: float = 33 / 87.1 * INCH  # 33" freight wheel
+    wheel_taper: float = 3.0  # degrees
+    axle_d: float = 0.088 * INCH
+    axle_l: float = 1.010 * INCH
+    wire_layer: float = 0.08  # the gray web needs fine layers; the test plates' slicer settings carry these
+    wire_first_layer: float = 0.16  # 0.16 + 28 x 0.08 = tie_h: the brown/gray seam stays on a layer
+    wire_test_deg: float = 18.0  # one corner span; wire_test_pieces of them make the 90 degree corner
+    wire_test_pieces: int = 5
+
     # fits
     fit_slide: float = 0.20
     fit_snap: float = 0.05

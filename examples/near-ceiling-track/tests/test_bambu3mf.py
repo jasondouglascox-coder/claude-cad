@@ -51,3 +51,7 @@ def test_starter_ladders_survive_the_slicer(tmp_path):
         from cadkit import bambu3mf
         assert len({sz for n, sz in bambu3mf.object_sizes(back) if n.startswith("ladder")}) == 3
     assert sorted(s.read_filaments(back)) == sorted(s.read_filaments(path))
+    # and it slices: every two-color ladder was once written on the same spot ("gcode path conflicts")
+    only = _write(tmp_path, items, "ladders")  # (the bracket above sits where the prime tower goes)
+    rep = s.slice_report(only, tmp_path / f"s{s.project_suffix}")
+    assert {f for fils, _, _ in rep["layers"] for f in fils} == {D.filament_brown, D.filament_gray}

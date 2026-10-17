@@ -81,6 +81,23 @@ A whole-room file takes a few minutes to translate.
 - Every other plate is single-color gray, except `bridge_corner_cleats`: the two ceiling cleats, alone in white
   PLA (PLA prints cooler than PETG, so it never shares a bed with gray).
 
+## Try stainless wire rail (experiment)
+
+<img src="docs/images/wire_curve_test.png" width="70%" alt="Wire-rail curve test piece: brown ties and runners, gray webs holding two stainless wires, an HO wheelset on top">
+
+A cheaper rail: 16 AWG (1.29 mm) 304 stainless wire laid into a printed gray web, in place of commercial Code 100
+rail. The decision record is in [`docs/specs/2026-10-16-wire-rail-design.md`](docs/specs/2026-10-16-wire-rail-design.md).
+
+```bash
+uv run python -m hotrain.build wire-test   # out/wire_test: plates, plates.csv, a render, a STEP with wires + wheelset
+```
+
+- `wire_curve_single`: one 18° piece of the corner radius. Seat and glue a wire in it first.
+- `wire_curve_corner`: five pieces that chain (jigsaw tabs) into the full 90° corner, for running a train.
+- These plates open at **0.08 mm layers** (0.16 mm first layer). The web can't form at 0.2 mm. Brown/gray still
+  swap once, at the tie tops.
+- Measure the wire with calipers and set `wire_d` in `hotrain/params.py` before printing.
+
 ## Install a straight bay
 
 1. **Brackets** at each pier: #8 screws into studs, or self-drilling drywall anchors where there's no stud. Level

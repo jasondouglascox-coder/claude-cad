@@ -209,3 +209,7 @@ Only after this passes: batch-print the run.
 - `build plates` packs parts onto 256 mm A1 plates (MaxRects, 3 mm gaps, two arch halves nested head-to-tail). Each bay = plate A (2 arch halves, 3 cross-frames, keystone, crown ladder + handrail) and plate B (same + bracket, pier-crossing ladder + handrail); `run_ends` = 4 end piers, the extra bracket, the first ladder + handrail. Identical plates are listed once with a quantity in `out/plates.csv`; each plate is written as STEP and 3MF.
 - Rail stays Code 100: it suits vintage equipment with deep ("pizza-cutter") flanges. Spike lips are on the outside of each rail only; the gauge side stays clear to `flange_depth_max` (1.6 mm) below the rail top.
 - Bus wiring: each cross-frame has a finger reaching to the bracket flange face, forming an open-top cradle (floor at Z = −4 mm, 11.5 mm wide, wall-end lip) for a 16 AWG pair along the wall. Each bracket has a 7.8 × 5 mm pass-through in front of its flange. Wires can be laid in from above after assembly; feeders drop between the ties.
+
+## 14. Amendments (2026-10-16)
+- Exploring 16 AWG stainless wire rail on a printed gray web in place of commercial Code 100 rail: see
+  `2026-10-16-wire-rail-design.md`. Commercial rail stays the default until the curve test piece passes.

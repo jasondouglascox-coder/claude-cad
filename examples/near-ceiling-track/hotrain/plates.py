@@ -169,3 +169,13 @@ def corner_plates(p: Params = P) -> list[Plate]:
                 for n, pl in enumerate(cleats)]
     out.append(Plate("rod_jig", 1, pack(p, [("rod_jig", rod_jig.make(p))])[0]))
     return out
+
+
+def wire_test_plates(p: Params = P) -> list[Plate]:
+    """The wire-rail curve test: one piece to seat the wire, then the 5 pieces of a 90° corner to run a train.
+    They print at the web's fine layers (build.cmd_wire_test writes those slicer settings)."""
+    from hotrain.parts import wire_curve
+    single = [Plate("wire_curve_single", 1, pack(p, [("wire_curve", wire_curve.make_colored(p))])[0])]
+    corner = pack(p, [(f"wire_curve#{k}", wire_curve.make_colored(p)) for k in range(p.wire_test_pieces)])
+    return single + [Plate("wire_curve_corner" + (f"_{n + 1}" if len(corner) > 1 else ""), 1, pl)
+                     for n, pl in enumerate(corner)]
