@@ -213,3 +213,8 @@ Only after this passes: batch-print the run.
 ## 14. Amendments (2026-10-16)
 - Exploring 16 AWG stainless wire rail on a printed gray web in place of commercial Code 100 rail: see
   `2026-10-16-wire-rail-design.md`. Commercial rail stays the default until the curve test piece passes.
+- Every brown/gray plate leaves Bambu's prime tower corner free (cadkit packs multi-color parts around the slicer's
+  `tower_keepout`, on the A1 template x 31-78, y 210-257 mm). Before this, Bambu refused all five two-color plates
+  and the starter's ladder plate ("gcode path conflicts" with the tower). The plate list didn't change. A slow test
+  slices every two-color plate.
+

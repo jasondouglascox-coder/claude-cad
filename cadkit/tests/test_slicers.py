@@ -71,3 +71,14 @@ def test_live_roundtrip_and_slice_one_color_change(tmp_path, two_color, name):
     report = s.slice_report(_plate(tmp_path, s, [("deck", two_color())], "deck"), tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (1,)]  # brown up to the seam, then gray: one change
     assert set(report["grams"]) == {1, 2}
+
+
+def test_bambu_tower_keepout_covers_where_the_tower_prints():
+    """Measured from Bambu's G-code with the A1 template: the tower printed in x 34.5-74.2, y 212.9-252.1
+    (0.2 and 0.08 mm layers)."""
+    x0, y0, x1, y1 = slicers.get("bambu").tower_keepout()
+    assert x0 <= 34.5 - 2 and y0 <= 212.9 - 2 and x1 >= 74.2 + 2 and y1 >= 252.1
+
+
+def test_a_slicer_without_a_tower_keeps_nothing_out():
+    assert slicers.get("none").tower_keepout() is None

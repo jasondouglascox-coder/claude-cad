@@ -44,6 +44,11 @@ class Slicer:
         bambu3mf.write(path, objects, settings or cfg().slicer_settings or self.default_settings())
         return Path(path)
 
+    def tower_keepout(self, settings: Path | None = None) -> tuple[float, float, float, float] | None:
+        """(x0, y0, x1, y1) on the bed where this slicer prints a prime/wipe tower on plates that change color, so the
+        packer keeps multi-color parts out of it. None: no tower (or the slicer places its own)."""
+        return None
+
     def read_filaments(self, path: Path) -> list[tuple[str, int, dict]]:
         """[(object, its filament, {part: filament})], read back from a project file this slicer wrote or saved."""
         return bambu3mf.read_filaments(path)

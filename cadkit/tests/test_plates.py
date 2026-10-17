@@ -53,3 +53,37 @@ def test_pack_uses_the_printer_from_settings(monkeypatch):
 
 def test_one_color_printer_mixes_multi_color_parts_with_the_rest(two_color):
     assert len(pack([("deck", two_color()), ("block", box(0, 0, 0, 20, 20, 3))], A1, colors=1)) == 1
+
+
+# --- the prime tower ---------------------------------------------------------------------------------------
+TOWER = (32.0, 211.0, 77.0, 256.0)  # a keep-out for the tests: the A1 template's tower corner
+
+
+def _overlaps(s, rect):
+    bb = s.bounding_box()
+    x0, y0, x1, y1 = rect
+    return bb.min.X < x1 and bb.max.X > x0 and bb.min.Y < y1 and bb.max.Y > y0
+
+
+def test_multi_color_plates_leave_the_prime_tower_corner_free(two_color):
+    """Bambu prints a prime tower on every plate that changes color, and refuses to slice when a part is in its way.
+    Ladders packed into its corner made every two-color plate of the railroad fail."""
+    parts = [(f"deck{i}", two_color(60.0)) for i in range(30)]
+    pls = pack(parts, A1, colors=4, keepout=TOWER)
+    assert len(pls) >= 1
+    for pl in pls:
+        assert not [n for n, s in pl if _overlaps(s, TOWER)]
+
+
+def test_one_color_plates_use_the_tower_corner(two_color):
+    parts = [(f"b{i}", box(0, 0, 0, 40, 40, 3)) for i in range(25)]  # 25 fill a 256 mm bed
+    (pl,) = pack(parts, A1, colors=4, keepout=TOWER)
+    assert any(_overlaps(s, TOWER) for _, s in pl)
+
+
+def test_pack_takes_the_keep_out_from_the_slicer(two_color, monkeypatch):
+    from cadkit import slicers
+    monkeypatch.setattr(slicers.get("bambu").__class__, "tower_keepout", lambda self, settings=None: TOWER)
+    monkeypatch.setattr(slicers, "active", lambda: slicers.get("bambu"))
+    pls = pack([(f"deck{i}", two_color(60.0)) for i in range(30)], A1, colors=4)
+    assert all(not _overlaps(s, TOWER) for pl in pls for _, s in pl)

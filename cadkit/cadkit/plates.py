@@ -124,25 +124,39 @@ def _free_after(free: list[_Rect], u: _Rect) -> list[_Rect]:
     return [a for i, a in enumerate(out) if not any(j != i and inside(a, b) for j, b in enumerate(out))]
 
 
+_SLICER = object()  # pack(keepout=...) default: ask the active slicer
+
+
 def pack(items: list[tuple[str, Shape]], printer: Printer | None = None, gap: float = GAP,
-         colors: int | None = None) -> list[list[tuple[str, Shape]]]:
+         colors: int | None = None, keepout=_SLICER) -> list[list[tuple[str, Shape]]]:
     """Pack (name, flat shape) items onto as few beds as possible; multi-color parts get their own plates unless
-    the printer has one color. printer and colors default to your settings."""
+    the printer has one color. printer and colors default to your settings.
+
+    keepout: (x0, y0, x1, y1) on the bed that multi-color plates leave free for the slicer's prime tower; by default
+    the active slicer's (cadkit.slicers.active().tower_keepout()), None for none."""
     from cadkit.settings import settings
     printer = printer or default()
     colors = settings().colors if colors is None else colors
     if colors == 1:
         return _pack(items, printer, gap)
+    if keepout is _SLICER:
+        from cadkit import slicers
+        keepout = slicers.active().tower_keepout()
     two = [it for it in items if is_multi_color(it[1])]
     one = [it for it in items if not is_multi_color(it[1])]
-    if two and one:
-        return _pack(two, printer, gap) + _pack(one, printer, gap)
-    return _pack(items, printer, gap)
+    return (_pack(two, printer, gap, keepout) if two else []) + (_pack(one, printer, gap) if one else [])
 
 
-def _pack(items: list[tuple[str, Shape]], printer: Printer, gap: float) -> list[list[tuple[str, Shape]]]:
+def _pack(items: list[tuple[str, Shape]], printer: Printer, gap: float,
+          keepout: tuple | None = None) -> list[list[tuple[str, Shape]]]:
     side_x, side_y = printer.usable_x + gap, printer.usable_y + gap  # every item carries the gap on its right/top
     off = printer.margin / 2
+    start = [_Rect(0, 0, side_x, side_y)]
+    if keepout is not None:  # bed coordinates -> packing coordinates; an item's gap stays on its own right/top
+        x0, y0 = max(keepout[0] - off, 0.0), max(keepout[1] - off, 0.0)
+        x1, y1 = min(keepout[2] - off, side_x), min(keepout[3] - off, side_y)
+        if x1 > x0 and y1 > y0:
+            start = _free_after(start, _Rect(x0, y0, x1 - x0, y1 - y0))
     todo = []
     for name, s in items:
         s = zeroed(s)
@@ -151,7 +165,7 @@ def _pack(items: list[tuple[str, Shape]], printer: Printer, gap: float) -> list[
     todo.sort(key=lambda t: (-max(t[2], t[3]), -t[2] * t[3]))
     plates_out = []
     while todo:
-        free, placed, left = [_Rect(0, 0, side_x, side_y)], [], []
+        free, placed, left = list(start), [], []
         for name, s, w, h in todo:
             best = None
             for r in free:

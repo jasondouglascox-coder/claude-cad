@@ -42,7 +42,7 @@ cd examples/sunflower-wall && uv run pytest -n 6 -m "not slow"       # ~2 min; s
   one per plate): when a design needs more, say so with the cost and alternatives, and record the accepted number
   per plate (`Plate(..., color_changes=n)`) and in the spec.
 - **When plate or 3MF output changes**, run the plates through the slicer's CLI (`cadkit.slicers.active()`): same
-  filaments, same geometry per object, the planned color changes. Unit tests alone have missed three real slicer bugs.
+  filaments, same geometry per object, the planned color changes. Unit tests alone have missed five real slicer bugs.
 - **After a visible change**, render it (SVG/PNG or the viewer) and look at it before saying it's right. Every
   example's README opens with renders in `docs/images/` (a cadkit test checks); refresh them when the look changes.
 - **Before printing a new batch**, run an independent review of the changed parts: print orientation, bridges

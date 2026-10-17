@@ -113,6 +113,9 @@ Bambu Studio is the one cadkit ships with. Adding PrusaSlicer, OrcaSlicer, Cura 
 
        def slice_report(self, src, dst=None) -> dict:
            ...  # slice plate 1: {"grams": {filament: g}, "layers": [(filaments, first layer, last layer)]}
+
+       def tower_keepout(self, settings=None):
+           ...  # optional: (x0, y0, x1, y1) where your prime/wipe tower prints; multi-color plates leave it free
    ```
 
 2. Import it at the bottom of `cadkit/cadkit/slicers/__init__.py`, next to `bambu`.
@@ -123,7 +126,7 @@ Bambu Studio is the one cadkit ships with. Adding PrusaSlicer, OrcaSlicer, Cura 
 What to implement depends on what the slicer can do:
 
 - **It has a command line that slices** (PrusaSlicer, OrcaSlicer): implement everything. Slicing in the tests is
-  what caught three real bugs that unit tests missed.
+  what caught five real bugs that unit tests missed.
 - **It has no slicing CLI** (Cura): implement `write_project`/`read_filaments` if its project format can carry a
   filament per part, and leave `find()` returning None. `available()` is then False, `roundtrip` and
   `slice_report` raise `Unavailable`, and the slicer tests skip instead of failing.

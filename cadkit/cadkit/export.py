@@ -81,6 +81,15 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
         allowed = budget if pl.color_changes is None else pl.color_changes
         if swaps > allowed:
             warnings.warn(f"{pl.name}: {swaps} color changes, over the budget of {allowed}. " + ADVICE, stacklevel=2)
+        tower = slicer.tower_keepout(settings) if swaps else None
+        if tower is not None:
+            x0, y0, x1, y1 = tower
+            hit = [s.label for s in children for bb in [s.bounding_box()]
+                   if bb.min.X < x1 and bb.max.X > x0 and bb.min.Y < y1 and bb.max.Y > y0]
+            if hit:
+                warnings.warn(f"{pl.name}: {', '.join(hit)} sits where the prime tower prints (x {x0:.0f}-{x1:.0f}, "
+                              f"y {y0:.0f}-{y1:.0f} mm), so the slicer won't slice it. Place parts with "
+                              f"cadkit.plates.pack, or move the tower in the slicer.", stacklevel=2)
         slicer.write_project(folder / f"{pl.name}{slicer.project_suffix}", objects, settings)
         if preview_dir is not None:
             write_svg(comp, preview_dir / f"plate_{pl.name}.svg", TOP)

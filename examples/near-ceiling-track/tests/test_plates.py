@@ -1,5 +1,6 @@
 import itertools
 from collections import Counter
+from dataclasses import replace
 
 import pytest
 
@@ -91,3 +92,28 @@ def test_corner_plates_keep_pla_off_petg_and_swap_at_most_once():
         fils = {filament(P, n) for n in names}
         assert P.filament_white not in fils or fils == {P.filament_white}, pl.name
         assert color_changes(pl.items, P.printer, key=lambda n, b: filament(P, n)) <= 1, pl.name
+
+
+@pytest.mark.slow
+def test_every_two_color_plate_slices(tmp_path):
+    """Bambu slices every brown/gray plate (runs, corners, starter): nothing on the bed where its prime tower
+    prints. Before cadkit kept that corner free, all five failed with "gcode path conflicts"."""
+    from concurrent.futures import ThreadPoolExecutor
+    from cadkit import slicers
+    from cadkit.plates import is_multi_color
+    from hotrain import build
+    s = slicers.active()
+    if not s.available():
+        pytest.skip("no slicer installed (settings: slicer)")
+    D = replace(P, run_style="deck_truss")
+    pls = plates.plates(D) + plates.corner_plates(D) + plates.all_in_one(D, [16 * INCH])
+    two = [pl for pl in pls if any(is_multi_color(sh) for _, sh in pl.items)]
+    assert len(two) >= 6
+    build.write_plates(two, tmp_path, tmp_path / "p.csv", p=D)
+
+    def layers(pl):
+        return [f for f, _, _ in s.slice_report(tmp_path / f"{pl.name}{s.project_suffix}")["layers"]]
+
+    with ThreadPoolExecutor(8) as ex:  # Bambu runs one process per plate: the laptop has the cores
+        got = dict(zip((pl.name for pl in two), ex.map(layers, two)))
+    assert all(v == [(D.filament_brown,), (D.filament_gray,)] for v in got.values()), got

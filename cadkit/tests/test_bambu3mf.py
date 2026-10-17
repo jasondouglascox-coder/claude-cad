@@ -181,3 +181,19 @@ def test_bambu_slices_a_plate_of_moved_two_color_parts(tmp_path, two_color):
     items = [("deck", Pos(10, 10, 0) * two_color()), ("deck2", Pos(150, 120, 0) * (Rot(0, 0, 90) * two_color()))]
     report = bambu.slice_report(_write(tmp_path, items), tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(2,), (1,)]
+
+
+def test_writing_a_two_color_plate_over_the_tower_warns(tmp_path, two_color):
+    with pytest.warns(UserWarning, match="prime tower"):
+        _write(tmp_path, [("deck", Pos(40, 220, 0) * two_color())])
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_slices_a_full_plate_of_two_color_parts(tmp_path, two_color):
+    """A bed packed full of two-color parts slices: none sits where the prime tower prints."""
+    from cadkit.plates import pack
+    from cadkit import A1
+    (pl, *_) = pack([(f"deck{i}", two_color(60.0)) for i in range(80)], A1, colors=4)  # a full first bed
+    report = bambu.slice_report(_write(tmp_path, pl), tmp_path / "s.3mf")
+    assert [r[0] for r in report["layers"]] == [(2,), (1,)]
