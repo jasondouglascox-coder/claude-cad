@@ -96,34 +96,40 @@ def _kits(p: Params, bays: list[float], ends: tuple) -> list[tuple[str, tuple, l
 def plates(p: Params = P, bays: list[float] = L.BAYS, ends: tuple = L.RUN_ENDS) -> list[Plate]:
     """Distinct plates with how many of each to print. Item names match out/manifest.csv
     (a nested arch pair counts as two arch halves). Two-color parts (tie ladders) from the whole run are
-    pooled onto shared "ladders" plates, one color change each; the per-bay kits are single-color."""
+    pooled onto shared "ladders" plates, one color change each; the per-bay kits are single-color. A kit that
+    overflows its plate sends the overflow to shared "extras" plates (one of each per kit instance)."""
     L.validate_bays(p, bays)
     seen: dict[tuple, list[Plate]] = {}
     variants: dict[str, int] = {}
     order: list[tuple] = []
     pool = []  # two-color parts of every kit instance, repeats included
+    spill: dict[tuple, list] = {}  # a kit's overflow past its first plate: shared extras plates, per instance
+    extras = []
     for role, key, items in _kits(p, bays, ends):
         pool += [it for it in items if is_two_color(it[1])]
         items = [it for it in items if not is_two_color(it[1])]
         if key in seen:
             for pl in seen[key]:
                 pl.qty += 1
+            extras += spill[key]
             continue
         variants[role] = variants.get(role, 0) + 1
         base = role if variants[role] == 1 else f"{role}{variants[role]}"
         packed = pack(p, items)
-        seen[key] = [Plate(base if len(packed) == 1 else f"{base}_{n + 1}", 1, _flatten(pl))
-                     for n, pl in enumerate(packed)]
+        spill[key] = [(name.split("#")[0], _zeroed(s)) for pl in packed[1:] for name, s in _flatten(pl)]
+        extras += spill[key]
+        seen[key] = [Plate(base, 1, _flatten(packed[0]))]
         order.append(key)
     ladders = [Plate(f"ladders_{n + 1}", 1, _flatten(pl)) for n, pl in enumerate(pack(p, pool))] if pool else []
-    return ladders + [pl for key in order for pl in seen[key]]
+    shared = [Plate(f"extras_{n + 1}", 1, _flatten(pl)) for n, pl in enumerate(pack(p, extras))] if extras else []
+    return ladders + [pl for key in order for pl in seen[key]] + shared
 
 
 def _flatten(pl: list) -> list:
     flat = []
     for name, s in pl:
-        if name.endswith("#pair"):
-            flat += [(name.replace("#pair", "#1"), s.solids()[0]), (name.replace("#pair", "#2"), s.solids()[1])]
+        if name.endswith("#pair"):  # keep each half's own name (the deck truss's start half is the mirror image)
+            flat += [(f"{c.label}#{k}", c) for k, c in enumerate(cadkit_plates.bodies(s), start=1)]  # where packed
         else:
             flat.append((name, s))
     return flat

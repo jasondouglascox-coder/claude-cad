@@ -139,8 +139,8 @@ def rivet_points(p: Params, bay_len: float) -> list[tuple[float, float]]:
         return []
     bare = Pos(0, p.pier_depth, 0) * extrude(profile(p, bay_len), p.panel_t)
     r, mid = p.rivet_d / 2 + p.rivet_margin, p.panel_t / 2
-    on = lambda u, z: all(bare.is_inside((u + du, z + dz + p.pier_depth, mid))
-                          for du, dz in ((0, 0), (r, 0), (-r, 0), (0, r), (0, -r)))
+    ring = [(0.0, 0.0)] + [(r * math.cos(k * math.pi / 8), r * math.sin(k * math.pi / 8)) for k in range(16)]
+    on = lambda u, z: all(bare.is_inside((u + du, z + dz + p.pier_depth, mid)) for du, dz in ring)
     keep, gap = [], p.rivet_d + 0.3
     pier = L.springing_u(p) + p.pier_cap_out + p.rivet_d  # concrete: the pier and its cap stay bare
     posts = L.post_us(p, bay_len)  # cross-frames grip both panels here

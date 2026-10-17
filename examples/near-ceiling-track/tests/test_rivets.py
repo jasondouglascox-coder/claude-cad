@@ -36,9 +36,10 @@ def test_rivets_are_many_and_all_on_truss_members():
     pts = arch_half.rivet_points(D, BAY)
     assert len(pts) > 150
     body = arch_half.make(replace(D, rivet_d=0.0), BAY)  # the bare panel
-    r = D.rivet_d / 2
+    r = D.rivet_d / 2 + D.rivet_margin * 0.9
+    ring = [(r * math.cos(k * math.pi / 8), r * math.sin(k * math.pi / 8)) for k in range(16)]
     for u, z in pts:
-        for du, dz in ((0, 0), (r, 0), (-r, 0), (0, r), (0, -r)):  # the whole head stands on the panel
+        for du, dz in [(0, 0)] + ring:  # the whole head, plus its margin, stands on the panel
             assert body.is_inside((u + du, z + dz + D.pier_depth, D.panel_t / 2)), (u, z)
     s = L.springing_u(D) + D.pier_cap_out
     assert min(u for u, _ in pts) > s, "no rivets on the concrete-look pier"
@@ -133,3 +134,22 @@ def test_no_rivet_under_a_cross_frame():
     clear = (D.cf_t + D.fit_slide) / 2 + D.rivet_d / 2
     for u, _ in arch_half.rivet_points(D, BAY):
         assert all(abs(u - post) >= clear for post in L.post_us(D, BAY)), u
+
+
+def test_plates_name_the_start_half():
+    """The two halves look alike on the bench: the plate (Bambu Studio's object list, plates.csv) says which is which."""
+    from hotrain import plates
+    pls = plates.plates(D, [BAY])
+    names = [n.split("#")[0] for pl in pls for n, _ in pl.items if n.startswith("arch_half")]
+    assert names.count(f"arch_half_{BAY:.1f}mm_start") == names.count(f"arch_half_{BAY:.1f}mm") > 0
+    for pl in pls:  # each named half sits where the packer put the pair, on the bed, not on top of the other
+        halves = [s for n, s in pl.items if n.startswith("arch_half")]
+        for s in halves:
+            bb = s.bounding_box()
+            assert bb.min.X >= 0 and bb.min.Y >= 0 and bb.max.X <= D.bed and bb.max.Y <= D.bed
+        others = [s for n, s in pl.items if not n.startswith("arch_half")]
+        for h in halves:
+            assert all(h.distance_to(o) > 1.0 for o in others)
+        if len(halves) == 2:
+            assert halves[0].distance_to(halves[1]) > 1.0
+

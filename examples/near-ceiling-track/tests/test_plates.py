@@ -117,3 +117,16 @@ def test_every_two_color_plate_slices(tmp_path):
     with ThreadPoolExecutor(8) as ex:  # Bambu runs one process per plate: the laptop has the cores
         got = dict(zip((pl.name for pl in two), ex.map(layers, two)))
     assert all(v == [(D.filament_brown,), (D.filament_gray,)] for v in got.values()), got
+
+
+def test_stragglers_share_plates():
+    """A kit that overflows its plate (the riveted deck truss pair is deeper) sends the overflow to shared extras
+    plates, like the pooled ladders, instead of a plate of one cross-frame per bay."""
+    D = replace(P, run_style="deck_truss")
+    bays = [418.2] * 3  # the room's bay length
+    pls = plates.plates(D, bays)
+    assert not [pl.name for pl in pls if pl.name.startswith("bay_") and pl.name.endswith("_2")]
+    extras = [pl for pl in pls if pl.name.startswith("extras")]
+    assert sum(pl.qty for pl in extras) == 1
+    printed = Counter(n.split("#")[0] for pl in pls for n, _ in pl.items for _ in range(pl.qty))
+    assert sum(q for n, q in printed.items() if n.startswith("cross_frame")) == 3 * 2 * len(L.post_us(D, 418.2))

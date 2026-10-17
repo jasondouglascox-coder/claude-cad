@@ -168,8 +168,13 @@ plates and packing, and the bus cradle.
     Bambu prints them: the slow test slices a pair of halves up to the rivet tops.
 - **Each panel prints a mirror-image start half.** The halves print rivets-up. The start half used to be the end
   half turned 180°, which would have put its rivets on the wall side.
-  - Each bay is now 2 end halves + 2 start halves (`arch_half_<bay>` and `arch_half_<bay>_start`), and each half-span
-    plate prints one of each. The plate list and counts are otherwise unchanged.
+  - Each bay is now 2 end halves + 2 start halves (`arch_half_<bay>` and `arch_half_<bay>_start`). Each half-span
+    plate prints one of each, named on the plate so you can tell them apart in Bambu Studio and in `plates.csv`.
+  - A mirror pair can't nest head-to-tail (that needs one half flipped over, rivets down), so the pair is 17 mm
+    deeper. On the room's 418.2 mm bays a cross-frame no longer fits its plate. A kit's overflow now goes to
+    shared `extras` plates, like the pooled ladders.
+  - The room comes out at 19 distinct plates and 49 prints (47 before rivets; 56 without pooling). The starter
+    bay gains one small plate (two cross-frames).
   - Placed, the mirrored start half fills exactly the space the old one did (tested), so brackets, latches,
     cross-frames and keys are unchanged.
 - The arch style and the corner trusses get no rivets. A corner frame prints its outer (room) face down, because
