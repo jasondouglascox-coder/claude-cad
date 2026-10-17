@@ -123,7 +123,8 @@ uv run python -m hotrain.build wire-test   # out/wire_test: plates, plates.csv, 
 <img src="docs/images/rivets_closeup.png" width="45%" alt="Close-up of a deck truss end: rows of small round rivet heads along the chords, end post and diagonals; the concrete pier is bare">
 
 The deck truss has gray rivet heads on its room face: 0.8 mm dots, two layers proud, in rows along every member.
-The pier stays bare. Each panel prints one normal half and one mirror-image half (`…_start`), so both halves show
+The pier stays bare, and its concrete face stands two layers proud of the steel so the two read as different
+materials. Each panel prints one normal half and one mirror-image half (`…_start`), so both halves show
 their rivets to the room. Set `rivet_d = 0` in `hotrain/params.py` for flat panels. The corner trusses have none
 yet: their room face prints against the bed.
 

@@ -55,17 +55,18 @@ def test_rivets_never_touch_each_other():
 
 def test_start_half_is_the_mirror_image_in_the_same_place():
     """The mirrored start half placed fills exactly the space the old start half did, plus its rivet heads."""
-    bare = replace(D, rivet_d=0.0)
+    bare = replace(D, rivet_d=0.0, pier_relief=0.0)
     old = arch_half.place(bare, 0, BAY, 10.0, end=False) * arch_half.make(bare, BAY)
     new = arch_half.place_half(D, 0, BAY, 10.0, start=True) * half(True)
     heads = len(arch_half.rivet_points(D, BAY)) * math.pi * (D.rivet_d / 2) ** 2 * D.printer.layers(D.rivet_h)
+    pier = arch_half.pier_face(D, BAY).area * D.printer.layers(D.pier_relief)
     assert (old - new).volume == pytest.approx(0, abs=1e-3)
-    assert (new - old).volume == pytest.approx(heads, rel=0.02)
+    assert (new - old).volume == pytest.approx(heads + pier, rel=0.02)
 
 
 def test_rivets_off_gives_flat_panels():
-    """rivet_d = 0 turns the heads off; the panels keep their mirrored start halves (the user's choice)."""
-    bare = replace(D, rivet_d=0.0)
+    """rivet_d = 0 and pier_relief = 0 give flat panels; they keep their mirrored start halves (the user's choice)."""
+    bare = replace(D, rivet_d=0.0, pier_relief=0.0)
     assert arch_half.rivet_points(bare, BAY) == []
     for start in (False, True):
         assert arch_half.make(bare, BAY, start=start).bounding_box().max.Z == pytest.approx(D.panel_t)
@@ -153,3 +154,37 @@ def test_plates_name_the_start_half():
         if len(halves) == 2:
             assert halves[0].distance_to(halves[1]) > 1.0
 
+
+
+# --- the concrete pier stands proud of the steel on the room face ------------------------------------------
+def _top(part, u, z):
+    """Highest point of the part over (u, z) in print coordinates."""
+    probe = Pos(u - 0.1, z + D.pier_depth - 0.1, 0) * Box(0.2, 0.2, 10, align=(Align.MIN, Align.MIN, Align.MIN))
+    return (part & probe).bounding_box().max.Z
+
+
+@pytest.mark.parametrize("start", [False, True])
+def test_pier_face_stands_proud_of_the_steel(start):
+    part = half(start)
+    proud = D.panel_t + D.printer.layers(D.pier_relief)
+    s = L.springing_u(D)
+    flip = (lambda u: L.half_len(BAY) - u) if start else (lambda u: u)  # the start half is the mirror image
+    assert _top(part, flip(s - 3.0), -D.pier_depth + 10) == pytest.approx(proud)  # pier body
+    assert _top(part, flip(s + 0.5), -D.top_band_h - D.pier_cap_h / 2) == pytest.approx(proud)  # pier cap
+    assert _top(part, flip(1.0), -20.0) == pytest.approx(D.panel_t), "the bracket slot grips the plain pier"
+    (ax, az), (bx, bz) = arch_half.end_post(D, BAY)
+    u, z = (ax + bx) / 2, (az + bz) / 2
+    assert _top(part, flip(u), z) <= D.panel_t + D.printer.layers(D.rivet_h) + 1e-6  # the end post: steel
+
+
+def test_deck_truss_pier_seats_in_the_corner_anchor():
+    from hotrain import corner_assembly as CA
+    from hotrain import corner_layout as CL
+    items = dict(CA.placed_parts(D, CL.inside_corner()))
+    for y in D.rail_ys:
+        for start in (False, True):
+            placed = arch_half.place_half(D, -BAY, BAY, y, start=start) * half(start)
+            if start:
+                continue  # the start half sits at the far pier, away from this anchor
+            assert (placed & items["anchor_in"]).volume < 1e-6
+            assert placed.distance_to(items["anchor_in"]) < 0.2

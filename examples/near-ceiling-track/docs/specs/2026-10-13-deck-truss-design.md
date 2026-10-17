@@ -183,4 +183,8 @@ plates and packing, and the bus cradle.
 - **Rivet test strips on the fit test (2026-10-17):** three 40 × 10 mm strips of panel with two rows of heads at
   0.6, 0.8 and 1.0 mm (1/2/3 notches), at the trusses' pitch and height. Bambu prints all three sizes (slow test);
   the print shows size and stringing before whole panels.
+- **The concrete pier stands proud of the steel (2026-10-17):** its body and cap rise `pier_relief` (0.4 mm, two
+  layers) on the room face, so concrete and steel no longer blend. The raise stops at the top chord's underside.
+  It leaves a 3.4 mm strip at the pier centerline flat, because the bracket (or a corner anchor) grips the plain
+  3.2 mm pier there and covers that strip anyway. `pier_relief = 0` turns it off.
 

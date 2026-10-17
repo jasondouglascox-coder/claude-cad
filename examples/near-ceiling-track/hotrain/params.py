@@ -81,6 +81,7 @@ class Params:
     rivet_h: float = 0.4  # two 0.2 mm layers (snapped to your layers)
     rivet_pitch: float = 2.5  # along each member row
     rivet_margin: float = 0.2  # heads stay this far inside a member's edges
+    pier_relief: float = 0.4  # deck truss: the concrete pier stands this proud of the steel on the room face
     pier_cap_h: float = 4.0  # concrete-look pier: ledge under the top chord
     pier_cap_out: float = 1.5
     pier_batter: float = 2.5  # pier face flares out this much at the bottom

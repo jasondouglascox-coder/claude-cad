@@ -2,7 +2,8 @@
 "arch" (half pier + top band + posts + half arch rib) or "deck_truss" (concrete-look half pier +
 top chord + inclined end post + Warren web + bottom chord, spliced at mid-bay with a small bow-tie).
 
-The deck truss carries rivet heads on its print-top face, which faces the room. A panel's start half is the end
+The deck truss carries rivet heads on its print-top face, which faces the room, and its concrete pier stands a
+couple of layers proud of the steel there. A panel's start half is the end
 half turned 180°, which would put its rivets on the wall side, so it prints as the mirror image instead
 (`start=True`, placed with `place_half`)."""
 import math
@@ -154,6 +155,17 @@ def rivet_points(p: Params, bay_len: float) -> list[tuple[float, float]]:
     return keep
 
 
+def pier_face(p: Params, bay_len: float) -> Sketch:
+    """(u, z) of the concrete pier's raised room face: its body and cap up to the top chord's underside, inside the
+    panel's outline, except the strip the bracket (or a corner anchor) grips at the pier centerline."""
+    s, pd, tb = L.springing_u(p), p.pier_depth, p.top_band_h
+    zc = -tb - p.pier_cap_h
+    pier = Sketch() + [poly((0, -pd), (s + p.pier_batter, -pd), (s, zc + 0.5), (0, zc + 0.5)),
+                       rect(0, s + p.pier_cap_out, zc, -tb)]
+    grip = (p.bracket_t + p.fit_slide) / 2 + 0.3
+    return (pier & profile(p, bay_len)) - rect(-1, grip, -pd - 1, 1)
+
+
 def mirrored(p: Params) -> bool:
     """Deck truss panels print a mirror-image start half, so both halves' rivets face the room."""
     return p.run_style == "deck_truss"
@@ -163,10 +175,16 @@ def make(p: Params = P, bay_len: float = P.bay_len, start: bool = False) -> Part
     """Print orientation: flat on the bed, u along X, pier bottom on Y=0; rivet heads (deck truss) on top. start: the
     mirror image for a panel's start half (pier at X = half length), see place_half."""
     part = Pos(0, p.pier_depth, 0) * extrude(profile(p, bay_len), p.panel_t)
+    proud = []
     pts = rivet_points(p, bay_len)
     if pts:
         heads = Sketch() + [Pos(u, z + p.pier_depth) * Circle(p.rivet_d / 2) for u, z in pts]
-        part = Part((part + Pos(0, 0, p.panel_t - 0.01) * extrude(heads, p.printer.layers(p.rivet_h) + 0.01)).solids())
+        proud.append(Pos(0, 0, p.panel_t - 0.01) * extrude(heads, p.printer.layers(p.rivet_h) + 0.01))
+    if p.run_style == "deck_truss" and p.pier_relief > 0:
+        face = Pos(0, p.pier_depth) * pier_face(p, bay_len)
+        proud.append(Pos(0, 0, p.panel_t - 0.01) * extrude(face, p.printer.layers(p.pier_relief) + 0.01))
+    if proud:
+        part = Part((part + proud).solids())
     if start and mirrored(p):
         part = Pos(L.half_len(bay_len), 0, 0) * part.mirror(Plane.YZ)
     return part
