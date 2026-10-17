@@ -180,4 +180,7 @@ plates and packing, and the bus cradle.
 - The arch style and the corner trusses get no rivets. A corner frame prints its outer (room) face down, because
   its U-ledges must face up. Riveting it would mean printing the ledges as separate glued strips; that's deferred
   until the user has seen the straight trusses.
+- **Rivet test strips on the fit test (2026-10-17):** three 40 × 10 mm strips of panel with two rows of heads at
+  0.6, 0.8 and 1.0 mm (1/2/3 notches), at the trusses' pitch and height. Bambu prints all three sizes (slow test);
+  the print shows size and stringing before whole panels.
 

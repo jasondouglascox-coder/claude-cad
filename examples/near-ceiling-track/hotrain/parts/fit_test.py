@@ -1,5 +1,5 @@
-"""Calibration coupon: tie-plate grooves, tab slots and keystone sockets at three clearances, plus a latch
-and three corner-deck rod-groove seats.
+"""Calibration coupon: tie-plate grooves, tab slots and keystone sockets at three clearances, plus a latch,
+three corner-deck rod-groove seats, and three deck-truss rivet strips (head sizes around rivet_d).
 Variant 1/2/3 = smallest/default/largest clearance, marked with 1/2/3 notches."""
 from dataclasses import replace
 
@@ -15,6 +15,8 @@ GROOVE_FITS = (0.10, 0.20, 0.30)
 SLOT_FITS = (0.10, 0.20, 0.30)
 KEY_FITS = (0.0, 0.05, 0.10)
 ROD_SEAT_FITS = (0.1, 0.2, 0.3)  # clearance of the corner deck's rod grooves on the 1/4" rods: tighter -> looser
+RIVET_SIZES = (0.6, 0.8, 1.0)  # deck-truss rivet head diameters: smaller -> larger (rivet_d is the middle one)
+RIVET_STRIP = (40.0, 10.0)  # strip length, width
 LATCH_DEPTH = 45.0
 LATCH_NOTCH = 1.0  # the coupon's short latch sample keeps a shallow pier notch
 
@@ -86,6 +88,21 @@ def rod_seat_sample(p: Params, fit: float, n: int) -> Part:
     return Pos(0, w / 2, 0) * Part(s.solids())
 
 
+def rivet_count(p: Params) -> int:
+    """Heads per row on a strip, at the trusses' pitch."""
+    return int((RIVET_STRIP[0] - 6.0) // p.rivet_pitch) + 1
+
+
+def rivet_strip(p: Params, d: float, n: int) -> Part:
+    """A strip of truss panel (panel_t thick) with two rows of d mm heads at rivet_pitch, rivet_h tall, n notches on
+    one long edge: see the head size and the PETG stringing between them before printing whole panels."""
+    length, width = RIVET_STRIP
+    body = extrude(rect(0, length, 0, width) - marks(n, 2.0, 0), p.panel_t)
+    heads = Sketch() + [Pos(3.0 + k * p.rivet_pitch, y) * Circle(d / 2)
+                        for k in range(rivet_count(p)) for y in (width * 0.4, width * 0.75)]
+    return Part((body + Pos(0, 0, p.panel_t - 0.01) * extrude(heads, p.printer.layers(p.rivet_h) + 0.01)).solids())
+
+
 def make(p: Params = P) -> Compound:
     pieces = []
     for i, f in enumerate(GROOVE_FITS):
@@ -99,4 +116,6 @@ def make(p: Params = P) -> Compound:
     pieces.append(Pos(110, 60, 0) * latch_pier(p))
     for i, f in enumerate(ROD_SEAT_FITS):
         pieces.append(Pos(180 + 25 * i, 0, 0) * rod_seat_sample(p, f, i + 1))
+    for i, d in enumerate(RIVET_SIZES):
+        pieces.append(Pos(150, 40 + 15 * i, 0) * rivet_strip(p, d, i + 1))
     return Compound(children=pieces)

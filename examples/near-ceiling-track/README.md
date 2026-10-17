@@ -73,6 +73,9 @@ A whole-room file takes a few minutes to translate.
 - Bambu A1 (256 × 256 mm bed), PETG, 0.4 mm nozzle, 0.2 mm layers, **no supports**.
 - **Print `fit_test` first.** Pick the variant of each joint (1/2/3 notches) that fits, then retune `fit_slide`,
   `fit_snap` and `rail_base_w` in `hotrain/params.py` and rebuild.
+  - The three rivet strips (1/2/3 notches = 0.6/0.8/1.0 mm heads) show how the deck truss rivets come out. If
+    you like another size better, set `rivet_d`; if PETG strings between the heads, fix that before printing
+    panels.
 - Every plate 3MF is a **Bambu Studio project** that opens already colored (File → Open Project, or "Open as
   project" when asked). Filament 1 is gray PETG, 2 brown PETG and 3 white PLA, matching the AMS. Change
   `filament_gray`, `filament_brown` and `filament_white` in `hotrain/params.py` if the slots move.
