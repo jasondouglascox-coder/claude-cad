@@ -54,13 +54,23 @@ class Params:
     floor_t: float = 1.2  # above the rail slot's peak
     tip_lift: float = 3.0  # lowest felt tip above the base
     inlet_gap: float = 3.0  # channel between the top window and the inlet socket's cone
+    # fit-test plate
+    fit_h: float = 15.0  # marker strip height: the tilted bores grip about as long as the block's
+    fit_wall: float = 1.6  # around each fit-test hole
+    slice_w: float = 8.0  # clip slice thickness
+    mark_w: float = 1.2  # one raised bar per variant number: 1, 2, 3 ...
+    mark_l: float = 4.0
+    mark_gap: float = 0.8
+    mark_h: float = 0.6
     filament_black: int = 3  # AMS slot
     printer: Printer = Printer()
 
     def __post_init__(self):
         """Heights land on the printer's layers (yours, from cadkit.settings), so tops print whole."""
-        for name in ("rail_h", "floor_t", "tube_depth"):
+        for name in ("rail_h", "floor_t", "tube_depth", "fit_h", "slice_w"):
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
+        for name in ("mark_h",):  # stacked on a height above
+            object.__setattr__(self, name, self.printer.layers(getattr(self, name)))
 
 
 P = Params()
