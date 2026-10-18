@@ -114,4 +114,4 @@ different colors would mix, but that's a side effect and not a goal.
   - Clip hook stays 2.0 (slice 2).
   - The bar's height is 19.4, not 20. Slice 2 had at least 1 mm of vertical play.
   - Details are in `docs/measurements.md`.
-
+  - Tube sockets are 4.2: tight. 4.3 pulled out easily.

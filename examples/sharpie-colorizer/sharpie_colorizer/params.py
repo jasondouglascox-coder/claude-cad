@@ -26,7 +26,7 @@ class Params:
     # fits: the fit-test plate picks these (one-line edits after printing it)
     marker_fit_d: float = 10.7  # fit test: 10.6 almost too tight, 10.8 slides in smoothly
     marker_fits: tuple = (10.6, 10.8, 11.0, 11.2, 11.4, 11.6)
-    tube_fit_d: float = 4.1
+    tube_fit_d: float = 4.2  # fit test: 4.2 tight, 4.3 smooth but pulls out
     tube_fits: tuple = (4.0, 4.1, 4.2, 4.3)
     hook: float = 2.0  # how far the clip's lips reach in under the bar
     hooks: tuple = (1.5, 2.0, 2.5)

@@ -17,6 +17,6 @@ Fit-test results (printed in black, 0.20 mm Standard):
 |---|---|---|
 | Marker socket | 10.6 "really tight, almost too tight"; 10.8 "nice but slides in smoothly" | `marker_fit_d` 10.7, and the marker's front section modelled at 10.7 (ruler said 11) |
 | Clip slice 2 (hook 2.0) on the bar | fits, but at least 1 mm too tall | `bar_h` 19.4 (the clip was built for 20.0 + 0.4 clearance) |
-| Tube hole | not reported yet | `tube_fit_d` 4.1 (default) |
+| Tube hole | 4.2 "a tight fit"; 4.3 "fits smooth but will pull out easily" | `tube_fit_d` 4.2 |
 
 All ruler readings are ±0.5 mm. The fit test settles the socket sizes.
