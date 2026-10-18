@@ -85,3 +85,19 @@ different colors would mix, but that's a side effect and not a goal.
 - Where along the bar it sits relative to the spool-holder clamp.
 
 ## Amendments
+
+- **2026-10-18: builder's choices while implementing** (the plan is in `docs/plans/2026-10-18-sharpie-colorizer.md`).
+  - The package is `sharpie_colorizer` (what `cadkit.new` names it), not `colorizer`.
+  - **Two parts.** The clip prints lying on its profile, so the snap flexes along the layers. The block prints
+    upright. They join by a dovetail rail on the clip, with a 45° peaked slot roof in the block so nothing bridges.
+  - **The channel sits 25.6 mm in front of the bar's center**, so the outlet tube drops past the clip's front wall.
+    The block cantilevers off the bar's top. Nothing but the clip lips goes below the bar.
+  - **Tilt is 42°**, the top end of the range, so the 1 mm nose clearance stays out of the channel's far half.
+  - **The felts are staggered 8 mm along a continuous Ø2.4 channel** at azimuths 270° (back), 30° and 150°. The
+    wall opposite each felt is unbroken, which guides a loading end past it. The window is the felt cone shifted
+    1 mm deeper, so a worn felt pushed back in still clears plastic.
+  - **The mouth is 29 mm from the felt point.** That gives 12 mm of grip at the 32 mm reading, and a ≥3 mm
+    shoulder gap at the 28.5 mm reading even after 1 mm of wear (`wear_max`).
+  - **The clip hook is fit-tested** at 1.5 / 2.0 / 2.5 mm. The default of 2.0 strains the wall about 1.4% while
+    snapping on.
+
