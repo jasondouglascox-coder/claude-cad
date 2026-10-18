@@ -56,7 +56,7 @@ def tube_socket(p: Params = P, fit_d: float | None = None) -> Part:
     """Guide-tube socket from a mouth at z = 0: tube_depth of Ø fit, then 45° down to the channel."""
     fit_d = fit_d or p.tube_fit_d
     return Part((_rod(fit_d / 2, 0, p.tube_depth) +
-                 _cone(fit_d / 2, p.channel_d / 2, p.tube_depth - 0.01, p.tube_depth + cone_h(p))).solids())
+                 _cone(fit_d / 2, p.channel_d / 2, p.tube_depth, p.tube_depth + cone_h(p))).solids())
 
 
 def rail_profile(p: Params = P, clearance: float = 0.0, peaked: bool = False) -> Sketch:

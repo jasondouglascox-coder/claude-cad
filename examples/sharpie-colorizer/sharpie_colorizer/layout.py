@@ -103,3 +103,8 @@ def validate(p: Params = P) -> None:
     if clip_strain(p, worst) > 0.02:
         raise ValueError(f"hooks={p.hooks}: the clip strains {clip_strain(p, worst):.3f} snapping on a {worst} mm "
                          f"hook (max 0.02); use a smaller hook or a thinner clip_t")
+
+
+def column_r(p: Params = P) -> float:
+    """The channel's column: wide enough to swallow each boss's start, so no boss end overhangs."""
+    return tip_r(p) + boss_r(p) + 0.2
