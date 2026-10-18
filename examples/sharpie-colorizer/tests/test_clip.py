@@ -47,7 +47,7 @@ def test_nothing_below_the_lips(placed):
 def test_rail_on_top_at_center(placed):
     top = P.bar_h / 2 + P.clip_clear + P.clip_t + P.rail_h
     assert placed.bounding_box().max.Z == pytest.approx(top)
-    probe = Pos(-1, -20, top - 0.05) * Box(0.2, 40, 0.02, align=(Align.MIN,) * 3)
+    probe = Pos(-5, -20, top - 0.05) * Box(0.2, 40, 0.02, align=(Align.MIN,) * 3)  # clear of the pin hole
     (head,) = (placed & probe).solids()
     assert head.bounding_box().size.Y == pytest.approx(P.rail_head, abs=0.05)
     assert head.bounding_box().center().Y == pytest.approx(0, abs=1e-3)

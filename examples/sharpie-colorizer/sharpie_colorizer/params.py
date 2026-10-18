@@ -53,7 +53,10 @@ class Params:
     rail_h: float = 4.0
     floor_t: float = 1.2  # above the rail slot's peak
     tip_lift: float = 3.0  # lowest felt tip above the base
-    inlet_gap: float = 3.0  # channel between the top window and the inlet socket's cone
+    inlet_wall: float = 0.8  # plastic between the top marker's nose bore and the inlet's cone
+    pin_hole_d: float = 2.0  # lock pin: a 1.75 mm filament stub through the base into the rail
+    pin_depth: float = 3.0  # how far the pin goes into the rail
+    pin_proud: float = 3.0  # how far it sticks up out of the base, to pull it
     # fit-test plate
     fit_h: float = 15.0  # marker strip height: the tilted bores grip about as long as the block's
     fit_wall: float = 1.6  # around each fit-test hole

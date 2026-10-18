@@ -2,7 +2,7 @@
 from build123d import Align, Cylinder, Location, Part, Plane, Pos, RectangleRounded, extrude
 
 from sharpie_colorizer.joints import marker_solid
-from sharpie_colorizer.layout import channel_y, top_z
+from sharpie_colorizer.layout import base_t, channel_y, top_z
 from sharpie_colorizer.params import P, Params
 from sharpie_colorizer.parts import block, clip
 
@@ -41,8 +41,15 @@ def tube_paths(p: Params = P) -> list[tuple[str, Part]]:
             ("outlet_tube", Pos(x, y, bottom) * Cylinder(p.tube_od / 2, outlet_floor - bottom, align=UP))]
 
 
+def lock_pin(p: Params = P) -> Part:
+    """A 1.75 mm filament stub down through the block's base into the rail: keeps the block from sliding off."""
+    rail_top = web_top(p) + p.rail_h
+    z0, z1 = rail_top - p.pin_depth + 0.2, web_top(p) + base_t(p) + p.pin_proud
+    return Pos(0, 0, z0) * Cylinder(p.filament_d / 2, z1 - z0, align=UP)
+
+
 def placed_parts(p: Params = P, reading: str = "long", wear: float = 0.0) -> list[tuple[str, Part]]:
     """Bar, clip, block, markers and tubes, for clash checks and renders. Not the filament: felt touches it."""
     out = [("bar", bar(p)), ("clip", clip.place(p) * clip.make(p)), ("block", block.place(p) * block.make(p))]
     out += [(f"marker_{i}", marker(p, i, reading, wear)) for i in range(len(p.azimuths_deg))]
-    return out + tube_paths(p)
+    return out + tube_paths(p) + [("lock_pin", lock_pin(p))]

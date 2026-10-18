@@ -2,7 +2,9 @@
 that slides onto the clip's rail. Prints as it stands (base on the bed); every bore leans at most tilt_deg."""
 import math
 
-from build123d import Align, Box, Cone, Cylinder, Location, Part, Plane, Pos, Rot, extrude
+from build123d import Align, Box, Cone, Cylinder, Location, Part, Plane, Pos, Rectangle, Rot, extrude
+
+from cadkit.shapes import poly
 
 from sharpie_colorizer.joints import marker_cavity, rail_profile, tube_socket
 from sharpie_colorizer.layout import base_t, boss_r, channel_y, column_r, mouth_l, tip_point, top_z
@@ -39,8 +41,19 @@ def make_use(p: Params = P) -> Part:
     out -= Pos(0, channel_y(p), top_z(p)) * Rot(180, 0, 0) * tube_socket(p)
     for i in range(len(p.azimuths_deg)):
         out -= marker_frame(p, i) * marker_cavity(p)
-    out -= Pos(-p.clip_w, 0, 0) * extrude(Plane.YZ * rail_profile(p, p.rail_clear, peaked=True), 2 * p.clip_w)
+    out -= Pos(-p.clip_w, 0, 0) * extrude(Plane.YZ * _slot(p), 2 * p.clip_w)
+    out -= Cylinder(p.pin_hole_d / 2, base_t(p), align=UP)  # lock pin, down into the rail
     return Part(out.solids())
+
+
+def _slot(p: Params):
+    """The rail slot with its peaked roof, chamfered bed_chamfer where it meets the bed (elephant foot)."""
+    slot = rail_profile(p, p.rail_clear, peaked=True)
+    half0 = (slot & Pos(0, 0.0) * Rectangle(40, 0.001)).bounding_box().size.X / 2
+    slope = (p.rail_head - p.rail_neck) / 2 / p.rail_h
+    v = p.bed_chamfer + 0.1  # end just inside the slot's flank, so no ledge is left where they meet
+    up, w = half0 + slope * v - 0.02, half0 + p.bed_chamfer
+    return slot + poly((-w, -1), (w, -1), (w, 0), (up, v), (-up, v), (-w, 0))
 
 
 def _offset(p: Params) -> tuple[float, float]:

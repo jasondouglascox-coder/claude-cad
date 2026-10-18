@@ -100,4 +100,12 @@ different colors would mix, but that's a side effect and not a goal.
     shoulder gap at the 28.5 mm reading even after 1 mm of wear (`wear_max`).
   - **The clip hook is fit-tested** at 1.5 / 2.0 / 2.5 mm. The default of 2.0 strains the wall about 1.4% while
     snapping on.
+- **2026-10-18: final review fixes.**
+  - **The block locks onto the rail with a filament pin.** A ~14 mm stub of the 1.75 mm filament goes down a
+    Ø2 hole in the block's base into a teardrop hole in the rail. Without it, pushing a marker in (58% of the force
+    runs along the bar) could slide the block off the rail. It's not a screw: there's no hardware, and it pulls
+    out with fingers.
+  - **The inlet is raised** so 0.8 mm of plastic separates its funnel from the top marker's nose bore. The column
+    is now 52.6 mm tall.
+  - **The slot is chamfered 0.4 mm where it meets the bed**, so elephant foot can't bind the rail.
 

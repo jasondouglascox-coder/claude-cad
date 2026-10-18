@@ -30,7 +30,8 @@ The block can face either way on the rail. Point the outlet at the head.
 
 ## Use
 
-1. Snap the clip onto the bar and slide the block onto the rail.
+1. Snap the clip onto the bar and slide the block onto the rail. Lock it: push a ~14 mm stub of filament down the
+   small hole in the base, behind the column, into the rail. Leave about 3 mm sticking up so you can pull it out.
 2. Push the guide tube from the swivel into the top socket. Push a second tube from the bottom socket to the head.
 3. Load white filament. Loading works with markers in.
 4. Push each marker in until the felt touches the filament. As the felt wears, push it a little deeper. After

@@ -81,3 +81,20 @@ def test_slot_takes_the_rail(part):
     rail = lambda c: Pos(-P.clip_w, 0, 0) * extrude(Plane.YZ * rail_profile(P, c), 2 * P.clip_w)
     assert (part & rail(0)).volume == pytest.approx(0, abs=1e-3)
     assert (part & rail(P.rail_clear + 0.1)).volume > 1
+
+
+def test_inlet_socket_walls_off_every_marker_cavity():
+    """Final review 1: 0.8 mm of plastic between the inlet funnel and every marker's cavity."""
+    from sharpie_colorizer.joints import marker_cavity, tube_socket
+    from build123d import Rot
+    grown = Pos(0, channel_y(P), top_z(P)) * Rot(180, 0, 0) * tube_socket(P, fit_d=P.tube_fit_d + 1.6)
+    for i in MARKERS:
+        assert (grown & block.marker_frame(P, i) * marker_cavity(P)).volume == pytest.approx(0, abs=1e-6), i
+
+
+def test_slot_mouth_chamfered_on_the_bed():
+    """Final review 5: elephant foot can't bind the rail where the slot meets the bed."""
+    from sharpie_colorizer.joints import rail_profile
+    mouth = Pos(-P.clip_w, 0, 0.05) * extrude(Plane.YZ * rail_profile(P, P.rail_clear + P.bed_chamfer / 2), 2 * P.clip_w)
+    assert (block.make_use(P) & (mouth & Pos(0, 0, 0.05) * Box(4 * P.clip_w, 40, 0.1))).volume == \
+        pytest.approx(0, abs=1e-4)

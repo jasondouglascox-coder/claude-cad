@@ -67,11 +67,16 @@ def tip_point(p: Params = P, i: int = 0) -> tuple[float, float, float]:
     return (tip_r(p) * math.cos(phi), channel_y(p) + tip_r(p) * math.sin(phi), base_t(p) + p.tip_lift + i * p.stagger)
 
 
-def top_z(p: Params = P) -> float:
-    """Top of the column: above the last felt, a stretch of channel, the inlet's cone and socket."""
+def nose_bore_top(p: Params = P, i: int = 0) -> float:
+    """Highest point of marker i's nose bore (the cavity part nearest the channel above its felt)."""
     t = math.radians(p.tilt_deg)
-    z = tip_point(p, len(p.azimuths_deg) - 1)[2] + p.felt_l * math.cos(t) + p.inlet_gap + cone_h(p) + p.tube_depth
-    return p.printer.snap(z)
+    return tip_point(p, i)[2] + (fit_start_l(p) + 0.5) * math.cos(t) + (p.nose_d / 2 + p.nose_clear) * math.sin(t)
+
+
+def top_z(p: Params = P) -> float:
+    """Top of the column: inlet_wall above every nose bore, then the inlet's cone and socket (rounded up)."""
+    z = max(nose_bore_top(p, i) for i in range(len(p.azimuths_deg))) + p.inlet_wall + cone_h(p) + p.tube_depth
+    return p.printer.snap(z + p.printer.layer / 2)
 
 
 def boss_r(p: Params = P) -> float:
