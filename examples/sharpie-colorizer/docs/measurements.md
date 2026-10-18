@@ -11,4 +11,12 @@
 | Shoulder to where the felt starts | 32 mm (the parts above add to ~28.5; rough) | the body shoulder | 2026-10-18 |
 | Felt tip | 5 mm long, 4 mm wide at the base, tapering to a point | where the felt leaves the nose | 2026-10-18 |
 
-All by ruler, ±0.5 mm. The fit test print settles the socket sizes.
+Fit-test results (printed in black, 0.20 mm Standard):
+
+| What | Result | Used |
+|---|---|---|
+| Marker socket | 10.6 "really tight, almost too tight"; 10.8 "nice but slides in smoothly" | `marker_fit_d` 10.7, and the marker's front section modelled at 10.7 (ruler said 11) |
+| Clip slice 2 (hook 2.0) on the bar | fits, but at least 1 mm too tall | `bar_h` 19.4 (the clip was built for 20.0 + 0.4 clearance) |
+| Tube hole | not reported yet | `tube_fit_d` 4.1 (default) |
+
+All ruler readings are ±0.5 mm. The fit test settles the socket sizes.

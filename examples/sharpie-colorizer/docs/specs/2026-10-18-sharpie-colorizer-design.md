@@ -108,4 +108,10 @@ different colors would mix, but that's a side effect and not a goal.
   - **The inlet is raised** so 0.8 mm of plastic separates its funnel from the top marker's nose bore. The column
     is now 52.6 mm tall.
   - **The slot is chamfered 0.4 mm where it meets the bed**, so elephant foot can't bind the rail.
+- **2026-10-18: fit-test results.**
+  - Marker socket is 10.7, between the almost-too-tight 10.6 and the smooth-sliding 10.8. The marker's front
+    section is modelled at 10.7 too.
+  - Clip hook stays 2.0 (slice 2).
+  - The bar's height is 19.4, not 20. Slice 2 had at least 1 mm of vertical play.
+  - Details are in `docs/measurements.md`.
 

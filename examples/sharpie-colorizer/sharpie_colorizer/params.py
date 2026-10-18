@@ -9,11 +9,11 @@ from cadkit import Printer
 class Params:
     # measured: the A1's top frame bar
     bar_w: float = 40.0  # front to back (Y)
-    bar_h: float = 20.0  # (Z)
+    bar_h: float = 19.4  # (Z): clip slice 2 at 20.0 had >= 1 mm of vertical play (fit test, 2026-10-18)
     bar_r: float = 3.0  # corner radius: not measured, only used to model the bar
     # measured: Sharpie Fine Point
     marker_body_d: float = 13.0  # main body, behind the shoulder
-    marker_front_d: float = 11.0  # front section the socket grips
+    marker_front_d: float = 10.7  # front section the socket grips: ruler said 11, the fit test says it is snug at 10.7
     front_straight_l: float = 20.0  # straight part of the front section, from the shoulder
     shoulder_to_felt_long: float = 32.0  # the direct reading
     shoulder_to_felt_short: float = 28.5  # the pieces added up (20 + 2.5 round-in + 6 nose)
@@ -24,7 +24,7 @@ class Params:
     filament_d: float = 1.75
     tube_od: float = 4.0  # the A1's guide tube
     # fits: the fit-test plate picks these (one-line edits after printing it)
-    marker_fit_d: float = 11.0
+    marker_fit_d: float = 10.7  # fit test: 10.6 almost too tight, 10.8 slides in smoothly
     marker_fits: tuple = (10.6, 10.8, 11.0, 11.2, 11.4, 11.6)
     tube_fit_d: float = 4.1
     tube_fits: tuple = (4.0, 4.1, 4.2, 4.3)
