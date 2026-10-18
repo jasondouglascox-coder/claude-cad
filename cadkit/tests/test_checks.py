@@ -2,7 +2,7 @@ import pytest
 from build123d import Box, Pos
 
 from cadkit import A1, Printer
-from cadkit.checks import downward_faces, off_layer_z, open_edges, printable_problems, unsupported
+from cadkit.checks import downward_faces, off_layer_z, open_edges, overhangs, printable_problems, unsupported
 from cadkit.clash import find_clashes
 from cadkit.shapes import bowtie, dovetail, poly, rect
 from build123d import extrude
@@ -82,3 +82,18 @@ def test_layers_rounds_a_stacked_thickness_to_whole_layers():
     assert fine.on_layer(base + fine.layers(0.6)) and fine.layers(0.6) == pytest.approx(0.6)
     assert fine.layers(0.01) == pytest.approx(0.12)  # at least one layer
     assert A1.layers(0.6) == 0.6 and A1.layers(15.0) == 15.0
+
+
+def test_overhangs_flag_undersides_steeper_than_45_only():
+    from build123d import Align, Cone, Cylinder, Rot
+    up = (Align.CENTER, Align.CENTER, Align.MIN)
+    assert overhangs(Cylinder(5, 10, align=up)) == []
+    # a rod leaning `deg` from vertical, cut flat on the bed: its underside overhangs by `deg`
+    lean = lambda deg: (Rot(0, deg, 0) * Cylinder(5, 60)) & Box(100, 100, 25, align=up)
+    assert overhangs(Pos(0, 0, 20) * Rot(0, 30, 0) * Cylinder(5, 30)) != []   # a leaning rod's end cap overhangs
+    assert overhangs(lean(30)) == []
+    assert overhangs(lean(60)) != []
+    assert overhangs(Cone(0.01, 10, 10, align=up)) == []           # a 45° flare prints
+    assert overhangs(Cone(0.01, 17.3, 10, align=up)) != []         # a 60° flare doesn't
+    z, area = overhangs(lean(60))[0]
+    assert z > 0 and area > 0
