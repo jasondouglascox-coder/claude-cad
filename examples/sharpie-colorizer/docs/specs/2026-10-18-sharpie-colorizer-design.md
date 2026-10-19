@@ -115,3 +115,13 @@ different colors would mix, but that's a side effect and not a goal.
   - The bar's height is 19.4, not 20. Slice 2 had at least 1 mm of vertical play.
   - Details are in `docs/measurements.md`.
   - Tube sockets are 4.2: tight. 4.3 pulled out easily.
+- **2026-10-19: first print. The clip is redone; the block stays.**
+  - The clip was loose on the frame bar. It's now 0.2 mm narrower across the bar (`clip_clear_w` 0.1 per side).
+    The height stays as it was.
+  - The rail was super loose in the block's slot. The clip's rail is now drawn fatter for a press fit,
+    `rail_grow` 0.2 per side over the rail the printed slot was cut around. The slot and the rest of the block are
+    unchanged, so only the clip gets reprinted.
+  - `clip_reprint_1` has three clips (rail +0.1 / +0.2 / +0.3, marked 1–3 bars) to pick the snug one. The press
+    fit still uses no screw; the filament lock pin stays optional.
+  - The marker socket goes to 10.75 for the next block print, because 10.7 was a hair tight.
+

@@ -27,6 +27,8 @@ The block can face either way on the rail. Point the outlet at the head.
 
    <img src="docs/images/fit_test.png" width="60%" alt="Fit-test plate">
 2. **`colorizer_1`:** the clip and the block. They print as shown, with no supports.
+3. **`clip_reprint_1`**, if the clip is loose on the rail: three clips with the rail 0.1 / 0.2 / 0.3 mm fatter per
+   side (1–3 bars). Keep the one that presses snugly into the block, then set `rail_grow` to match.
 
 ## Use
 

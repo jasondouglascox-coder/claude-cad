@@ -24,14 +24,17 @@ class Params:
     filament_d: float = 1.75
     tube_od: float = 4.0  # the A1's guide tube
     # fits: the fit-test plate picks these (one-line edits after printing it)
-    marker_fit_d: float = 10.7  # fit test: 10.6 almost too tight, 10.8 slides in smoothly
+    marker_fit_d: float = 10.75  # fit test: 10.6 almost too tight, 10.8 slides in smoothly; 10.7 fit, a hair tight
     marker_fits: tuple = (10.6, 10.8, 11.0, 11.2, 11.4, 11.6)
     tube_fit_d: float = 4.2  # fit test: 4.2 tight, 4.3 smooth but pulls out
     tube_fits: tuple = (4.0, 4.1, 4.2, 4.3)
     hook: float = 2.0  # how far the clip's lips reach in under the bar
     hooks: tuple = (1.5, 2.0, 2.5)
-    clip_clear: float = 0.2  # per side, around the bar
-    rail_clear: float = 0.1  # per side: the railroad's proven 0.2 mm slide
+    clip_clear: float = 0.2  # per side, above and below the bar (and the most the width may take)
+    clip_clear_w: float = 0.1  # per side across the bar's width: 0.2 printed loose on the bar
+    rail_clear: float = 0.1  # per side: the block's slot is cut this much around the nominal rail
+    rail_grow: float = 0.2  # per side: the clip's rail is drawn this much fatter (the nominal one printed super loose)
+    rail_grows: tuple = (0.1, 0.2, 0.3)  # the clip reprint plate: one clip per size, pick the snug one
     # design
     tilt_deg: float = 42.0  # marker axis from vertical, felt pointing down (downstream)
     azimuths_deg: tuple = (270.0, 30.0, 150.0)  # around the channel; 270 = back, over the bar; lowest first

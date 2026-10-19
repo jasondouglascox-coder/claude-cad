@@ -62,9 +62,9 @@ def test_rail_slot_is_the_rail_grown_and_peaked():
 def test_clip_profile_walls_and_lips():
     prof = clip_profile(P, P.hook)
     bb = prof.bounding_box()
-    outer = P.bar_w / 2 + P.clip_clear + P.clip_t
+    outer = P.bar_w / 2 + P.clip_clear_w + P.clip_t
     assert bb.max.X == pytest.approx(outer) and bb.min.X == pytest.approx(-outer)
-    assert bb.max.Y == pytest.approx(P.bar_h / 2 + P.clip_clear + P.clip_t + P.rail_h)
+    assert bb.max.Y == pytest.approx(P.bar_h / 2 + P.clip_clear + P.clip_t + P.rail_h + P.rail_grow)
     assert bb.min.Y == pytest.approx(-(P.bar_h / 2 + P.clip_clear + P.clip_t))
     # the opening between the lip tips
     probe = Pos(-30, -(P.bar_h / 2 + P.clip_clear) - 0.05) * Rectangle(60, 0.1, align=(Align.MIN, Align.CENTER))

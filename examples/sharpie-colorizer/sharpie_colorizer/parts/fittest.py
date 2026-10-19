@@ -84,18 +84,23 @@ def tube_strip(p: Params = P) -> Part:
 
 def bar_center(p: Params = P) -> tuple[float, float]:
     """Where the bar's center sits in a clip slice (print frame)."""
-    return p.bar_w / 2 + p.clip_clear + p.clip_t, p.bar_h / 2 + p.clip_clear + p.clip_t
+    return p.bar_w / 2 + p.clip_clear_w + p.clip_t, p.bar_h / 2 + p.clip_clear + p.clip_t
 
 
 def clip_slice(p: Params = P, k: int = 0) -> Part:
     """A slice_w-thick slice of the clip with hooks[k], lying on its profile, with k + 1 bars on a side wall."""
     cx, cy = bar_center(p)
     s = Pos(cx, cy, 0) * extrude(clip_profile(p, p.hooks[k]), p.slice_w)
-    wall_x = cx + p.bar_w / 2 + p.clip_clear + p.clip_t / 2
-    pitch = p.mark_w + p.mark_gap
-    bars = [rect(wall_x - p.mark_w / 2, wall_x + p.mark_w / 2, cy - p.bar_h / 2 + i * (p.mark_l + pitch),
-                 cy - p.bar_h / 2 + i * (p.mark_l + pitch) + p.mark_l) for i in range(k + 1)]
-    return _with_marks(Part(s.solids()), bars, p.slice_w, p.mark_h)
+    return _with_marks(Part(s.solids()), wall_bars(p, k + 1), p.slice_w, p.mark_h)
+
+
+def wall_bars(p: Params, n: int) -> list[Sketch]:
+    """n bars along a clip's side wall, for the top face of anything printed on the clip's profile."""
+    cx, cy = bar_center(p)
+    wall_x = cx + p.bar_w / 2 + p.clip_clear_w + p.clip_t / 2
+    pitch = p.mark_l + p.mark_w + p.mark_gap
+    return [rect(wall_x - p.mark_w / 2, wall_x + p.mark_w / 2, cy - p.bar_h / 2 + i * pitch,
+                 cy - p.bar_h / 2 + i * pitch + p.mark_l) for i in range(n)]
 
 
 def fit_items(p: Params = P) -> list[tuple[str, Part]]:

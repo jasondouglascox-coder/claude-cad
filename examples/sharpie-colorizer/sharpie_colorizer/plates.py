@@ -11,6 +11,6 @@ def colorizer_items(p: Params = P) -> list:
 
 def plates(p: Params = P) -> list[Plate]:
     out = []
-    for name, items in (("fit_test", fit_items(p)), ("colorizer", colorizer_items(p))):
+    for name, items in (("fit_test", fit_items(p)), ("colorizer", colorizer_items(p)), ("clip_reprint", clip.variants(p))):
         out += [Plate(f"{name}_{n + 1}", 1, bed) for n, bed in enumerate(pack(items, p.printer))]
     return out

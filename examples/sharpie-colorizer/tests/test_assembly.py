@@ -13,8 +13,8 @@ MARKERS = range(len(P.azimuths_deg))
 @pytest.mark.parametrize("reading,wear", [("long", 0.0), ("short", 0.0), ("short", P.wear_max)],
                          ids=["long", "short", "worn"])
 def test_markers_clear_block(reading, wear):
-    """Review Focus 2 & 3."""
-    assert find_clashes(placed_parts(P, reading, wear)) == []
+    """Review Focus 2 & 3. The clip's rail presses into the block's slot on purpose (see the next test)."""
+    assert [c for c in find_clashes(placed_parts(P, reading, wear)) if {c[0], c[1]} != {"block", "clip"}] == []
 
 
 def test_clash_test_can_fail():
@@ -68,3 +68,14 @@ def test_lock_pin_reachable_from_above():
     for name, s in placed_parts(P):
         if name not in ("lock_pin",):
             assert (s & reach).volume == pytest.approx(0, abs=1e-3), name
+
+
+def test_rail_press_fit_overlaps_only_in_the_slot():
+    """The clip's fat rail and the block overlap by design, and only there: within the slot, by about rail_grow."""
+    parts = dict(placed_parts(P))
+    overlap = parts["clip"] & parts["block"]
+    assert overlap.volume > 0
+    bb = overlap.bounding_box()
+    web = P.bar_h / 2 + P.clip_clear + P.clip_t
+    assert bb.min.Z >= web - 1e-3 and bb.max.Z <= web + P.rail_h + 2 * P.rail_grow
+    assert max(abs(bb.min.Y), abs(bb.max.Y)) <= P.rail_head / 2 + 2 * P.rail_grow

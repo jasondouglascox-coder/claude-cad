@@ -19,4 +19,12 @@ Fit-test results (printed in black, 0.20 mm Standard):
 | Clip slice 2 (hook 2.0) on the bar | fits, but at least 1 mm too tall | `bar_h` 19.4 (the clip was built for 20.0 + 0.4 clearance) |
 | Tube hole | 4.2 "a tight fit"; 4.3 "fits smooth but will pull out easily" | `tube_fit_d` 4.2 |
 
+First real print (2026-10-19):
+
+| What | Result | Changed to |
+|---|---|---|
+| Marker in the 10.7 socket | fits, a hair tight | `marker_fit_d` 10.75 (next block print) |
+| Clip on the frame bar (0.2 per side across the width) | needs to be 0.2 mm narrower | `clip_clear_w` 0.1 |
+| Clip rail in the block's slot (0.1 per side clearance) | super loose | rail drawn `rail_grow` 0.2 per side fatter; the reprint plate has 0.1 / 0.2 / 0.3 |
+
 All ruler readings are ±0.5 mm. The fit test settles the socket sizes.

@@ -72,14 +72,15 @@ def rail_profile(p: Params = P, clearance: float = 0.0, peaked: bool = False) ->
     return poly(*pts, (-half(top), top))
 
 
-def clip_profile(p: Params = P, hook: float = 2.0) -> Sketch:
+def clip_profile(p: Params = P, hook: float = 2.0, rail_grow: float | None = None) -> Sketch:
     """C around the bar (centered on the origin) with lips reaching `hook` in under its bottom edge, a 45° lead-in
-    on each lip's lower inside, and the rail on the top web."""
-    a, b = p.bar_w / 2 + p.clip_clear, p.bar_h / 2 + p.clip_clear
+    on each lip's lower inside, and the rail (rail_grow fatter than nominal, for a press fit) on the top web."""
+    rail_grow = p.rail_grow if rail_grow is None else rail_grow
+    a, b = p.bar_w / 2 + p.clip_clear_w, p.bar_h / 2 + p.clip_clear
     A, t = a + p.clip_t, p.clip_t
     tip = p.bar_w / 2 - hook
     right = poly((a, b), (a, -b), (tip, -b), (tip + t, -b - t), (A, -b - t), (A, b))
     left = poly((-a, b), (-A, b), (-A, -b - t), (-tip - t, -b - t), (-tip, -b), (-a, -b))
     web = rect(-A, A, b - 0.01, b + t)
-    rail = Pos(0, b + t) * rail_profile(p)
+    rail = Pos(0, b + t) * rail_profile(p, rail_grow)
     return Sketch() + [right, left, web, rail]

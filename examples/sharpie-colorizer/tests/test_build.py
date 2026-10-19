@@ -49,15 +49,17 @@ def test_plates_list_the_fit_test_and_the_colorizer():
     from sharpie_colorizer.plates import plates
     got = {pl.name: sorted(n for n, _ in pl.items) for pl in plates(P)}
     assert got == {"fit_test_1": sorted(["marker_strip", "tube_strip"] + [f"clip_slice_{k + 1}" for k in range(len(P.hooks))]),
-                   "colorizer_1": ["block", "clip"]}
+                   "colorizer_1": ["block", "clip"],
+                   "clip_reprint_1": [f"clip_rail_{k + 1}" for k in range(len(P.rail_grows))]}
 
 
 @pytest.mark.slow
 @pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
-def test_slicer_slices_the_colorizer_in_black_only(tmp_path):
+@pytest.mark.parametrize("name", ["colorizer_1", "clip_reprint_1"])
+def test_slicer_slices_the_colorizer_in_black_only(tmp_path, name):
     build.main(["all", "--out", str(tmp_path)])
     s = slicers.active()
-    plate = tmp_path / "plates" / f"colorizer_1{s.project_suffix}"
+    plate = tmp_path / "plates" / f"{name}{s.project_suffix}"
     assert s.same_objects(s.roundtrip(plate), plate)
     report = s.slice_report(plate, tmp_path / "s.3mf")
     # the tilted mouths' top edge leaves the last layer empty: every layer with plastic is black

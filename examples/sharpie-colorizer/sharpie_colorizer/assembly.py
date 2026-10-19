@@ -43,7 +43,7 @@ def tube_paths(p: Params = P) -> list[tuple[str, Part]]:
 
 def lock_pin(p: Params = P) -> Part:
     """A 1.75 mm filament stub down through the block's base into the rail: keeps the block from sliding off."""
-    rail_top = web_top(p) + p.rail_h
+    rail_top = web_top(p) + p.rail_h + p.rail_grow
     z0, z1 = rail_top - p.pin_depth + 0.2, web_top(p) + base_t(p) + p.pin_proud
     return Pos(0, 0, z0) * Cylinder(p.filament_d / 2, z1 - z0, align=UP)
 
