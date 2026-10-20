@@ -2,7 +2,7 @@
 from math import hypot
 
 import pytest
-from build123d import Pos
+from build123d import Align, Box, Pos, Rot
 
 from cadkit.clash import find_clashes
 from refill_spool.assembly import coil, placed_parts, strap_paths
@@ -16,6 +16,17 @@ def test_cap_seats_on_the_barrel_without_clashing():
     (_, barrel), (_, cap) = parts
     assert cap.distance_to(barrel) == pytest.approx(0, abs=1e-3)
     assert cap.bounding_box().max.Z == pytest.approx(P.width, abs=1e-3)
+
+
+def test_bore_runs_the_full_width():
+    """Like the official spool, the AMS lite hub bears on a tube the whole way through, not two end rings."""
+    a = 90 + 180 / P.spokes  # clear of the notch and the spokes
+    whole = placed_parts(P)[0][1] + placed_parts(P)[1][1]
+    probe = Rot(0, 0, a) * Pos(P.bore_d / 2 + 0.3, 0, -1) * Box(0.1, 0.1, P.width + 2, align=(Align.CENTER,
+                                                                                            Align.CENTER, Align.MIN))
+    bb = (whole & probe).bounding_box()
+    assert (bb.min.Z, bb.max.Z) == (pytest.approx(0, abs=1e-3), pytest.approx(P.width, abs=1e-3))
+    assert (whole & probe).volume == pytest.approx(0.01 * P.width, rel=1e-3)  # no gap along the way
 
 
 def test_threads_engage_with_play():

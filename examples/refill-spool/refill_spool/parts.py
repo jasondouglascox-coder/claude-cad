@@ -73,6 +73,7 @@ def engaged(p: Params) -> float:
 def barrel_half_centered(p: Params = P) -> Part:
     top = p.barrel_top
     part = flange(p) + ring(p.bore_d / 2, p.bore_d / 2 + p.hub_wall, p.hub_h)
+    part += ring(p.bore_d / 2, p.bore_d / 2 + p.bore_wall, top)  # the cap's bore ring lands on its end
     part += ring(p.nut_root, p.barrel_d / 2, top)
     z0, z1 = nut_span(p)
     part += thread(p.nut_root, p.thread_depth, p.pitch, z1 - z0, p.thread_crest, inward=True, z0=z0,

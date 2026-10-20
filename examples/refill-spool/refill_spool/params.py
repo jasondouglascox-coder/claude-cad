@@ -23,6 +23,7 @@ class Params:
     spoke_w: float = 6.0
     # barrel half
     barrel_wall: float = 1.2
+    bore_wall: float = 1.2  # tube round the bore, the barrel half's full height (like the official spool)
     hub_wall: float = 4.5  # bore ring around the AMS lite hub, thick enough for the notch
     hub_h: float = 7.2
     notch_depth: float = 6.0  # AMS lite drive notch: in from the outer face along the bore
@@ -49,7 +50,7 @@ class Params:
     strap_w: float = 10.0  # slot width in the barrel
     strap_t: float = 1.5  # thickest strap the path must pass
     filament: int = 1  # AMS slot
-    max_grams: float = 60.0  # both halves, as Bambu Studio slices them (a solid printed spool is ~150)
+    max_grams: float = 75.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
     printer: Printer = Printer()
 
     def __post_init__(self):

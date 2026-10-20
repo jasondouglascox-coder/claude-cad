@@ -69,12 +69,14 @@ def test_spokes_reach_from_hub_to_rim(barrel, capp):
 def test_barrel_height_and_outside_diameter(barrel):
     assert barrel.bounding_box().max.Z == pytest.approx(P.barrel_top, abs=1e-3)
     assert radial(barrel, C, PLAIN_GAP * 1.5, P.barrel_top / 2) == [
+        pytest.approx((BORE, BORE + P.bore_wall), abs=0.02),
         pytest.approx((P.nut_root, R_OUT), abs=0.02)]
 
 
 def test_nut_thread_inside_the_barrel_top(barrel):
     """Somewhere round the middle of the top band the ridge stands thread_depth in from the wall."""
-    inner = min(r[0][0] for a in range(0, 360, 5) if (r := radial(barrel, C, a, P.barrel_top - P.thread_len / 2)))
+    inner = min(r[0][0] for a in range(0, 360, 5) if (r := radial(barrel, C, a, P.barrel_top - P.thread_len / 2,
+                                                             r0=BORE + P.bore_wall + 0.5)))
     assert inner == pytest.approx(P.nut_root - P.thread_depth, abs=0.05)
 
 

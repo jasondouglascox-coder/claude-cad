@@ -19,8 +19,8 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PETG, AMS slot 1. Bambu Studio slices the pair at 58 g (56 g before the cap lip); the tests
-  hold it under 60 g.
+- **Filament:** PETG, AMS slot 1. Bambu Studio slices the pair at 71 g (see amendments); the tests hold it
+  under 75 g.
 
 All sizes live in `refill_spool/params.py`.
 
@@ -34,3 +34,8 @@ All sizes live in `refill_spool/params.py`.
   - The cap no longer needs strap openings, so its flange has a solid ring (Ø71 to Ø82) and a lip 2.4 mm tall,
     0.8 mm thick, 0.2 mm outside the barrel, with a 0.6 mm lead-in. Screwed home, it wraps the strips' top ends.
   - The drive notch is on the barrel half only: that side goes toward the AMS lite's drive.
+- **2026-10-20: the bore is a tube the full width.** From the user, comparing with the official Bambu reusable
+  spool, whose bore runs solid through: the AMS lite hub should bear along the whole spool, not on a 7.2 mm ring at
+  one end and a 3 mm ring at the other. The barrel half now has a 1.2 mm tube round the Ø55 bore up to the barrel
+  top, and the cap's bore ring lands on its end, so the bore is continuous over the full 65 mm. 71 g sliced (budget
+  raised to 75 g; the user's solid printed spools are ~220 g).
