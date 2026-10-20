@@ -43,17 +43,22 @@ def test_cap_has_no_bridges(capp):
     assert downward_faces(capp) == []
 
 
-def test_barrel_half_flange_is_hub_barrel_rim(barrel):
+def test_barrel_half_flange_is_solid_out_to_the_barrel_then_rim(barrel):
+    """The barrel stands on a solid floor all round, not just where the spokes cross it."""
+    for a in range(0, 360, 5):
+        if min(abs((a - s + 180) % 360 - 180) for s in P.strap_angles()) < 15:
+            continue  # strap slots, below
+        assert radial(barrel, C, a + 2.5, LOW, r0=BORE + P.notch_h + 0.5, r1=R_OUT) == [pytest.approx(
+            (BORE + P.notch_h + 0.5, R_OUT), abs=0.02)], a
     assert radial(barrel, C, PLAIN_GAP / 2 + PLAIN_GAP, LOW) == [
-        pytest.approx((BORE, BORE + P.hub_wall), abs=0.02),
-        pytest.approx((P.nut_root, R_OUT), abs=0.02),
+        pytest.approx((BORE, R_OUT), abs=0.02),
         pytest.approx((P.rim_in, P.rim_d / 2), abs=0.02)]
 
 
 @pytest.mark.parametrize("angle", P.strap_angles())
 def test_strap_slot_runs_the_barrels_full_length(barrel, angle):
     for z in (LOW, P.barrel_top / 2, P.barrel_top - 0.1):
-        pieces = radial(barrel, C, angle, z, r0=BORE + P.hub_wall + 0.5, r1=P.rim_in - 0.5)
+        pieces = radial(barrel, C, angle, z, r0=P.nut_root - P.thread_depth, r1=P.rim_in - 0.5)
         assert pieces == [], (z, pieces)
     assert tangential_gap(barrel, C, angle, R_OUT - P.barrel_wall / 2, P.barrel_top / 2) == pytest.approx(
         P.strap_w, abs=0.05)

@@ -19,8 +19,8 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 75 g; the tests hold it
-  under 80 g.
+- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 77.5 g; the tests hold
+  it under 80 g.
 
 All sizes live in `refill_spool/params.py`.
 
@@ -42,3 +42,7 @@ All sizes live in `refill_spool/params.py`.
 - **2026-10-20: PLA, AMS slot 3.** The user has PLA to use up. PLA is stiffer (good for the thin spokes and rim)
   and prints the thread cleaner; it's more brittle if dropped and softens near 55–60 °C, so don't dry filament on
   this spool above ~50 °C. The template's PLA profile slices the pair at 74.6 g (50.7 + 23.9); budget 80 g.
+- **2026-10-20: solid floor under the barrel.** From the user: the barrel's strips only met the flange where the
+  six spokes crossed them, two small contacts per strip. The barrel half's flange is now solid from the bore out to
+  the barrel's outside (Ø55 to Ø80, flange_t thick), open only at the three strap slots. +2.9 g: 77.5 g sliced
+  (barrel half 53.6 g, cap 23.9 g).
