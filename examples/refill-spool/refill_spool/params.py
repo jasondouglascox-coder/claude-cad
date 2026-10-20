@@ -49,8 +49,8 @@ class Params:
     straps: int = 3
     strap_w: float = 10.0  # slot width in the barrel
     strap_t: float = 1.5  # thickest strap the path must pass
-    filament: int = 1  # AMS slot
-    max_grams: float = 75.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
+    filament: int = 3  # AMS slot: the user's PLA
+    max_grams: float = 80.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
     printer: Printer = Printer()
 
     def __post_init__(self):

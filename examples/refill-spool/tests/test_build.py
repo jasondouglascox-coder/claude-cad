@@ -34,7 +34,8 @@ def test_slicer_slices_the_project_light(tmp_path):
     s = slicers.active()
     reports = s.slice_all(tmp_path / "plates" / f"refill_spool{s.project_suffix}", tmp_path / "sliced.3mf")
     assert len(reports) == 2
-    assert all([r[0] for r in rep["layers"]] == [(1,)] for rep in reports)
+    f = settings().filament(P.filament)
+    assert all([r[0] for r in rep["layers"]] == [(f,)] for rep in reports)
     total = sum(sum(rep["grams"].values()) for rep in reports)
     print(f"slicer: {total:.1f} g for the pair")
     assert total <= P.max_grams
