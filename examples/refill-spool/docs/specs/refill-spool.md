@@ -19,9 +19,18 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PETG, AMS slot 1. Bambu Studio slices the pair at 56 g (barrel half 35 g, cap 21 g); the tests
+- **Filament:** PETG, AMS slot 1. Bambu Studio slices the pair at 58 g (56 g before the cap lip); the tests
   hold it under 60 g.
 
 All sizes live in `refill_spool/params.py`.
 
 ## Amendments
+
+- **2026-10-20: straps go on with the cap off; the cap gets a lip.** The pre-print review showed that straps
+  looped outside both flanges stop the cap turning after ~18°, and the barrel's three strips (slotted full length)
+  are only joined at the bottom, so the thread could push them apart and jump.
+  - New procedure: unscrew the cap, thread ties down the open slots and round the coil, lift the coil off.
+    Tests check the strap paths with the cap off and lift the strapped coil clear at several heights.
+  - The cap no longer needs strap openings, so its flange has a solid ring (Ø71 to Ø82) and a lip 2.4 mm tall,
+    0.8 mm thick, 0.2 mm outside the barrel, with a 0.6 mm lead-in. Screwed home, it wraps the strips' top ends.
+  - The drive notch is on the barrel half only: that side goes toward the AMS lite's drive.

@@ -2,7 +2,7 @@
 the spool axis (Z) for the assembly."""
 import math
 
-from build123d import Align, Box, Cylinder, Part, Pos, Rot
+from build123d import Align, Box, Cone, Cylinder, Part, Pos, Rot
 
 from cadkit.shapes import thread, thread_gap
 from refill_spool.params import P, Params
@@ -89,7 +89,14 @@ def cap_centered(p: Params = P) -> Part:
     top = p.flange_t + p.thread_len
     inner = p.bolt_root - p.spigot_wall
     part = flange(p) + ring(p.bore_d / 2, p.bore_d / 2 + p.cap_hub_wall, p.flange_t)
-    part += ring(inner, p.bolt_root + p.thread_depth, p.flange_t)  # under the ridge's lowest flank
+    lip_in = p.barrel_d / 2 + p.lip_clear
+    lip_out = lip_in + p.lip_t
+    part += ring(inner, lip_out, p.flange_t)  # under the spigot's ridge and the lip
+    lip = Pos(0, 0, p.flange_t) * ring(lip_in, lip_out, p.lip_h)
+    tip = p.flange_t + p.lip_h - p.lip_chamfer
+    lead_in = Cone(lip_in, lip_in + p.lip_chamfer, p.lip_chamfer, align=UP) - Cylinder(lip_in - 1, p.lip_chamfer,
+                                                                                      align=UP)
+    part += lip - Pos(0, 0, tip) * lead_in
     part += ring(inner, p.bolt_root, top)
     z0, z1 = bolt_span(p)
     part += thread(p.bolt_root, p.thread_depth, p.pitch, z1 - z0, p.thread_crest, z0=z0, flank=p.thread_flank)

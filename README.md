@@ -31,7 +31,7 @@ one, a wall sunflower (`examples/sunflower-wall`), shows organic shapes and mult
 ├── examples/
 │   ├── fit-coupon/                smallest complete project: start here; the template for `cadkit.new`
 │   ├── candle-adapter/            one black part, glued into a chandelier cup
-│   ├── refill-spool/              a 56 g screw-together spool for Bambu refills, threads and strap slots
+│   ├── refill-spool/              a 58 g screw-together spool for Bambu refills, threads and strap slots
 │   ├── near-ceiling-track/        everything at scale: an HO railroad shelf around a room, ~220 tests
 │   └── sunflower-wall/            a 16" wall sunflower kit and a 10" one-piece print, four AMS colors
 ├── docs/specs/                    decisions about the tool itself

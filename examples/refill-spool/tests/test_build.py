@@ -8,7 +8,7 @@ from refill_spool.params import P
 
 def test_build_writes_plates_steps_and_renders(tmp_path):
     assert build.main(["--out", str(tmp_path)]) == 0
-    for f in ("render/iso.png", "render/top.png", "step/barrel_half.step", "step/cap.step", "plates.csv"):
+    for f in ("render/iso.png", "render/top.png", "render/cap.png", "step/barrel_half.step", "step/cap.step", "plates.csv"):
         assert (tmp_path / f).exists(), f
     s = slicers.active()
     got = {}

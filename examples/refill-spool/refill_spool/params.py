@@ -31,6 +31,10 @@ class Params:
     # cap
     cap_hub_wall: float = 2.5
     spigot_wall: float = 1.6
+    lip_h: float = 2.4  # ring on the cap flange round the barrel's top: holds the slotted barrel's strips in
+    lip_t: float = 0.8
+    lip_clear: float = 0.2  # radial, outside the barrel
+    lip_chamfer: float = 0.6  # lead-in on the lip's inner tip
     # thread: barrel top is the nut, cap spigot the bolt
     pitch: float = 4.0
     thread_depth: float = 1.2
@@ -50,7 +54,7 @@ class Params:
 
     def __post_init__(self):
         """Heights land on the printer's layers (yours, from cadkit.settings), so every top prints whole."""
-        for name in ("flange_t", "hub_h", "notch_depth"):
+        for name in ("flange_t", "hub_h", "notch_depth", "lip_h"):
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
         for name in ("inside_w", "thread_len"):  # stacked on the flange
             object.__setattr__(self, name, self.printer.layers(getattr(self, name)))

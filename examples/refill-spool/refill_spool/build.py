@@ -1,5 +1,6 @@
 """uv run python -m refill_spool.build [--out out]: STEP for CAD, one Bambu Studio plate per half, and shaded
-previews in out/render (iso.png: the halves apart over the coil's place; top.png: the barrel half from above)."""
+previews in out/render (iso.png: the halves apart over the coil's place; top.png: the barrel half from
+above; cap.png: the cap as printed, spigot and lip up)."""
 import argparse
 import sys
 from pathlib import Path
@@ -32,6 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     render([(b, GRAY), (apart, GRAY)] + [(s, STRAP) for s in strap_paths(P)[:1]], out / "render" / "iso.png",
            view=(0.6, -1, 0.7), px=900)
     render([(b, GRAY)], out / "render" / "top.png", view=(0, 0, 1), px=900)
+    render([(cap(P), GRAY)], out / "render" / "cap.png", view=(0.6, -1, 0.8), px=900)
     print(f"wrote {out}/ (plates.csv lists what to print)")
     return 0
 

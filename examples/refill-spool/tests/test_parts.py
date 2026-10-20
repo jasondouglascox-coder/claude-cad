@@ -86,11 +86,16 @@ def test_ams_lite_notch(barrel):
         P.notch_w, abs=0.05)
 
 
-def test_cap_flange_and_spigot(capp):
+def test_cap_flange_spigot_and_lip(capp):
+    lip_out = P.barrel_d / 2 + P.lip_clear + P.lip_t
     assert radial(capp, C, PLAIN_GAP * 1.5, LOW) == [
         pytest.approx((BORE, BORE + P.cap_hub_wall), abs=0.02),
-        pytest.approx((P.bolt_root - P.spigot_wall, P.bolt_root + P.thread_depth), abs=0.02),
+        pytest.approx((P.bolt_root - P.spigot_wall, lip_out), abs=0.02),
         pytest.approx((P.rim_in, P.rim_d / 2), abs=0.02)]
+    lip = radial(capp, C, PLAIN_GAP * 1.5, P.flange_t + 0.1, r0=P.barrel_d / 2 - 0.5, r1=P.rim_in - 0.5)
+    assert lip == [pytest.approx((P.barrel_d / 2 + P.lip_clear, lip_out), abs=0.02)]
+    top = radial(capp, C, PLAIN_GAP * 1.5, P.flange_t + P.lip_h - 0.05, r0=P.barrel_d / 2 - 0.5, r1=P.rim_in - 0.5)
+    assert top[0][0] > P.barrel_d / 2 + P.lip_clear + P.lip_chamfer / 2  # lead-in at the lip's tip
     assert capp.bounding_box().max.Z == pytest.approx(P.flange_t + P.thread_len, abs=1e-3)
     outer = max(radial(capp, C, a, P.flange_t + P.thread_len / 2)[0][1] for a in range(0, 360, 5))
     assert outer == pytest.approx(P.bolt_root + P.thread_depth, abs=0.05)
