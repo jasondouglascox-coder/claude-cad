@@ -1,0 +1,23 @@
+[project]
+name = "refill-spool"
+version = "0.1.0"
+description = "Fit-test coupon: tune a printer's hole clearance before printing a real project"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "build123d==0.13.0",
+    "cadkit[render]",
+]
+
+[tool.uv.sources]
+cadkit = { path = "../../cadkit", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-xdist>=3.8.0",
+]
+
+[tool.pytest.ini_options]
+markers = ["slow: drives Bambu Studio's CLI; skipped when it isn't installed"]
+pythonpath = ["."]
+testpaths = ["tests"]

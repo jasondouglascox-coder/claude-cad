@@ -28,6 +28,7 @@ jobs:
           - examples/candle-adapter
           - examples/near-ceiling-track
           - examples/sunflower-wall
+          - examples/refill-spool
         include:
           - pytest: -n 4 -m "not slow"
           # Each xdist worker builds the whole flower, so one process. The 10" one-piece tests (test_small.py)

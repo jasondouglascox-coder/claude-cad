@@ -22,6 +22,8 @@
 - `examples/sharpie-colorizer/`: an inline Sharpie colorizer for the A1's external-spool guide tube (package
   `sharpie_colorizer`): a snap clip on the 40 × 20 frame bar and a block holding three tilted markers; fit-test
   plate first.
+- `examples/refill-spool/`: a ~56 g two-piece spool for Bambu refill coils (package `refill_spool`): spoked flanges,
+  slotted barrel for zip-tie straps, screw-on cap, AMS lite bore notch. Threads from `cadkit.shapes.thread`.
 - `examples/sunflower-wall/`: a 400 mm wall sunflower (package `sunflower`): lofted arched petals in quarters, a
   Fibonacci seed head of ~1,100 diamond seeds, snap pins.
 
@@ -35,6 +37,7 @@ cd examples/fit-coupon && uv sync && uv run pytest               # ~1 min
 cd examples/near-ceiling-track && uv run pytest -n 6 -m "not slow"   # ~4 min; full suite ~25 min, run it in the background
 cd examples/sunflower-wall && uv run pytest -n 6 -m "not slow"       # ~2 min; slow tests slice every plate in Bambu
 cd examples/sharpie-colorizer && uv run pytest -n 4                  # ~30 s, both plates through Bambu
+cd examples/refill-spool && uv run pytest -n 2                       # ~20 s, both halves through Bambu
 ```
 
 ## Rules

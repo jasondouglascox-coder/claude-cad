@@ -1,5 +1,7 @@
 """2D profile helpers. Flat-printed parts are profiles extruded to a thickness, so most geometry starts here."""
-from build123d import Align, Kind, Polygon, Pos, Rectangle, Sketch, offset
+import math
+
+from build123d import Align, Helix, Kind, Part, Plane, Polygon, Pos, Rectangle, Sketch, offset, sweep
 
 
 def poly(*pts: tuple) -> Sketch:
@@ -30,3 +32,29 @@ def dovetail(x: float, y: float, neck: float, head: float, length: float, cleara
     """Jigsaw tab with its neck on x, widening toward +x. Joins long flat parts end to end."""
     n, h = neck / 2, head / 2
     return grow(poly((x - 0.01, y - n), (x + length, y - h), (x + length, y + h), (x - 0.01, y + n)), clearance)
+
+
+def thread(radius: float, depth: float, pitch: float, length: float, crest: float = 0.5, inward: bool = False,
+           z0: float = 0.0, overlap: float = 0.3, flank: float = 40.0) -> Part:
+    """Right-hand helical ridge with flanks `flank` degrees off the axis, to fuse onto a tube: it prints upright
+    without support, inside or out (the sweep tilts the profile by the helix angle, so 45 lands just past 45°). It stands on the tube wall at `radius` and reaches `depth` out (or in, for a nut); its center line passes
+    angle 0 (+X) at z0 and rises `pitch` per turn for `length`. `overlap` sinks the root into the wall so the union
+    fuses. Mate a bolt half a pitch out of phase with its nut, its crest a radial clearance inside the nut's root."""
+    run = 1 / math.tan(math.radians(flank))  # axial run per mm of depth
+    half_base = crest / 2 + depth * run
+    if 2 * half_base >= pitch:
+        raise ValueError(f"thread: crest {crest} + 2 x depth {depth} with {flank}° flanks must fit in the pitch {pitch}")
+    s = -1 if inward else 1
+    sunk = half_base + overlap * run  # the flanks carry on into the wall: no flat underside anywhere
+    pts = [(radius - s * overlap, -sunk), (radius + s * depth, -crest / 2), (radius + s * depth, crest / 2),
+           (radius - s * overlap, sunk)]
+    ridge = sweep(Plane.XZ * Polygon(*pts, align=None), Helix(pitch, length, radius), is_frenet=True)
+    return Pos(0, 0, z0) * Part(ridge.solids())
+
+
+def thread_gap(depth: float, pitch: float, crest: float, clearance: float, flank: float = 40.0) -> float:
+    """Axial play on each flank between a bolt and nut from thread(), the bolt's crest `clearance` inside the nut's
+    root. Check fits with this (and is_inside sampling), not by intersecting the two ridges: OCC booleans between
+    swept helices come back empty at random, even for ridges fully in phase."""
+    run = 1 / math.tan(math.radians(flank))
+    return (pitch - 2 * crest - 2 * run * (depth - clearance)) / 2

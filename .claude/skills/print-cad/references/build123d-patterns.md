@@ -106,6 +106,23 @@ Coarse deflection (0.5 mm / 0.5 rad) keeps a whole viaduct section around 6–13
 - **Viewers** that only color whole shapes need the split bodies, placed with the copy's location
   (`Location(placed.wrapped.Location())`, matched with `placed.wrapped.IsPartner(proto.wrapped)`).
 
+## Threads
+
+`cadkit.shapes.thread(radius, depth, pitch, length, crest, inward=, z0=, flank=)` sweeps a right-hand ridge
+(`sweep(..., Helix(...), is_frenet=True)`) to fuse onto a tube. 40° flanks: the sweep tilts the profile by the
+helix angle, so a 45° flank comes out just past 45° and fails `overhangs`. The flanks carry on into the wall, so
+there is no flat underside.
+
+- **Trap: OCC booleans with a swept ridge come back empty at random.** Clipping a ridge to a band with a box or a
+  cylinder, or intersecting a bolt ridge with its nut, returned volume 0 for about half the lengths tried, even
+  ridges fully in phase. Don't clip: start and end the ridge inside its band (its end faces stand vertical). Don't
+  test a fit by intersection volume: use `thread_gap` (axial play per flank) and sample the bolt ridge's mesh
+  vertices with `nut.is_inside(v)` (`examples/refill-spool/tests/test_assembly.py`). Fusing a ridge onto a tube
+  and cutting slots through it worked every time; probes still confirm it.
+- Clock a screw-on part (spokes lined up with the other half) by its ridge phase: screwed home, a part flipped over
+  (`Rot(180, 0, 0)`: angle → −angle, z → width − z) meshes when its ridge starts at width − nut_z0 − pitch/2 − play
+  (mod pitch), with play = the flank gap, since tightening pulls that flank tight.
+
 ## Misc traps
 
 - `extrude` of a Compound returns a Compound; wrap results with `Part(x.solids())` before boolean chains, or you
