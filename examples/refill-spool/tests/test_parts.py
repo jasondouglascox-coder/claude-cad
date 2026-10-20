@@ -2,7 +2,9 @@
 import pytest
 
 from cadkit.checks import downward_faces, off_layer_z, open_edges, overhangs, printable_problems
-from build123d import Pos
+import math
+
+from build123d import Box, Pos, Rot
 
 from probes import radial, radial_z, tangential_gap
 from refill_spool.params import P
@@ -35,14 +37,9 @@ def test_prints_flat_watertight_on_layers_without_support(make):
     assert {z for z, _ in overhangs(part)} <= bridges  # nothing angled past 45°; flat bridges are tested below
 
 
-def test_barrel_half_only_bridges_the_notch_roof(barrel):
-    faces = downward_faces(barrel)
-    assert {z for z, _ in faces} == {P.notch_depth}
-    assert sum(a for _, a in faces) <= P.notch_w * (P.notch_h + 0.1)  # its inner edge follows the bore
-
-
-def test_cap_has_no_bridges(capp):
-    assert downward_faces(capp) == []
+@pytest.mark.parametrize("make", [barrel_half, cap])
+def test_no_bridges(make):
+    assert downward_faces(make(P)) == []
 
 
 def test_barrel_half_flange_is_solid_out_to_the_barrel_then_rim(barrel):
@@ -50,8 +47,8 @@ def test_barrel_half_flange_is_solid_out_to_the_barrel_then_rim(barrel):
     for a in range(0, 360, 5):
         if min(abs((a - s + 180) % 360 - 180) for s in P.strap_angles()) < 15:
             continue  # strap tracks, below
-        assert radial(barrel, C, a + 2.5, LOW, r0=BORE + P.notch_h + 0.5, r1=R_OUT) == [pytest.approx(
-            (BORE + P.notch_h + 0.5, R_OUT), abs=0.02)], a
+        assert radial(barrel, C, a + 2.5, LOW, r0=BORE + 0.5, r1=R_OUT) == [pytest.approx(
+            (BORE + 0.5, R_OUT), abs=0.02)], a
     assert radial(barrel, C, PLAIN_GAP / 2 + PLAIN_GAP, LOW) == [
         pytest.approx((BORE, R_OUT), abs=0.02),
         pytest.approx((P.rim_in, P.rim_d / 2), abs=0.02)]
@@ -97,12 +94,28 @@ def test_nut_thread_inside_the_barrel_top(barrel):
     assert inner == pytest.approx(P.nut_root - P.thread_depth, abs=0.05)
 
 
-def test_ams_lite_notch(barrel):
-    """Notch in the bore at the outer face: notch_depth in, notch_h into the wall, notch_w wide."""
-    assert radial(barrel, C, 0, P.notch_depth / 2)[0][0] == pytest.approx(BORE + P.notch_h, abs=0.02)
-    assert radial(barrel, C, 0, P.notch_depth + 0.5)[0][0] == pytest.approx(BORE, abs=0.02)
-    assert tangential_gap(barrel, C, 0, BORE + P.notch_h / 2, P.notch_depth / 2) == pytest.approx(
-        P.notch_w, abs=0.05)
+def test_core_key_on_the_barrel_at_the_flange(barrel):
+    """A key on the barrel's outside, standing on the flange: key_len up the barrel, key_h out, key_w wide. It pokes
+    into a notch in the refill's cardboard core so the coil turns with the spool."""
+    z = P.flange_t + P.key_len / 2
+    assert radial(barrel, C, P.key_angle, z)[-1] == pytest.approx((P.nut_root, R_OUT + P.key_h), abs=0.02)
+    assert radial(barrel, C, P.key_angle, P.flange_t + P.key_len + 0.1)[-1] == pytest.approx((P.nut_root, R_OUT),
+                                                                                             abs=0.02)
+    assert key_width(barrel, z) == pytest.approx(P.key_w, abs=0.02)
+
+
+def key_width(part, z):
+    a = math.radians(P.key_angle)
+    r = R_OUT + P.key_h / 2
+    bar = Pos(C[0] + r * math.cos(a), C[1] + r * math.sin(a), z) * Rot(0, 0, P.key_angle) * Box(0.1, 20, 0.1)
+    (piece,) = (part & bar).solids()
+    return max(abs(piece.bounding_box().size.X), abs(piece.bounding_box().size.Y))
+
+
+def test_bore_is_plain(barrel):
+    """No notch or ring in the bore: just the tube."""
+    for z in (LOW, P.flange_t + 2, P.barrel_top / 2):
+        assert radial(barrel, C, P.key_angle + 30, z)[0][0] == pytest.approx(BORE, abs=0.02)
 
 
 def test_cap_flange_spigot_and_lip(capp):

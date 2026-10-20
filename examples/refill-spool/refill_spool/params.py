@@ -1,7 +1,7 @@
 """Every dimension in one place (mm). A design change is a one-line edit here; tests derive from these.
 
 The spool's axis is Z. Both halves print outer face down: the barrel half (flange + barrel + nut thread + AMS lite
-notch) and the cap (flange + threaded spigot that screws into the barrel's top)."""
+core key) and the cap (flange + threaded spigot that screws into the barrel's top)."""
 from dataclasses import dataclass
 
 from cadkit import Printer
@@ -13,6 +13,7 @@ class Params:
     bore_d: float = 55.0  # AMS lite hub
     barrel_d: float = 80.0  # the refill's cardboard core is ~82 inside
     core_d: float = 82.0
+    core_od: float = 87.0  # the cardboard's outside: the key has to stop inside its wall
     coil_d: float = 190.0  # filament OD of a full 1 kg coil: straps pass over it inside the rim
     inside_w: float = 59.0  # flange to flange, where the coil sits
     rim_d: float = 200.0
@@ -24,11 +25,11 @@ class Params:
     # barrel half
     barrel_wall: float = 1.2
     bore_wall: float = 1.2  # tube round the bore, the barrel half's full height (like the official spool)
-    hub_wall: float = 4.5  # bore ring around the AMS lite hub, thick enough for the notch
-    hub_h: float = 7.2
-    notch_depth: float = 6.0  # AMS lite drive notch: in from the outer face along the bore
-    notch_h: float = 3.0  # radial, into the bore wall
-    notch_w: float = 3.0
+    key_len: float = 6.0  # core key: on the barrel's outside at the flange, into a notch in the refill's core
+    key_h: float = 3.0  # radial, out from the barrel
+    key_w: float = 3.0
+    key_angle: float = 0.0  # on a spoke, so it stands on the flange
+    core_notch_clear: float = 0.5  # the core's notch round the key, as modelled (unmeasured)
     # cap
     spigot_wall: float = 1.6
     lip_h: float = 2.4  # ring on the cap flange round the barrel's top: keeps the thin barrel from spreading
@@ -55,9 +56,9 @@ class Params:
 
     def __post_init__(self):
         """Heights land on the printer's layers (yours, from cadkit.settings), so every top prints whole."""
-        for name in ("flange_t", "hub_h", "notch_depth", "lip_h"):
+        for name in ("flange_t", "lip_h"):
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
-        for name in ("inside_w", "thread_len"):  # stacked on the flange
+        for name in ("inside_w", "thread_len", "key_len"):  # stacked on the flange
             object.__setattr__(self, name, self.printer.layers(getattr(self, name)))
         if self.spokes % self.straps:
             raise ValueError(f"straps={self.straps} must divide spokes={self.spokes} (a strap between every "

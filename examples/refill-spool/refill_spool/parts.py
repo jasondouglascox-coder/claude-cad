@@ -72,16 +72,15 @@ def engaged(p: Params) -> float:
 
 def barrel_half_centered(p: Params = P) -> Part:
     top = p.barrel_top
-    part = flange(p) + ring(p.bore_d / 2, p.bore_d / 2 + p.hub_wall, p.hub_h)
-    part += ring(p.bore_d / 2, p.barrel_d / 2, p.flange_t)  # solid floor: the barrel stands on it all round
-    part += ring(p.bore_d / 2, p.bore_d / 2 + p.bore_wall, top)  # the cap's bore ring lands on its end
+    part = flange(p) + ring(p.bore_d / 2, p.barrel_d / 2, p.flange_t)  # solid floor: the barrel stands on it
+    part += ring(p.bore_d / 2, p.bore_d / 2 + p.bore_wall, top)  # the cap's flange lands on its end
     part += ring(p.nut_root, p.barrel_d / 2, top)
     z0, z1 = nut_span(p)
     part += thread(p.nut_root, p.thread_depth, p.pitch, z1 - z0, p.thread_crest, inward=True, z0=z0,
                    flank=p.thread_flank)
     for a in p.strap_angles():
         part -= radial_box(a, p.track_floor, p.barrel_d / 2 + 0.5, p.strap_w, top + 1, -0.5)  # strap track
-    part -= radial_box(0, p.bore_d / 2 - 0.5, p.bore_d / 2 + p.notch_h, p.notch_w, p.notch_depth + 0.5, -0.5)
+    part += radial_box(p.key_angle, p.barrel_d / 2 - 0.3, p.barrel_d / 2 + p.key_h, p.key_w, p.flange_t + p.key_len)
     part = Part(part.solids())
     part.label = "barrel_half"
     return part

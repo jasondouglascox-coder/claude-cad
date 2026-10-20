@@ -7,7 +7,7 @@ from build123d import Align, Box, Pos, Rot
 from cadkit.clash import find_clashes
 from refill_spool.assembly import coil, placed_parts, strap_paths
 from refill_spool.params import P, Params
-from refill_spool.parts import engaged, play_per_flank, ring
+from refill_spool.parts import engaged, play_per_flank, radial_box, ring
 
 
 def test_cap_seats_on_the_barrel_without_clashing():
@@ -20,13 +20,24 @@ def test_cap_seats_on_the_barrel_without_clashing():
 
 def test_bore_runs_the_full_width():
     """Like the official spool, the AMS lite hub bears on a tube the whole way through, not two end rings."""
-    a = 90 + 180 / P.spokes  # clear of the notch and the spokes
+    a = 90 + 180 / P.spokes  # clear of the key, the spokes and the strap tracks
     whole = placed_parts(P)[0][1] + placed_parts(P)[1][1]
     probe = Rot(0, 0, a) * Pos(P.bore_d / 2 + 0.3, 0, -1) * Box(0.1, 0.1, P.width + 2, align=(Align.CENTER,
                                                                                             Align.CENTER, Align.MIN))
     bb = (whole & probe).bounding_box()
     assert (bb.min.Z, bb.max.Z) == (pytest.approx(0, abs=1e-3), pytest.approx(P.width, abs=1e-3))
     assert (whole & probe).volume == pytest.approx(0.01 * P.width, rel=1e-3)  # no gap along the way
+
+
+def test_core_key_sits_in_the_cores_notch():
+    """The key reaches into the core's wall, not past it: the coil's notch takes it with core_notch_clear round it."""
+    assert P.barrel_d / 2 + P.key_h > P.core_d / 2 + 1.0
+    assert P.barrel_d / 2 + P.key_h < P.core_od / 2
+    (_, barrel), _ = placed_parts(P)
+    key = barrel & radial_box(P.key_angle, P.barrel_d / 2 + 0.01, P.barrel_d / 2 + P.key_h + 1, P.key_w + 2,
+                              P.key_len + 1, P.flange_t + 0.01)
+    assert key.volume > 0
+    assert key.distance_to(coil(P)) == pytest.approx(P.core_notch_clear, abs=0.02)
 
 
 def test_threads_engage_with_play():

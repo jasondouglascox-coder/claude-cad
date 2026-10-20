@@ -12,8 +12,12 @@ def placed_parts(p: Params = P) -> list[tuple[str, Part]]:
 
 
 def coil(p: Params = P) -> Part:
-    """A full refill: cardboard core inside, 1 kg of filament out to coil_d, 0.5 mm short of each flange."""
-    return Pos(0, 0, p.flange_t + 0.5) * ring(p.core_d / 2, p.coil_d / 2, p.inside_w - 1)
+    """A full refill: cardboard core inside, 1 kg of filament out to coil_d, 0.5 mm short of each flange, with a
+    notch in the core's end round the barrel half's key."""
+    c = p.core_notch_clear
+    full = Pos(0, 0, p.flange_t + 0.5) * ring(p.core_d / 2, p.coil_d / 2, p.inside_w - 1)
+    return full - radial_box(p.key_angle, p.core_d / 2 - 1, p.barrel_d / 2 + p.key_h + c, p.key_w + 2 * c,
+                             p.key_len + c, p.flange_t)
 
 
 def strap_paths(p: Params = P) -> list[Part]:

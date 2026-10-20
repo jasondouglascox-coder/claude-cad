@@ -19,7 +19,7 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 81.7 g; the tests hold
+- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 80.4 g; the tests hold
   it under 85 g.
 
 All sizes live in `refill_spool/params.py`.
@@ -55,3 +55,9 @@ All sizes live in `refill_spool/params.py`.
   - The cap's bore ring met the rest of the cap only at the spokes, like the barrel did. The cap's flange is now
     solid from the bore out to the lip.
   - 81.7 g sliced (barrel half 55.9 g, cap 25.8 g); budget 85 g.
+- **2026-10-20: the 6 × 3 × 3 mm feature is a core key, not a bore notch.** From the user: it goes on the
+  filament side of the barrel and sticks into the refill's cardboard core, so the coil turns with the spool. It's
+  now a key on the barrel's outside at the barrel half's flange, 6 mm up the barrel, 3 mm out (to Ø86, inside the
+  core's ~Ø87 outside), 3 mm wide, standing on a spoke. The notch in the bore is gone, and with it the 4.5 mm × 7.2
+  mm bore ring that held it: the bore is the plain 1.2 mm tube. The barrel half now has no bridges at all. The coil
+  model carries a notch 0.5 mm round the key (unmeasured). 80.4 g sliced (barrel half 54.7 g, cap 25.8 g).
