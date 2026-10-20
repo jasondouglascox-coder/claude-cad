@@ -1,21 +1,43 @@
 """uv run python -m refill_spool.build [--out out]: STEP for CAD, out/plates/refill_spool.3mf (one Bambu Studio
-project, a plate per half; each plate also on its own), and shaded
-previews in out/render (iso.png: the halves apart over the coil's place; top.png: the barrel half from
-above; cap.png: the cap as printed, spigot and lip up)."""
+project, a plate per half; each plate also on its own), out/view/refill_spool_assembled.3mf (to look at, not print:
+screwed together, and strapping a coil with the cap off), and shaded previews in out/render (iso.png: the halves
+apart; top.png: the barrel half from above; cap.png: the cap as printed, spigot and lip up)."""
 import argparse
 import sys
 from pathlib import Path
 
-from build123d import Color, Pos, export_step
+from build123d import Align, Box, Color, Pos, export_step
+
+from cadkit import bambu3mf
 
 from cadkit.export import write_plates
 from cadkit.plates import Plate, pack
 from cadkit.render import render
-from refill_spool.assembly import placed_parts, strap_paths
+from refill_spool.assembly import coil, placed_parts, strap_paths
 from refill_spool.params import P
 from refill_spool.parts import barrel_half, cap
 
 GRAY, STRAP = Color(0.55, 0.57, 0.6), Color(0.9, 0.5, 0.15)
+
+
+VIEW_COLORS = [("PLA", "#E8E8E8"), ("PLA", "#C8A165"), ("PLA", "#7A8088"), ("PLA", "#F28C28")]  # cap, coil, barrel, straps
+
+
+def write_view(path: Path) -> None:
+    """A Bambu project to look at, not print: screwed together, then strapping with the cap off over a coil cut in
+    half (one strap under the coil, one in the open, one on the cut). Each plate is one object of colored parts, so
+    nothing drops to the bed on its own."""
+    (_, barrel), (_, cap_on) = placed_parts(P)
+    at = Pos(P.rim_d / 2 + P.printer.margin, P.rim_d / 2 + P.printer.margin, 0)
+    half = coil(P) & Pos(0, -P.rim_d, -1) * Box(P.rim_d, 2 * P.rim_d, P.width + 2, align=(Align.MIN,) * 3)
+    straps = [(f"strap {k + 1}", at * s, 4) for k, s in enumerate(strap_paths(P))]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    settings = bambu3mf.write_settings(path.with_suffix(".config"), VIEW_COLORS)
+    bambu3mf.write_plates_project(path, [
+        ("screwed together", [("spool", [("barrel_half", at * barrel, 3), ("cap", at * cap_on, 1)])]),
+        ("strapping, cap off", [("strapping", [("barrel_half", at * barrel, 3), ("coil (cut in half)", at * half, 2)]
+                                 + straps)])], settings)
+    settings.unlink()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -28,6 +50,7 @@ def main(argv: list[str] | None = None) -> int:
         export_step(part, out / "step" / f"{name}.step")
     plates = [Plate(name, 1, items) for name, part in parts for items in pack([(name, part)], P.printer)]
     write_plates(plates, out / "plates", out / "plates.csv", lambda name: P.filament, combined="refill_spool")
+    write_view(out / "view" / "refill_spool_assembled.3mf")
     (_, b), (_, c) = placed_parts(P)
     apart = Pos(0, 0, 40) * c  # lifted off so the thread shows
     render([(b, GRAY), (apart, GRAY)] + [(s, STRAP) for s in strap_paths(P)[:1]], out / "render" / "iso.png",
