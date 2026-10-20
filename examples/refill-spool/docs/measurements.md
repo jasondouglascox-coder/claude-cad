@@ -2,18 +2,17 @@
 
 | What | Value | Source |
 |---|---|---|
+| Refill core, inside | 82 mm | user, on a real refill (2026-10-20) |
+| Refill coil, outside of the filament | 6.75" = 171.5 mm | user, on a real refill |
+| Refill coil width | 61 mm | user, on a real refill |
+| Refill core, outside | ~87 mm | Bambu forum, one user's caliper |
+| AMS lite spool limits | 40–68 mm wide, 53–58 mm bore | [Bambu store](https://us.store.bambulab.com/products/ams-lite) |
 | Bambu reusable spool outside diameter | 200 mm | [Bambu forum](https://forum.bambulab.com/t/bambu-spool-dimensions/123480), [3DJake listing](https://www.3djake.com/bambu-lab/bambu-reusable-spool-high-temperature-resistance) |
-| Bambu reusable spool overall width | ~67 mm | same |
-| Bambu reusable spool bore | 55 mm (user: "54 maybe") | same; AMS lite reportedly takes 53–58 |
-| Refill cardboard core | ~82 mm inside, ~87 mm outside (2026 refill) | Bambu forum, one user's caliper |
+| Bambu reusable spool bore | 55 mm (user: "54 maybe") | same |
 | Spool barrel outside diameter | 80 mm | user's printed spools |
-| Flange thickness / between flanges | 4 mm / ~59 mm | user's printed spools (200 mm walls, 4 mm thick) |
 | Core key (on the barrel, into the core's notch) | 6 mm along the barrel from the flange, 3 mm high, 3 mm wide | user |
 
 Still to measure on a real refill:
 - the notch in the core's end that the key goes in (the model assumes 0.5 mm round the key);
-- coil width including its own ties (must be under 59 mm; 0.5 mm a side is all the room there is);
-- full coil outside diameter (straps pass over it inside the rim at Ø194; the model assumes Ø190);
-- the core's inside diameter: the strap tracks are tunnels 1.4 mm deep only if it's 82 (less and ties won't fit);
-- how many ties run under the core and how they're spaced (they only fit in the barrel's 3 tracks, 120° apart);
-- how far the AMS lite hub reaches into the bore (the bore is a tube the full 65 mm, so any reach works).
+- whether the refill's own ties sit proud of the coil's 61 mm (0.5 mm a side is all the room there is);
+- how many ties run under the core and how they're spaced (they only fit in the barrel's 3 tracks, 120° apart).

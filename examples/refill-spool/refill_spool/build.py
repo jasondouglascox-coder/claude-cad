@@ -1,7 +1,7 @@
 """uv run python -m refill_spool.build [--out out]: STEP for CAD, out/plates/refill_spool.3mf (one Bambu Studio
 project, a plate per half; each plate also on its own), out/view/refill_spool_assembled.3mf (to look at, not print:
 screwed together, and strapping a coil with the cap off), and shaded previews in out/render (iso.png: the halves
-apart; top.png: the barrel half from above; cap.png: the cap as printed, spigot and lip up)."""
+apart; top.png: the barrel half from above; cap.png: the cap as printed, spigot up)."""
 import argparse
 import sys
 from pathlib import Path

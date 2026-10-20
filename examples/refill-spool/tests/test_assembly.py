@@ -29,6 +29,15 @@ def test_bore_runs_the_full_width():
     assert (whole & probe).volume == pytest.approx(0.01 * P.width, rel=1e-3)  # no gap along the way
 
 
+def test_coil_sits_between_the_flanges_with_room_each_side():
+    (_, barrel), (_, cap) = placed_parts(P)
+    c = coil(P)
+    for part in (barrel, cap):
+        assert c.distance_to(part) >= P.coil_side_clear - 0.01
+    bb = c.bounding_box()
+    assert bb.size.Z == pytest.approx(P.coil_w, abs=1e-3) and bb.size.X == pytest.approx(P.coil_d, abs=0.01)
+
+
 def test_core_key_sits_in_the_cores_notch():
     """The key reaches into the core's wall, not past it: the coil's notch takes it with core_notch_clear round it."""
     assert P.barrel_d / 2 + P.key_h > P.core_d / 2 + 1.0
@@ -53,7 +62,7 @@ def bolt_points_in_nut(p):
     intersections of two swept ridges come back empty at random (cadkit.shapes.thread_gap)."""
     (_, barrel), (_, cap) = placed_parts(p)
     verts, _ = cap.tessellate(0.05, 0.3)
-    lo, hi = p.barrel_top - p.thread_len, p.barrel_top
+    lo, hi = p.barrel_top - p.thread_len, p.barrel_top - 0.01  # not the flange face resting on the barrel top
     pts = [v for v in verts if hypot(v.X, v.Y) > p.bolt_root + 0.05 and lo < v.Z < hi]
     assert len(pts) > 100
     return sum(barrel.is_inside(v) for v in pts[::2])
@@ -83,14 +92,3 @@ def test_strapped_coil_lifts_off_the_barrel(lift):
     (_, barrel), _ = placed_parts(P)
     load = [coil(P)] + strap_paths(P)
     assert [round((Pos(0, 0, lift) * s & barrel).volume, 3) for s in load] == [0] * len(load)
-
-
-def test_cap_lip_holds_the_barrel_top_in():
-    """Screwed home, a lip on the cap wraps the barrel's top, lip_clear outside it, so the thread can't spread the
-    thin barrel."""
-    (_, barrel), (_, cap) = placed_parts(P)
-    lip = cap & (Pos(0, 0, P.barrel_top - P.lip_h) * ring(P.barrel_d / 2, P.barrel_d / 2 + 5, P.lip_h))
-    bb = lip.bounding_box()
-    assert bb.min.Z == pytest.approx(P.barrel_top - P.lip_h, abs=1e-3)
-    assert min(hypot(v.X, v.Y) for v in lip.vertices()) == pytest.approx(P.barrel_d / 2 + P.lip_clear, abs=0.02)
-    assert lip.distance_to(barrel) == pytest.approx(P.lip_clear, abs=0.02)

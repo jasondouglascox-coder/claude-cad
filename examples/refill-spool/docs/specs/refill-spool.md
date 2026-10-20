@@ -19,7 +19,7 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 80.4 g; the tests hold
+- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 79.8 g; the tests hold
   it under 85 g.
 
 All sizes live in `refill_spool/params.py`.
@@ -61,3 +61,12 @@ All sizes live in `refill_spool/params.py`.
   core's ~Ø87 outside), 3 mm wide, standing on a spoke. The notch in the bore is gone, and with it the 4.5 mm × 7.2
   mm bore ring that held it: the bore is the plain 1.2 mm tube. The barrel half now has no bridges at all. The coil
   model carries a notch 0.5 mm round the key (unmeasured). 80.4 g sliced (barrel half 54.7 g, cap 25.8 g).
+- **2026-10-20: sized to a measured refill; no cap lip.** The user measured a real refill: core 82 mm inside,
+  filament 6.75" (171.5 mm) outside, coil 61 mm wide. The coil was 2 mm wider than the space.
+  - 62 mm between flanges (0.5 mm a side) and 2.8 mm flanges: 67.6 mm overall, inside the AMS lite's 68 mm
+    (Bambu store: 40–68 mm wide, 53–58 mm bore).
+  - The cap lip came out: its outside sat at Ø82, exactly the core's inside, so the core would rub on it as the cap
+    screwed down. It was there to hold the old slotted barrel's strips; since the strap tracks, the barrel is a
+    whole tube. The cap's flange stays solid from the bore out over the barrel's top end.
+  - Straps pass over the coil at Ø171.5, well inside the rim.
+  - 79.8 g sliced (barrel half 55.7 g, cap 24.0 g).

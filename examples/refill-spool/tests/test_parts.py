@@ -118,20 +118,19 @@ def test_bore_is_plain(barrel):
         assert radial(barrel, C, P.key_angle + 30, z)[0][0] == pytest.approx(BORE, abs=0.02)
 
 
-def test_cap_flange_spigot_and_lip(capp):
-    """The cap's flange is solid from the bore out to the lip, so the bore ring isn't hung on the spokes."""
-    lip_out = P.barrel_d / 2 + P.lip_clear + P.lip_t
+def test_cap_flange_and_spigot(capp):
+    """The cap's flange is solid from the bore out over the barrel's top end, so the bore isn't hung on the spokes."""
     assert radial(capp, C, PLAIN_GAP * 1.5, LOW) == [
-        pytest.approx((BORE, lip_out), abs=0.02),
+        pytest.approx((BORE, R_OUT), abs=0.02),
         pytest.approx((P.rim_in, P.rim_d / 2), abs=0.02)]
-    lip = radial(capp, C, PLAIN_GAP * 1.5, P.flange_t + 0.1, r0=P.barrel_d / 2 - 0.5, r1=P.rim_in - 0.5)
-    assert lip == [pytest.approx((P.barrel_d / 2 + P.lip_clear, lip_out), abs=0.02)]
-    top = radial(capp, C, PLAIN_GAP * 1.5, P.flange_t + P.lip_h - 0.05, r0=P.barrel_d / 2 - 0.5, r1=P.rim_in - 0.5)
-    assert top[0][0] > P.barrel_d / 2 + P.lip_clear + P.lip_chamfer / 2  # lead-in at the lip's tip
     assert capp.bounding_box().max.Z == pytest.approx(P.flange_t + P.thread_len, abs=1e-3)
     outer = max(radial(capp, C, a, P.flange_t + P.thread_len / 2)[0][1] for a in range(0, 360, 5))
     assert outer == pytest.approx(P.bolt_root + P.thread_depth, abs=0.05)
 
 
+def test_the_measured_coil_fits_between_the_flanges():
+    assert P.inside_w - P.coil_w >= 2 * P.coil_side_clear
+
+
 def test_overall_size_fits_the_ams():
-    assert P.width <= 67.0 and P.rim_d <= 200.0
+    assert P.width <= P.ams_max_w and P.rim_d <= 200.0

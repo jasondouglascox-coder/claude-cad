@@ -14,11 +14,14 @@ class Params:
     barrel_d: float = 80.0  # the refill's cardboard core is ~82 inside
     core_d: float = 82.0
     core_od: float = 87.0  # the cardboard's outside: the key has to stop inside its wall
-    coil_d: float = 190.0  # filament OD of a full 1 kg coil: straps pass over it inside the rim
-    inside_w: float = 59.0  # flange to flange, where the coil sits
+    coil_d: float = 171.5  # filament OD of a full 1 kg coil (6.75"): straps pass over it inside the rim
+    coil_w: float = 61.0
+    coil_side_clear: float = 0.5  # each side, between the coil and a flange
+    inside_w: float = 62.0  # flange to flange, where the coil sits
+    ams_max_w: float = 68.0  # AMS lite: spools 40-68 mm wide
     rim_d: float = 200.0
     # flanges: spokes and a rim instead of a solid disc
-    flange_t: float = 3.0
+    flange_t: float = 2.8  # 62 between flanges + 2 x 2.8 = 67.6, inside the AMS lite's 68
     rim_w: float = 3.0  # radial
     spokes: int = 6
     spoke_w: float = 6.0
@@ -32,10 +35,6 @@ class Params:
     core_notch_clear: float = 0.5  # the core's notch round the key, as modelled (unmeasured)
     # cap
     spigot_wall: float = 1.6
-    lip_h: float = 2.4  # ring on the cap flange round the barrel's top: keeps the thin barrel from spreading
-    lip_t: float = 0.8
-    lip_clear: float = 0.2  # radial, outside the barrel
-    lip_chamfer: float = 0.6  # lead-in on the lip's inner tip
     # thread: barrel top is the nut, cap spigot the bolt
     pitch: float = 4.0
     thread_depth: float = 1.2
@@ -56,7 +55,7 @@ class Params:
 
     def __post_init__(self):
         """Heights land on the printer's layers (yours, from cadkit.settings), so every top prints whole."""
-        for name in ("flange_t", "lip_h"):
+        for name in ("flange_t",):
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
         for name in ("inside_w", "thread_len", "key_len"):  # stacked on the flange
             object.__setattr__(self, name, self.printer.layers(getattr(self, name)))
@@ -66,7 +65,7 @@ class Params:
 
     @property
     def width(self) -> float:
-        """Overall, outer face to outer face (AMS takes about 67)."""
+        """Overall, outer face to outer face (ams_max_w)."""
         return 2 * self.flange_t + self.inside_w
 
     @property
