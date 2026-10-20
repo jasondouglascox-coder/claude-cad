@@ -2,15 +2,17 @@
 import pytest
 
 from cadkit.checks import downward_faces, off_layer_z, open_edges, overhangs, printable_problems
-from probes import radial, tangential_gap
+from build123d import Pos
+
+from probes import radial, radial_z, tangential_gap
 from refill_spool.params import P
-from refill_spool.parts import barrel_half, cap, center
+from refill_spool.parts import barrel_half, cap, center, ring
 
 C = center(P)
 BORE = P.bore_d / 2
 R_OUT = P.barrel_d / 2
 LOW = P.flange_t / 2
-PLAIN_GAP = 360 / P.spokes  # between spokes 1 and 2: no strap slot (straps are 0.5, 2.5, 4.5 steps round)
+PLAIN_GAP = 360 / P.spokes  # between spokes 1 and 2: no strap track (straps are 0.5, 2.5, 4.5 steps round)
 
 
 @pytest.fixture(scope="module")
@@ -47,7 +49,7 @@ def test_barrel_half_flange_is_solid_out_to_the_barrel_then_rim(barrel):
     """The barrel stands on a solid floor all round, not just where the spokes cross it."""
     for a in range(0, 360, 5):
         if min(abs((a - s + 180) % 360 - 180) for s in P.strap_angles()) < 15:
-            continue  # strap slots, below
+            continue  # strap tracks, below
         assert radial(barrel, C, a + 2.5, LOW, r0=BORE + P.notch_h + 0.5, r1=R_OUT) == [pytest.approx(
             (BORE + P.notch_h + 0.5, R_OUT), abs=0.02)], a
     assert radial(barrel, C, PLAIN_GAP / 2 + PLAIN_GAP, LOW) == [
@@ -56,12 +58,22 @@ def test_barrel_half_flange_is_solid_out_to_the_barrel_then_rim(barrel):
 
 
 @pytest.mark.parametrize("angle", P.strap_angles())
-def test_strap_slot_runs_the_barrels_full_length(barrel, angle):
+def test_strap_track_is_a_groove_the_barrels_full_length(barrel, angle):
+    """A strap pushed in at the top can only come out at the bottom: the track has a wall behind it the whole way
+    down (the barrel isn't slotted through), and opens out through the flange under it."""
     for z in (LOW, P.barrel_top / 2, P.barrel_top - 0.1):
-        pieces = radial(barrel, C, angle, z, r0=P.nut_root - P.thread_depth, r1=P.rim_in - 0.5)
-        assert pieces == [], (z, pieces)
-    assert tangential_gap(barrel, C, angle, R_OUT - P.barrel_wall / 2, P.barrel_top / 2) == pytest.approx(
+        pieces = radial(barrel, C, angle, z, r0=BORE + P.bore_wall + 0.5, r1=P.rim_in - 0.5)
+        assert pieces[-1][1] == pytest.approx(P.track_floor, abs=0.02), (z, pieces)
+    behind = radial_z(barrel, C, angle, (P.nut_root + P.track_floor) / 2)
+    assert behind == [pytest.approx((0, P.barrel_top), abs=1e-3)]
+    assert tangential_gap(barrel, C, angle, (P.track_floor + R_OUT) / 2, P.barrel_top / 2) == pytest.approx(
         P.strap_w, abs=0.05)
+
+
+def test_barrel_is_one_tube_with_the_thread_unbroken(barrel):
+    """No through-slots: the barrel above the floor is one piece, and the nut ridge runs all round."""
+    above = barrel & (Pos(*C, LOW + P.flange_t) * ring(P.nut_root - P.thread_depth - 0.5, R_OUT + 1, P.barrel_top))
+    assert len(above.solids()) == 1
 
 
 def test_spokes_reach_from_hub_to_rim(barrel, capp):
@@ -94,10 +106,10 @@ def test_ams_lite_notch(barrel):
 
 
 def test_cap_flange_spigot_and_lip(capp):
+    """The cap's flange is solid from the bore out to the lip, so the bore ring isn't hung on the spokes."""
     lip_out = P.barrel_d / 2 + P.lip_clear + P.lip_t
     assert radial(capp, C, PLAIN_GAP * 1.5, LOW) == [
-        pytest.approx((BORE, BORE + P.cap_hub_wall), abs=0.02),
-        pytest.approx((P.bolt_root - P.spigot_wall, lip_out), abs=0.02),
+        pytest.approx((BORE, lip_out), abs=0.02),
         pytest.approx((P.rim_in, P.rim_d / 2), abs=0.02)]
     lip = radial(capp, C, PLAIN_GAP * 1.5, P.flange_t + 0.1, r0=P.barrel_d / 2 - 0.5, r1=P.rim_in - 0.5)
     assert lip == [pytest.approx((P.barrel_d / 2 + P.lip_clear, lip_out), abs=0.02)]

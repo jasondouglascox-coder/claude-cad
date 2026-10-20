@@ -19,8 +19,8 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 77.5 g; the tests hold
-  it under 80 g.
+- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 81.7 g; the tests hold
+  it under 85 g.
 
 All sizes live in `refill_spool/params.py`.
 
@@ -46,3 +46,12 @@ All sizes live in `refill_spool/params.py`.
   six spokes crossed them, two small contacts per strip. The barrel half's flange is now solid from the bore out to
   the barrel's outside (Ø55 to Ø80, flange_t thick), open only at the three strap slots. +2.9 g: 77.5 g sliced
   (barrel half 53.6 g, cap 23.9 g).
+- **2026-10-20: strap tracks instead of slots; solid cap hub.** From the user:
+  - A tie pushed down a through-slot could wander into the barrel and miss the opening at the bottom. Each strap
+    now has a track: a 7 mm groove in the barrel's outside, 0.4 mm deep, leaving 0.8 mm of wall behind it. With
+    the core over it, the track is a closed tunnel 1.4 mm deep from the barrel top out through the flange, so it
+    takes zip ties up to ~6 × 1.2 mm. The barrel is one tube again and the nut thread runs unbroken. The cap lip
+    stays (it keeps the 1.2 mm barrel from spreading and centers the cap).
+  - The cap's bore ring met the rest of the cap only at the spokes, like the barrel did. The cap's flange is now
+    solid from the bore out to the lip.
+  - 81.7 g sliced (barrel half 55.9 g, cap 25.8 g); budget 85 g.

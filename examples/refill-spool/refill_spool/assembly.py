@@ -17,7 +17,7 @@ def coil(p: Params = P) -> Part:
 
 
 def strap_paths(p: Params = P) -> list[Part]:
-    """One loop per strap, strap_t thick and a mm narrower than the slot: under the core in the barrel slot, out
+    """One loop per strap, strap_t thick and a mm narrower than the track: under the core in its track, out
     through both flanges, along each outer face, and back over the coil inside the rim."""
     t, w, gap = p.strap_t, p.strap_w - 1, 0.05
     top = ((p.core_d / 2 - gap) ** 2 - (w / 2) ** 2) ** 0.5  # the box's corners stay inside the core

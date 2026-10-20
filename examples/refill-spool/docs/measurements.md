@@ -13,5 +13,6 @@
 Still to measure on a real refill:
 - coil width including its own ties (must be under 59 mm; 0.5 mm a side is all the room there is);
 - full coil outside diameter (straps pass over it inside the rim at Ø194; the model assumes Ø190);
-- how many ties run under the core and how they're spaced (they only fit in the barrel's 3 slots, 120° apart);
+- the core's inside diameter: the strap tracks are tunnels 1.4 mm deep only if it's 82 (less and ties won't fit);
+- how many ties run under the core and how they're spaced (they only fit in the barrel's 3 tracks, 120° apart);
 - how far the AMS lite hub reaches into the bore (the bore is a tube the full 65 mm, so any reach works).

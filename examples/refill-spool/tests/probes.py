@@ -27,3 +27,12 @@ def tangential_gap(part, center, angle, r, z, span=30.0, w=0.1):
     lo = max(t[-1] for t in along if t[-1] <= 0.001)
     hi = min(t[0] for t in along if t[0] >= -0.001)
     return hi - lo
+
+
+def radial_z(part, center, angle, r, z0=-1.0, z1=200.0, w=0.1):
+    """(z_lo, z_hi) of each solid piece a thin vertical bar at radius r, `angle` degrees, cuts."""
+    cx, cy = center
+    a = math.radians(angle)
+    bar = Pos(cx + r * math.cos(a), cy + r * math.sin(a), z0) * Box(w, w, z1 - z0, align=(Align.CENTER,
+                                                                                         Align.CENTER, Align.MIN))
+    return sorted((round(b.min.Z, 3), round(b.max.Z, 3)) for b in (s.bounding_box() for s in (part & bar).solids()))

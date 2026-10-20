@@ -58,7 +58,7 @@ def test_ridge_check_can_fail():
 
 
 def test_strap_paths_are_clear_with_the_cap_off():
-    """Straps go on with the cap off (on, they'd stop it turning): each runs under the core in a barrel slot, out
+    """Straps go on with the cap off (on, they'd stop it turning): each runs down a track under the core, out
     through the barrel half's flange, and back over the coil inside the rim."""
     (barrel_name, barrel), _ = placed_parts(P)
     things = [(barrel_name, barrel), ("coil", coil(P))]
@@ -75,8 +75,8 @@ def test_strapped_coil_lifts_off_the_barrel(lift):
 
 
 def test_cap_lip_holds_the_barrel_top_in():
-    """The barrel's strips are only joined at the bottom: screwed home, a lip on the cap wraps their top ends so
-    the thread can't push them apart, lip_clear outside them."""
+    """Screwed home, a lip on the cap wraps the barrel's top, lip_clear outside it, so the thread can't spread the
+    thin barrel."""
     (_, barrel), (_, cap) = placed_parts(P)
     lip = cap & (Pos(0, 0, P.barrel_top - P.lip_h) * ring(P.barrel_d / 2, P.barrel_d / 2 + 5, P.lip_h))
     bb = lip.bounding_box()

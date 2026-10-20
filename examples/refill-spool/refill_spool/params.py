@@ -30,9 +30,8 @@ class Params:
     notch_h: float = 3.0  # radial, into the bore wall
     notch_w: float = 3.0
     # cap
-    cap_hub_wall: float = 2.5
     spigot_wall: float = 1.6
-    lip_h: float = 2.4  # ring on the cap flange round the barrel's top: holds the slotted barrel's strips in
+    lip_h: float = 2.4  # ring on the cap flange round the barrel's top: keeps the thin barrel from spreading
     lip_t: float = 0.8
     lip_clear: float = 0.2  # radial, outside the barrel
     lip_chamfer: float = 0.6  # lead-in on the lip's inner tip
@@ -45,12 +44,13 @@ class Params:
     min_turns: float = 1.5  # engaged, screwed home
     min_play: float = 0.25  # axial, each flank: printed threads need room
     thread_flank: float = 40.0  # degrees off the axis
-    # straps: zip ties under the core (in the barrel slots), out through the flanges, over the coil
+    # straps: zip ties under the core (in tracks on the barrel), out through the flange, over the coil
     straps: int = 3
-    strap_w: float = 10.0  # slot width in the barrel
-    strap_t: float = 1.5  # thickest strap the path must pass
+    strap_w: float = 7.0  # track width: a groove in the barrel's outside, a tunnel once the core is over it
+    strap_t: float = 1.2  # thickest strap the track must pass (zip ties up to ~6 x 1.2 mm)
+    track_wall: float = 0.8  # barrel wall left behind the track
     filament: int = 3  # AMS slot: the user's PLA
-    max_grams: float = 80.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
+    max_grams: float = 85.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
     printer: Printer = Printer()
 
     def __post_init__(self):
@@ -81,6 +81,11 @@ class Params:
     def bolt_root(self) -> float:
         """Outside radius of the cap's spigot wall: its crest sits thread_clear inside the nut's root."""
         return self.nut_root - self.thread_clear - self.thread_depth
+
+    @property
+    def track_floor(self) -> float:
+        """Radius of each strap track's floor (flat, at its middle)."""
+        return self.nut_root + self.track_wall
 
     @property
     def rim_in(self) -> float:
