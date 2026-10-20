@@ -10,7 +10,7 @@ Zip ties thread through the barrel slots and round the coil, so the coil comes o
 ```bash
 uv sync
 uv run pytest -n 2                     # print checks, sizes, thread fit, strap paths, plates, the slicer (if installed)
-uv run python -m refill_spool.build    # out/plates (one plate per half), out/step, out/render
+uv run python -m refill_spool.build    # out/plates/refill_spool.3mf (both plates), out/step, out/render
 ```
 
 Print both halves outer face down, no supports. The barrel half has the AMS lite drive notch: mount it with
