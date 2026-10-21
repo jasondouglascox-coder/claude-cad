@@ -23,6 +23,9 @@ class Params:
     # flanges: spokes and a rim instead of a solid disc
     flange_t: float = 3.0  # 61 between flanges + 2 x 3 = 67, the enclosure's limit
     rim_w: float = 3.0  # radial
+    mid_ring_d: float = 130.0  # a second ring across the spokes, centered here: stiffer, smaller gaps
+    mid_ring_w: float = 3.0
+    mid_ring_gap: float = 10.0  # on the barrel half, at each strap: the tie crosses its outer face there
     spokes: int = 6
     spoke_w: float = 6.0
     # barrel half
@@ -50,7 +53,7 @@ class Params:
     strap_t: float = 1.2  # thickest strap the track must pass (zip ties up to ~6 x 1.2 mm)
     track_wall: float = 0.8  # barrel wall left behind the track
     filament: int = 3  # AMS slot: the user's PLA
-    max_grams: float = 85.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
+    max_grams: float = 95.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
     printer: Printer = Printer()
 
     def __post_init__(self):

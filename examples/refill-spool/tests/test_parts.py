@@ -14,6 +14,8 @@ C = center(P)
 BORE = P.bore_d / 2
 R_OUT = P.barrel_d / 2
 LOW = P.flange_t / 2
+MID_RING = pytest.approx((P.mid_ring_d / 2 - P.mid_ring_w / 2, P.mid_ring_d / 2 + P.mid_ring_w / 2), abs=0.02)
+RIM = pytest.approx((P.rim_in, P.rim_d / 2), abs=0.02)
 PLAIN_GAP = 360 / P.spokes  # between spokes 1 and 2: no strap track (straps are 0.5, 2.5, 4.5 steps round)
 
 
@@ -50,8 +52,7 @@ def test_barrel_half_flange_is_solid_out_to_the_barrel_then_rim(barrel):
         assert radial(barrel, C, a + 2.5, LOW, r0=BORE + 0.5, r1=R_OUT) == [pytest.approx(
             (BORE + 0.5, R_OUT), abs=0.02)], a
     assert radial(barrel, C, PLAIN_GAP / 2 + PLAIN_GAP, LOW) == [
-        pytest.approx((BORE, R_OUT), abs=0.02),
-        pytest.approx((P.rim_in, P.rim_d / 2), abs=0.02)]
+        pytest.approx((BORE, R_OUT), abs=0.02), MID_RING, RIM]
 
 
 @pytest.mark.parametrize("angle", P.strap_angles())
@@ -60,11 +61,19 @@ def test_strap_track_is_a_groove_the_barrels_full_length(barrel, angle):
     down (the barrel isn't slotted through), and opens out through the flange under it."""
     for z in (LOW, P.barrel_top / 2, P.barrel_top - 0.1):
         pieces = radial(barrel, C, angle, z, r0=BORE + P.bore_wall + 0.5, r1=P.rim_in - 0.5)
-        assert pieces[-1][1] == pytest.approx(P.track_floor, abs=0.02), (z, pieces)
+        assert pieces[-1][1] == pytest.approx(P.track_floor, abs=0.02), (z, pieces)  # open out to the rim
     behind = radial_z(barrel, C, angle, (P.nut_root + P.track_floor) / 2)
     assert behind == [pytest.approx((0, P.barrel_top), abs=1e-3)]
     assert tangential_gap(barrel, C, angle, (P.track_floor + R_OUT) / 2, P.barrel_top / 2) == pytest.approx(
         P.strap_w, abs=0.05)
+
+
+def test_middle_ring_is_gapped_for_the_straps_on_the_barrel_half_only(barrel, capp):
+    """A tie runs across the barrel half's outer face from its track to past the coil; a whole middle ring would
+    trap it. The cap's ring is whole: straps go on with the cap off."""
+    for a in P.strap_angles():
+        assert tangential_gap(barrel, C, a, P.mid_ring_d / 2, LOW, span=40) == pytest.approx(P.mid_ring_gap, abs=0.05)
+        assert radial(capp, C, a, LOW, r0=R_OUT + 0.5, r1=P.rim_in - 0.5) == [MID_RING]
 
 
 def test_barrel_is_one_tube_with_the_thread_unbroken(barrel):
@@ -120,9 +129,7 @@ def test_bore_is_plain(barrel):
 
 def test_cap_flange_and_spigot(capp):
     """The cap's flange is solid from the bore out over the barrel's top end, so the bore isn't hung on the spokes."""
-    assert radial(capp, C, PLAIN_GAP * 1.5, LOW) == [
-        pytest.approx((BORE, R_OUT), abs=0.02),
-        pytest.approx((P.rim_in, P.rim_d / 2), abs=0.02)]
+    assert radial(capp, C, PLAIN_GAP * 1.5, LOW) == [pytest.approx((BORE, R_OUT), abs=0.02), MID_RING, RIM]
     assert capp.bounding_box().max.Z == pytest.approx(P.flange_t + P.thread_len, abs=1e-3)
     outer = max(radial(capp, C, a, P.flange_t + P.thread_len / 2)[0][1] for a in range(0, 360, 5))
     assert outer == pytest.approx(P.bolt_root + P.thread_depth, abs=0.05)
