@@ -21,7 +21,8 @@ Print both halves outer face down, no supports (PLA, AMS slot 3; don't dry filam
   between the spokes.
 - **Take a part-used coil off:** lay the spool barrel half down and unscrew the cap first (straps on, it can't
   turn). Push a zip tie (up to ~6 × 1.2 mm) down each of the three tracks from the barrel top: the core closes
-  the track over, so it comes out through the flange underneath. Close each round the coil, then lift the coil off.
+  the track over, so it comes out through the flange underneath. Close each round the coil, then lift the coil off, moving each tie round the barrel half's middle
+  ring as it comes.
 
   <img src="docs/images/track.png" width="30%" alt="Slice through a strap track: barrel wall, zip tie, coil core">
 

@@ -24,16 +24,11 @@ def radial_box(angle: float, r0: float, r1: float, w: float, h: float, z: float 
     return Rot(0, 0, angle) * Pos(r0, 0, z) * Box(r1 - r0, w, h, align=OUT)
 
 
-def flange(p: Params, strap_gaps: bool = False) -> Part:
+def flange(p: Params) -> Part:
     """Rim, middle ring and spokes, flange_t thick. Each spoke reaches from just inside the bore to the middle of the
-    rim. strap_gaps: open the middle ring where each strap crosses the flange's outer face."""
+    rim."""
     f = ring(p.rim_in, p.rim_d / 2, p.flange_t)
-    mid = ring(p.mid_ring_d / 2 - p.mid_ring_w / 2, p.mid_ring_d / 2 + p.mid_ring_w / 2, p.flange_t)
-    if strap_gaps:
-        for a in p.strap_angles():
-            mid -= radial_box(a, p.mid_ring_d / 2 - p.mid_ring_w, p.mid_ring_d / 2 + p.mid_ring_w, p.mid_ring_gap,
-                              p.flange_t + 1, -0.5)
-    f += mid
+    f += ring(p.mid_ring_d / 2 - p.mid_ring_w / 2, p.mid_ring_d / 2 + p.mid_ring_w / 2, p.flange_t)
     for a in p.spoke_angles():
         f += radial_box(a, p.bore_d / 2 + 0.5, p.rim_in + p.rim_w / 2, p.spoke_w, p.flange_t)
     return f
@@ -79,7 +74,7 @@ def engaged(p: Params) -> float:
 
 def barrel_half_centered(p: Params = P) -> Part:
     top = p.barrel_top
-    part = flange(p, strap_gaps=True) + ring(p.bore_d / 2, p.barrel_d / 2, p.flange_t)  # solid floor under barrel
+    part = flange(p) + ring(p.bore_d / 2, p.barrel_d / 2, p.flange_t)  # solid floor under barrel
     part += ring(p.bore_d / 2, p.bore_d / 2 + p.bore_wall, top)  # the cap's flange lands on its end
     part += ring(p.nut_root, p.barrel_d / 2, top)
     z0, z1 = nut_span(p)

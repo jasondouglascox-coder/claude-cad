@@ -25,7 +25,6 @@ class Params:
     rim_w: float = 3.0  # radial
     mid_ring_d: float = 130.0  # a second ring across the spokes, centered here: stiffer, smaller gaps
     mid_ring_w: float = 3.0
-    mid_ring_gap: float = 10.0  # on the barrel half, at each strap: the tie crosses its outer face there
     spokes: int = 6
     spoke_w: float = 6.0
     # barrel half

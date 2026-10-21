@@ -60,20 +60,19 @@ def test_strap_track_is_a_groove_the_barrels_full_length(barrel, angle):
     """A strap pushed in at the top can only come out at the bottom: the track has a wall behind it the whole way
     down (the barrel isn't slotted through), and opens out through the flange under it."""
     for z in (LOW, P.barrel_top / 2, P.barrel_top - 0.1):
-        pieces = radial(barrel, C, angle, z, r0=BORE + P.bore_wall + 0.5, r1=P.rim_in - 0.5)
-        assert pieces[-1][1] == pytest.approx(P.track_floor, abs=0.02), (z, pieces)  # open out to the rim
+        pieces = radial(barrel, C, angle, z, r0=BORE + P.bore_wall + 0.5, r1=P.mid_ring_d / 2 - P.mid_ring_w)
+        assert pieces[-1][1] == pytest.approx(P.track_floor, abs=0.02), (z, pieces)
     behind = radial_z(barrel, C, angle, (P.nut_root + P.track_floor) / 2)
     assert behind == [pytest.approx((0, P.barrel_top), abs=1e-3)]
     assert tangential_gap(barrel, C, angle, (P.track_floor + R_OUT) / 2, P.barrel_top / 2) == pytest.approx(
         P.strap_w, abs=0.05)
 
 
-def test_middle_ring_is_gapped_for_the_straps_on_the_barrel_half_only(barrel, capp):
-    """A tie runs across the barrel half's outer face from its track to past the coil; a whole middle ring would
-    trap it. The cap's ring is whole: straps go on with the cap off."""
-    for a in P.strap_angles():
-        assert tangential_gap(barrel, C, a, P.mid_ring_d / 2, LOW, span=40) == pytest.approx(P.mid_ring_gap, abs=0.05)
-        assert radial(capp, C, a, LOW, r0=R_OUT + 0.5, r1=P.rim_in - 0.5) == [MID_RING]
+@pytest.mark.parametrize("angle", P.strap_angles())
+def test_middle_ring_is_whole_on_both_flanges(barrel, capp, angle):
+    """No gaps for a strap to find: a gap's ends would snag the filament."""
+    for part in (barrel, capp):
+        assert radial(part, C, angle, LOW, r0=R_OUT + 0.5, r1=P.rim_in - 0.5) == [MID_RING]
 
 
 def test_barrel_is_one_tube_with_the_thread_unbroken(barrel):

@@ -88,7 +88,8 @@ def test_strap_paths_are_clear_with_the_cap_off():
 
 
 @pytest.mark.parametrize("lift", [2.0, 10.0, 30.0, 70.0])
-def test_strapped_coil_lifts_off_the_barrel(lift):
+def test_coil_lifts_off_the_barrel(lift):
+    """The coil slides straight off. Each tie's loop crosses the barrel half's outer face over the middle ring, so
+    the user moves it round the ring as the coil comes off (the user's call: a gap in the ring would snag)."""
     (_, barrel), _ = placed_parts(P)
-    load = [coil(P)] + strap_paths(P)
-    assert [round((Pos(0, 0, lift) * s & barrel).volume, 3) for s in load] == [0] * len(load)
+    assert round((Pos(0, 0, lift) * coil(P) & barrel).volume, 3) == 0
