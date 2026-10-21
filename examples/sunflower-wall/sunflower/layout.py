@@ -46,10 +46,19 @@ def valley_u(p: Params, k: int) -> float:
     return (2 * k + 1) / p.petal_veins - 1
 
 
-def bead_width(p: Params, r: float) -> float:
-    """Orange bead width at radius r: one line at the start, widening over bead_fade, then tapering back to one
-    line at the end; 0 outside the bead."""
+def bead_end(p: Params, k: int) -> float:
+    """Where the bead down valley k ends: the middle one at bead_r's end, each step out toward the edges sooner,
+    the outermost bead_falloff of the length short."""
     r0, r1 = p.bead_r
+    mid = p.bead_valleys[len(p.bead_valleys) // 2]
+    steps = max(abs(v - mid) for v in p.bead_valleys) or 1
+    return r1 - (r1 - r0) * p.bead_falloff * abs(k - mid) / steps
+
+
+def bead_width(p: Params, r: float, k: int) -> float:
+    """Width of the bead down valley k at radius r: one line at the start, widening over bead_fade, then tapering
+    back to one line at its end (bead_end); 0 outside the bead."""
+    r0, r1 = p.bead_r[0], bead_end(p, k)
     if r < r0 or r > r1:
         return 0.0
     if r < r0 + p.bead_fade:

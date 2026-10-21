@@ -14,7 +14,7 @@ they read as depth, not stripes.
 `uv run python -m sunflower.build` writes `out/plates/sunflower_10in.3mf`: one plate with the whole flower
 stacked in place, a Bambu project that opens already colored (File → Open Project). It prints yellow (the orange
 beads share some of those layers: a swap on each), then black, then brown, with the prime tower in the bed's
-front-left corner: 9.4 h, 177 g (124 g yellow, 3 g orange, 14 g black, 37 g brown), 22 color swaps.
+front-left corner: 9.3 h, 176 g (123 g yellow, 2 g orange, 14 g black, 37 g brown), 18 color swaps.
 
 AMS slots: 1 orange, 2 yellow, 3 black, 4 brown (`filaments` and `slot_*` in `sunflower/params.py`).
 

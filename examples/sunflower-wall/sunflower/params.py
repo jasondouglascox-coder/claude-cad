@@ -41,6 +41,7 @@ class Params:
     bead_w: float = 1.2  # widest: three lines
     bead_w_end: float = 0.4  # one line where each bead fades in and where it tapers out
     bead_fade: float = 6.0  # fade-in length
+    bead_falloff: float = 0.25  # the outermost beads this much of the length shorter than the middle one
     bead_t: float = 0.4  # two layers, flush with the petal top
     hub_r: float = 78.0  # hub disk under the seed head
     back_t: float = 6.0  # back hub thickness; back petals stay below it

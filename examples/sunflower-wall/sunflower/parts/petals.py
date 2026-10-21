@@ -52,13 +52,13 @@ def petal(p: Params, layer: str) -> Part:
 
 
 def _bead_strip(p: Params, k: int, n: int = 40):
-    """Footprint of the bead down valley k: on the valley line, layout.bead_width wide."""
-    r0, r1 = p.bead_r
+    """Footprint of the bead down valley k: on the valley line, layout.bead_width wide, to layout.bead_end."""
+    r0, r1 = p.bead_r[0], layout.bead_end(p, k)
     u = layout.valley_u(p, k)
     left, right = [], []
     for i in range(n + 1):
         r = r0 + (r1 - r0) * i / n
-        y, w = u * layout.half_width(p.front, r), layout.bead_width(p, r)
+        y, w = u * layout.half_width(p.front, r), layout.bead_width(p, r, k)
         left.append((r, y + w / 2))
         right.append((r, y - w / 2))
     return poly(*(left + right[::-1]))

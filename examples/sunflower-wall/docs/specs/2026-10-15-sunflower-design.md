@@ -120,3 +120,8 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
   is still drawn at 400 mm in `params.py` and scaled to the bed by `flower.params()` (radii and widths only).
   `small.py` became `flower.py`. The beads are now cut from one front petal before the ring is fused, instead of
   from the whole fused flower (that boolean made the tests take an hour).
+- 2026-10-21: Some variety in the beads (the user, from Bambu's preview: "middle slightly longer than the
+  outsides"). They all still start at the top of the arch; the middle bead runs to `bead_r`'s end and each step
+  out toward the edges ends sooner, the outermost pair `bead_falloff` = 25% of the length short
+  (`layout.bead_end`). Each keeps its fade-in and taper to one line. Sliced: 9.3 h, 176 g; the beads now share layers
+  42-57 with yellow (16 swaps, was 20), 18 in all.
