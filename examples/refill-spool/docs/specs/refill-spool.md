@@ -19,7 +19,7 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 79.7 g; the tests hold
+- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 80.5 g; the tests hold
   it under 85 g.
 
 All sizes live in `refill_spool/params.py`.
@@ -72,3 +72,7 @@ All sizes live in `refill_spool/params.py`.
   - 79.8 g sliced (barrel half 55.7 g, cap 24.0 g).
 - **2026-10-21: smaller key.** From the user: the core key is 2 mm wide, 3 mm out from the barrel and 3 mm along
   it from the flange (was 3 wide, 3 out, 6 along). 79.7 g sliced.
+- **2026-10-21: 67 mm overall, 3 mm flanges, 61 mm inside.** The user's enclosure takes 67 mm at most, and the
+  cardboard core measures 60 mm at its middle. 61 mm between flanges (0.5 mm a side) and 3 mm flanges make 67 mm.
+  4 mm flanges (57 mm inside) can't hold a 60 mm core; 2 mm would fit but each spoke would be about a third as stiff
+  (bending stiffness goes with thickness cubed), so 3 mm it is, in PLA (stiffer than PETG). 80.5 g sliced.

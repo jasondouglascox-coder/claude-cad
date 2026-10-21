@@ -133,4 +133,4 @@ def test_the_measured_coil_fits_between_the_flanges():
 
 
 def test_overall_size_fits_the_ams():
-    assert P.width <= P.ams_max_w and P.rim_d <= 200.0
+    assert P.width <= P.max_w and P.rim_d <= 200.0

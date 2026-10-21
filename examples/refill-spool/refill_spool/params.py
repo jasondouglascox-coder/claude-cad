@@ -15,13 +15,13 @@ class Params:
     core_d: float = 82.0
     core_od: float = 87.0  # the cardboard's outside: the key has to stop inside its wall
     coil_d: float = 171.5  # filament OD of a full 1 kg coil (6.75"): straps pass over it inside the rim
-    coil_w: float = 61.0
+    coil_w: float = 60.0  # the cardboard core, measured at its middle
     coil_side_clear: float = 0.5  # each side, between the coil and a flange
-    inside_w: float = 62.0  # flange to flange, where the coil sits
-    ams_max_w: float = 68.0  # AMS lite: spools 40-68 mm wide
+    inside_w: float = 61.0  # flange to flange, where the coil sits
+    max_w: float = 67.0  # the user's enclosure (the AMS lite takes 40-68 mm)
     rim_d: float = 200.0
     # flanges: spokes and a rim instead of a solid disc
-    flange_t: float = 2.8  # 62 between flanges + 2 x 2.8 = 67.6, inside the AMS lite's 68
+    flange_t: float = 3.0  # 61 between flanges + 2 x 3 = 67, the enclosure's limit
     rim_w: float = 3.0  # radial
     spokes: int = 6
     spoke_w: float = 6.0
@@ -65,7 +65,7 @@ class Params:
 
     @property
     def width(self) -> float:
-        """Overall, outer face to outer face (ams_max_w)."""
+        """Overall, outer face to outer face (max_w)."""
         return 2 * self.flange_t + self.inside_w
 
     @property
