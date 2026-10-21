@@ -28,9 +28,9 @@ class Params:
     # barrel half
     barrel_wall: float = 1.2
     bore_wall: float = 1.2  # tube round the bore, the barrel half's full height (like the official spool)
-    key_len: float = 6.0  # core key: on the barrel's outside at the flange, into a notch in the refill's core
+    key_len: float = 3.0  # core key: on the barrel's outside at the flange, into a notch in the refill's core
     key_h: float = 3.0  # radial, out from the barrel
-    key_w: float = 3.0
+    key_w: float = 2.0
     key_angle: float = 0.0  # on a spoke, so it stands on the flange
     core_notch_clear: float = 0.5  # the core's notch round the key, as modelled (unmeasured)
     # cap

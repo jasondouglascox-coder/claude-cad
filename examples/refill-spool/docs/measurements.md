@@ -10,7 +10,7 @@
 | Bambu reusable spool outside diameter | 200 mm | [Bambu forum](https://forum.bambulab.com/t/bambu-spool-dimensions/123480), [3DJake listing](https://www.3djake.com/bambu-lab/bambu-reusable-spool-high-temperature-resistance) |
 | Bambu reusable spool bore | 55 mm (user: "54 maybe") | same |
 | Spool barrel outside diameter | 80 mm | user's printed spools |
-| Core key (on the barrel, into the core's notch) | 6 mm along the barrel from the flange, 3 mm high, 3 mm wide | user |
+| Core key (on the barrel, into the core's notch) | 2 mm wide, 3 mm out from the barrel, 3 mm along it from the flange | user (2026-10-21; was 6 × 3 × 3) |
 
 Still to measure on a real refill:
 - the notch in the core's end that the key goes in (the model assumes 0.5 mm round the key);
