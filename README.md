@@ -17,7 +17,7 @@ It was built for, and battle-tested on, a 3D-printed HO model railroad that runs
 ceiling (`examples/near-ceiling-track`). That project is the big example; the tool itself is generic. A smaller
 one, a wall sunflower (`examples/sunflower-wall`), shows organic shapes and multi-color prints:
 
-<img src="examples/near-ceiling-track/docs/images/bay_above.png" width="480" alt="One 16-inch deck-truss bay of the HO railroad shelf"> <img src="examples/sunflower-wall/docs/images/16in_front.png" width="320" alt="16-inch 3D-printed sunflower render">
+<img src="examples/near-ceiling-track/docs/images/bay_above.png" width="480" alt="One 16-inch deck-truss bay of the HO railroad shelf"> <img src="examples/sunflower-wall/docs/images/10in_front.png" width="320" alt="10-inch 3D-printed sunflower render">
 
 ```
 .
@@ -33,7 +33,7 @@ one, a wall sunflower (`examples/sunflower-wall`), shows organic shapes and mult
 │   ├── candle-adapter/            one black part, glued into a chandelier cup
 │   ├── refill-spool/              an 80 g screw-together spool for Bambu refills, threads and strap tracks
 │   ├── near-ceiling-track/        everything at scale: an HO railroad shelf around a room, ~220 tests
-│   └── sunflower-wall/            a 16" wall sunflower kit and a 10" one-piece print, four AMS colors
+│   └── sunflower-wall/            a 10" wall sunflower printed in one go, four AMS colors
 ├── docs/specs/                    decisions about the tool itself
 ├── cadkit.toml.example            every setting for your printer/slicer/folder; copy to cadkit.toml (ignored)
 ├── CLAUDE.md                      working notes for Claude Code sessions in this repo

@@ -1,17 +1,19 @@
-"""The 10-inch flower, printed in one go: the same design scaled to the biggest the bed takes, every part stacked in
-place as one object, colors by height: yellow with the front petals' orange beads (a swap on each layer the beads
-cross), then black, then brown.
+"""The sunflower, printed in one go: drawn at 400 mm (params.py) and scaled to the biggest the bed takes (~10"),
+every part stacked in place as one object, colors by height: yellow with the front petals' orange beads (a swap on
+each layer the beads cross), then black, then brown.
 
-Changes from the 16-inch kit, only where a single print needs them:
-- the front petals are filled down to the bed (they'd otherwise start over air above the arching back petals);
-- the seed head sits on a hidden yellow riser just above the tallest petal, so the black never shares a layer with
-  yellow (sharing would mean two color swaps per layer);
-- no pins, sockets or seams; one keyhole, placed from the wall measurements (docs/measurements.md) so the flower
-  hangs centered in its gap.
-Thicknesses stay as they are (they're set by what prints well, not by the flower's size); seeds keep their size.
+- The back ring sits on the bed; the front petals are solid down to the bed too. They rise to the head's rim at
+  `front_top`, the tallest yellow, and sweep down to the plate at the tip; across, their edges come down onto the
+  back petals.
+- The seed head sits on a hidden yellow riser at `front_top`, so the black never shares a layer with yellow
+  (sharing would mean two color swaps per layer). The petals meet the head right at its rim; the black is a thin
+  floor, and the seeds run out to the rim and dome up from there.
+- One keyhole, placed from the wall measurements (docs/measurements.md) so the flower hangs centered in its gap.
+Thicknesses and heights don't scale (they're set by what prints well); seeds keep their size.
 """
 import math
 from dataclasses import replace
+from functools import lru_cache
 from pathlib import Path
 
 from build123d import Align, Color, Compound, Cone, Cylinder, Part, Pos, Rot, SlotCenterToCenter, extrude
@@ -21,7 +23,7 @@ from cadkit.export import write_plates
 from cadkit.plates import Plate, color_changes
 from sunflower import layout
 from sunflower.params import P, Params, Ring
-from sunflower.parts import center, quarter
+from sunflower.parts import center, petals
 
 INCH = 25.4
 GAP = (20 + 3 / 8) * INCH  # docs/measurements.md
@@ -43,13 +45,11 @@ def _layer(p: Params, z: float) -> float:
 def params(base: Params = P, diameter: float | None = None) -> Params:
     """The flower scaled across (radii, widths) to `diameter` (default: the bed's usable width, less 1 mm)."""
     s = (diameter or base.printer.usable - 1) / base.diameter
-    ring = lambda g: Ring(g.r0 * s, g.r1 * s, g.width * s, tuple((r * s, z) for r, z in g.profile), g.drop)
-    center_r = base.center_r * s
-    center_t = _layer(base, base.center_t * s)
+    pts = lambda prof: None if prof is None else tuple((r * s, z) for r, z in prof)
+    ring = lambda g: Ring(g.r0 * s, g.r1 * s, g.width * s, pts(g.profile), g.drop, pts(g.edge))
     return replace(base, back=ring(base.back), front=ring(base.front), hub_r=base.hub_r * s,
-                   center_r=center_r, center_t=center_t, center_rb=center_r - center_t,
+                   center_r=base.center_r * s,
                    seed_gaps=tuple((r * s if r < 900 else r, g) for r, g in base.seed_gaps),
-                   seed_dome=_layer(base, base.seed_dome * s),
                    bead_r=tuple(r * s for r in base.bead_r), bead_fade=base.bead_fade * s)
 
 
@@ -59,9 +59,8 @@ def key_angle(p: Params) -> float:
 
 
 def riser_top(p: Params) -> float:
-    """Above the tallest yellow (back ring + highest front midrib), on a layer."""
-    top = p.back_t + max(z for _, z in p.front.profile)
-    return math.ceil(top / p.printer.layer - 1e-9) * p.printer.layer
+    """The tallest yellow (the front petals at the head's rim), on a layer: where the black starts."""
+    return math.ceil(p.front_top / p.printer.layer - 1e-9) * p.printer.layer
 
 
 def _keyhole(p: Params) -> list:
@@ -78,19 +77,21 @@ def _keyhole(p: Params) -> list:
             extrude(SlotCenterToCenter(KEY_LEN, p.key_head_d), _layer(p, roof), taper=45)]
 
 
+@lru_cache
 def assembled(p: Params) -> Compound:
     """Centered on the flower axis, back on the wall at z = 0."""
-    fill = [Rot(0, 0, a) * extrude(quarter.outline(p.front), p.back_t) for a in layout.front_angles(p)]
-    base_top = p.back_t + p.front_t
-    flare = p.center_rb - p.hub_r  # the head is wider than the hub: flare out at 45 degrees, not over air
+    # the riser fills everything under the head: from the back hub on the bed it flares out at 45 degrees (not over
+    # air) to the head's rim, then stands straight up to the black, so the black's whole floor sits on yellow
+    flare = p.center_r - p.hub_r
+    top = riser_top(p)
+    assert flare < top, "the head is too wide for the riser to flare out under it"
     mn = (Align.CENTER, Align.CENTER, Align.MIN)
-    riser = [Pos(0, 0, base_top) * Cone(p.hub_r, p.center_rb, flare, align=mn),
-             Pos(0, 0, base_top + flare) * Cylinder(p.center_rb, riser_top(p) - base_top - flare, align=mn)]
-    yellow = quarter.whole(p, "back") + fill + [Pos(0, 0, p.back_t) * quarter.whole(p, "front")] + riser
-    orange = Part([s for a in layout.front_angles(p) for s in (Pos(0, 0, p.back_t) * Rot(0, 0, a) *
-                                                                quarter.beads(p)).solids()])
-    yellow = Part((Part(yellow.solids()) - _keyhole(p) - orange).solids())
-    head_body, seeds = center.assembled(p, sockets=False).children
+    riser = [Cone(p.hub_r, p.center_r, flare, align=mn),
+             Pos(0, 0, flare) * Cylinder(p.center_r, top - flare, align=mn)]
+    yellow = petals.whole(p, "back") + [petals.whole(p, "front", cut_beads=True)] + riser
+    yellow = Part((Part(yellow.solids()) - _keyhole(p)).solids())
+    orange = Part([s for a in layout.front_angles(p) for s in (Rot(0, 0, a) * petals.beads(p)).solids()])
+    head_body, seeds = center.assembled(p).children
     black = Pos(0, 0, riser_top(p)) * head_body
     brown = Pos(0, 0, riser_top(p)) * seeds
     for body, name, col in ((yellow, "flower_yellow", YELLOW), (orange, "flower_orange", ORANGE),

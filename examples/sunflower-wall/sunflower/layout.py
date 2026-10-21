@@ -1,4 +1,4 @@
-"""Pure math (no CAD): petal angles, quarter boundaries, pin and seed positions, petal shape functions."""
+"""Pure math (no CAD): petal angles, seed positions, petal shape functions."""
 import math
 from dataclasses import dataclass
 
@@ -10,11 +10,6 @@ from sunflower.params import Params, Ring
 GOLDEN = math.pi * (3 - math.sqrt(5))
 
 
-def validate(p: Params) -> None:
-    if p.petals % 4 or p.petals < 8:
-        raise ValueError(f"petals = {p.petals}: need a multiple of 4, at least 8, so the quarters are identical")
-
-
 def back_angles(p: Params) -> list[float]:
     return [k * p.pitch for k in range(p.petals)]
 
@@ -22,31 +17,6 @@ def back_angles(p: Params) -> list[float]:
 def front_angles(p: Params) -> list[float]:
     """Front petals sit over the back ring's gaps."""
     return [(k + 0.5) * p.pitch for k in range(p.petals)]
-
-
-def back_start(p: Params) -> float:
-    """First back quarter boundary: a back-petal gap (a front petal covers it)."""
-    return p.pitch / 2
-
-
-def front_start(p: Params) -> float:
-    """First front quarter boundary: the front-petal gap nearest 45 degrees past the back one (brick bond)."""
-    return round((back_start(p) + 45) / p.pitch) * p.pitch
-
-
-def boundaries(p: Params, layer: str) -> list[float]:
-    a0 = back_start(p) if layer == "back" else front_start(p)
-    return [a0 + 90 * q for q in range(4)]
-
-
-def pin_angles(p: Params) -> list[float]:
-    """Midway between each pair of neighbouring back/front boundaries: each pin ties one quarter of each ring."""
-    b = sorted(a % 360 for a in boundaries(p, "back") + boundaries(p, "front"))
-    return [(x + ((y - x) % 360) / 2) % 360 for x, y in zip(b, b[1:] + b[:1])]
-
-
-def in_quarter(angle: float, start: float) -> bool:
-    return 0 < (angle - start) % 360 < 90
 
 
 def half_width(ring: Ring, r: float) -> float:
@@ -59,10 +29,13 @@ def half_width(ring: Ring, r: float) -> float:
 
 def petal_top(p: Params, ring: Ring, r: float, y: float, hw: float, veins: bool = True) -> float:
     """Petal top at radius r, y across from the midrib (hw = half width there): the midrib height, falling by
-    `drop` toward the edges, with `petal_veins` lengthwise grooves `vein_depth` deep. Veins follow the petal's
-    width, so they gather toward the root and the tip like real ones."""
+    `drop` toward the edges (or down to the ring's `edge` heights, never below petal_min), with `petal_veins`
+    lengthwise grooves `vein_depth` deep. Veins follow the petal's width, so they gather toward the root and the tip
+    like real ones."""
     u = y / hw
-    z = midrib(ring, r) - ring.drop * min(u * u, 1.5)
+    mid = midrib(ring, r)
+    drop = ring.drop if ring.edge is None else max(mid - max(_through(ring.edge, r), p.petal_min), 0.0)
+    z = mid - drop * min(u * u, 1.5)
     if veins and abs(u) <= 1:
         z -= p.vein_depth * (1 - math.cos(math.pi * p.petal_veins * (u + 1))) / 2
     return z
@@ -86,7 +59,11 @@ def bead_width(p: Params, r: float) -> float:
 
 def midrib(ring: Ring, r: float) -> float:
     """Top of the petal along its midrib: smoothstep through the profile points."""
-    pts = ring.profile
+    return _through(ring.profile, r)
+
+
+def _through(pts: tuple, r: float) -> float:
+    """Smoothstep through (r, z) points; flat beyond the ends."""
     if r <= pts[0][0]:
         return pts[0][1]
     for (r0, z0), (r1, z1) in zip(pts, pts[1:]):
@@ -207,19 +184,3 @@ def seeds(p: Params) -> list[Seed]:
         shoulder = round((p.seed_shoulder + p.seed_dome * (1 - (r / lim) ** 2)) / lay) * lay
         out.append(Seed(tuple(map(tuple, cell)), shoulder, shoulder + p.seed_pyramid, top_scale))
     return out
-
-
-def pin_y(p: Params) -> dict:
-    """Pin profile stations along its length (y = 0 at the head's underside = the wall)."""
-    barb = p.back_t + p.front_t + p.throat + p.pin_play
-    return {"head": p.pin_head, "barb": barb, "tip": barb + p.pin_tip}
-
-
-def pin_strain(p: Params) -> float:
-    """Peak bending strain in a barb arm squeezed through a slot: a cantilever from the end of the split to the
-    barb, deflected by the barb's overhang past the slot wall. eps = 3 * deflection * arm width / (2 * length^2)."""
-    y = pin_y(p)
-    arm = (p.pin_w - p.pin_slot_w) / 2
-    length = y["barb"] - (y["tip"] - p.pin_slot_len)
-    deflection = p.pin_barb - p.fit / 2
-    return 3 * deflection * arm / (2 * length ** 2)

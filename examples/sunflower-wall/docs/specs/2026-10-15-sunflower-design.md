@@ -3,6 +3,10 @@
 Reference: a real sunflower photo (large dark seed head about 45% of the width, two rings of plain yellow petals
 that arch back). Printer: Bambu A1 + AMS lite, 0.4 nozzle, 0.20 mm Standard, PLA.
 
+> **Now (2026-10-21): only the one-piece ~10" print is kept** (`sunflower/flower.py`); the 16" kit below (quarters,
+> pins, sockets) was deleted. The sections up to the Amendments describe the original kit and stay as history;
+> the amendments of 2026-10-16 and 2026-10-21 describe the print as it is.
+
 ## Goal
 A 400 mm (~16") wall sunflower that prints without supports, assembles without glue, and shows no seams.
 
@@ -96,4 +100,23 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
   (`build makerworld`): `sunflower_16in` (back quarter, front quarter, seed head; "(print 4)" where it applies) and
   `sunflower_10in`. They can't share a file, because the 10" keeps its prime tower in the front-left corner. The
   16" plates now pack around the A1's back-left prime-tower corner (cadkit); the plate list didn't change.
-
+- 2026-10-21: The user moved to printing the 10" only, and asked for two changes after looking at it in Bambu.
+  **Front petals thinner, sweeping back to the plate:** they had been filled to the bed under the 16" shape, so
+  they stood as 15 mm slabs with walls. Now each front petal is solid from the bed with its own heights: level at
+  `front_top` = 12 mm under the head out to its rim, then falling to the tip at the plate; across, the edges come
+  down to the back petals' midribs (`Ring.edge`), so they read as thin petals lying on the back ring. **The seed
+  head down onto the petals:** there was a gap because the head stood on a riser above the old 15 mm petals. Now
+  the riser stops at `front_top`, where the petals meet the head's rim, so the black still never shares a layer
+  with yellow. A rounded black shoulder sweeping up from the petals was tried and dropped ("not the connection");
+  instead the black is a 1 mm floor out to the rim (`center_t`) and the seeds run out to the rim (`seed_edge`
+  0.6) and dome 9 mm up to the middle (`seed_dome`): the head rises straight from the petals. Still one seam to
+  black and one to brown; more brown to print. The user liked it ("that looks better").
+  The riser now fills all of the head's underside (it flares from the hub on the bed, then stands at the rim's
+  width), since the petals' sides slope away under the head. Sliced: 9.4 h, 177 g (124 yellow, 3 orange, 14
+  black, 37 brown); the beads share layers 38-57 with yellow, so 20 swaps there plus the two seams.
+- 2026-10-21: **The 16" kit is deleted** (user: print the 10" only): quarters, seams, pins and sockets, plates,
+  the assembly clash test, the 16" builds, tests, images and README section. What the 10" needs stays: the
+  petals (`parts/petals.py`, from the quarter code), the seed head without sockets, the seed layout. The design
+  is still drawn at 400 mm in `params.py` and scaled to the bed by `flower.params()` (radii and widths only).
+  `small.py` became `flower.py`. The beads are now cut from one front petal before the ring is fused, instead of
+  from the whole fused flower (that boolean made the tests take an hour).

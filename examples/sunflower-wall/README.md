@@ -1,57 +1,37 @@
 # Sunflower wall decor
 
-A 400 mm (~16") sunflower for the wall, modeled on a real one: a big dark seed head (Fibonacci spiral) and two
-rings of yellow petals that arch back. Bambu A1 + AMS lite, 0.20 mm Standard, PLA, no supports, no glue.
+A 250 mm (~10") sunflower for the wall, printed in one go on a Bambu A1 + AMS lite: a domed seed head (Fibonacci
+spiral of diamond seeds) and two rings of yellow petals, the front ones rising to the head and sweeping back down
+to the plate. 0.20 mm Standard, PLA, no supports, no glue, no assembly.
 
-<img src="docs/images/16in_front.png" width="49%" alt="16-inch sunflower, straight on"> <img src="docs/images/16in_iso.png" width="49%" alt="16-inch sunflower, three-quarter view">
+<img src="docs/images/10in_front.png" width="49%" alt="sunflower, straight on"> <img src="docs/images/10in_side.png" width="49%" alt="sunflower, three-quarter view">
 
 The orange streaks near the head are beads of orange down the front petals' middle valleys: from a few feet away
 they read as depth, not stripes.
 
-## What to print (`out/plates.csv`)
+## Printing it
 
-| Plate | Prints | Contents | Filament |
-|---|---|---|---|
-| `back_quarter.3mf` | 4 | back petal quarter + 3 snap pins (8 needed, 4 spare) | yellow (2) |
-| `front_quarter.3mf` | 4 | front petal quarter | yellow (2) with orange (1) beads in the valleys: a swap on each of ~14 layers |
-| `seed_head.3mf` | 1 | seed head | black (3), then brown (4): one color change |
+`uv run python -m sunflower.build` writes `out/plates/sunflower_10in.3mf`: one plate with the whole flower
+stacked in place, a Bambu project that opens already colored (File → Open Project). It prints yellow (the orange
+beads share some of those layers: a swap on each), then black, then brown, with the prime tower in the bed's
+front-left corner: 9.4 h, 177 g (124 g yellow, 3 g orange, 14 g black, 37 g brown), 22 color swaps.
 
-AMS slots: 1 orange, 2 yellow, 3 black, 4 brown (`filaments` and `slot_*` in `sunflower/params.py`). The plates
-open already colored: File → Open Project.
+AMS slots: 1 orange, 2 yellow, 3 black, 4 brown (`filaments` and `slot_*` in `sunflower/params.py`).
 
-## The 10" one-piece print
+Hang it by the keyhole behind the first front petal, on a nail 2 3/16" above where the flower's center should be
+(`docs/measurements.md`).
 
-<img src="docs/images/10in_front.png" width="49%" alt="10-inch sunflower, straight on"> <img src="docs/images/10in_iso.png" width="49%" alt="10-inch sunflower, three-quarter view">
-
-`uv run python -m sunflower.build small` writes `out/small/`: one plate, `plates/sunflower_10in.3mf`, with the
-whole flower (250 mm) stacked in place. It prints yellow with the orange beads, then black, then brown, with the
-prime tower in the bed's front-left corner: 9.2 h, 203 g. No assembly: hang it by the keyhole behind the first
-front petal, on a nail 2 3/16" above where the flower's center should be (`docs/measurements.md`).
-
-## Assembly
-
-1. Lay the seed head face down on a towel.
-2. Set the 4 front quarters (no keyhole) on it, flat side up, hub to hub; their pin slots line up with the sockets.
-3. Set the 4 back quarters on top, turned so their slots line up too (the seams land between petals).
-4. Push a pin through each of the 8 slots, barbs first, until it clicks and its head sits flush.
-5. Hang it on a pan-head screw (#8 / M4, head ≤ 8.5 mm × 3 mm) through the keyhole of whichever back quarter is
-   at the top: head in the round hole, then let it drop. Leave the underside of the screw head 1.6–3 mm off the
-   wall so the flower sits flat against it.
-
-The petal tops arch, so 0.2 mm layers show as faint contour lines; the petal plates also slice fine at 0.12 mm
-for smoother tops (the 1.6 mm pin-head recess isn't a 0.12 multiple, so the heads may sit ~0.1 mm proud: harmless).
+The petal tops arch, so 0.2 mm layers show as faint contour lines.
 
 ## Commands
 
 ```bash
 uv sync
-uv run pytest -n 6 -m "not slow"          # ~2 min: printable, watertight, layers, fits, nothing overlaps
-uv run pytest -n 5                        # + the plate files and Bambu Studio slicing each plate (~10 min)
-uv run python -m sunflower.build          # out/plates, out/step, out/render
-uv run python -m sunflower.build small    # out/small: the 10" one-piece print
-uv run python -m sunflower.build makerworld   # out/makerworld: sunflower_16in + sunflower_10in, sliced, to upload
+uv run pytest -n 3 --dist loadfile -m "not slow"   # printable, watertight, layers, colors by height, the keyhole
+uv run pytest -n 3 --dist loadfile                 # + the build and Bambu Studio slicing the plate
+uv run python -m sunflower.build                   # out/plates, out/sunflower_10in.step, out/render
+uv run python -m sunflower.build makerworld        # out/makerworld: the sliced project, to upload
 ```
 
 Design and decisions: `docs/specs/2026-10-15-sunflower-design.md`. The pictures in `docs/images/` are
-`build render` / `build small` output; refresh them after a visible change.
-Before the first print, check `fit` (slot clearance) with `../fit-coupon`.
+`build render` output; refresh them after a visible change.

@@ -24,8 +24,8 @@
   plate first.
 - `examples/refill-spool/`: a ~80 g two-piece spool for Bambu refill coils (package `refill_spool`): spoked flanges,
   barrel with zip-tie strap tracks, screw-on cap, a key into the refill core's notch. Threads from `cadkit.shapes.thread`.
-- `examples/sunflower-wall/`: a 400 mm wall sunflower (package `sunflower`): lofted arched petals in quarters, a
-  Fibonacci seed head of ~1,100 diamond seeds, snap pins.
+- `examples/sunflower-wall/`: a ~10" wall sunflower printed in one go (package `sunflower`, `flower.py`): lofted
+  arched petals with orange valley beads, a domed Fibonacci head of diamond seeds, four colors by height.
 
 ## Commands
 
@@ -35,7 +35,7 @@ Each project runs from its own folder:
 cd cadkit && uv sync && uv run pytest -n 4                       # ~10 s; includes a live Bambu Studio check if installed
 cd examples/fit-coupon && uv sync && uv run pytest               # ~1 min
 cd examples/near-ceiling-track && uv run pytest -n 6 -m "not slow"   # ~4 min; full suite ~25 min, run it in the background
-cd examples/sunflower-wall && uv run pytest -n 6 -m "not slow"       # ~2 min; slow tests slice every plate in Bambu
+cd examples/sunflower-wall && uv run pytest -n 3 --dist loadfile -m "not slow"   # whole flower ~12 GB a worker; slow: Bambu
 cd examples/sharpie-colorizer && uv run pytest -n 4                  # ~30 s, both plates through Bambu
 cd examples/refill-spool && uv run pytest -n 2                       # ~20 s, both halves through Bambu
 ```

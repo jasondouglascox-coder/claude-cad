@@ -1,4 +1,8 @@
-"""Every dimension in one place (mm). A design change is a one-line edit here; tests derive from these."""
+"""Every dimension in one place (mm). A design change is a one-line edit here; tests derive from these.
+
+The flower is drawn at 400 mm across; `flower.params()` scales it to the biggest the bed takes. Only radii and
+widths scale: thicknesses and heights are set by what prints well, so they stay as written here.
+"""
 from dataclasses import dataclass, field
 
 from build123d import Color
@@ -12,16 +16,22 @@ class Ring:
     r0: float
     r1: float
     width: float  # widest point
-    profile: tuple  # (r, top z) along the midrib, in the ring's own print frame
+    profile: tuple  # (r, top z) along the midrib, bed at z = 0
     drop: float  # how much lower the edges are than the midrib
+    edge: tuple | None = None  # (r, edge z) instead of a fixed drop: edges come down to these heights
+
+
+BACK = Ring(60, 205, 40, ((60, 5.8), (100, 5.8), (140, 4.6), (175, 2.8), (207, 1.2)), 1.6)
 
 
 @dataclass(frozen=True)
 class Params:
-    petals: int = 16  # per ring; a multiple of 4 so the four quarters are identical
-    back: Ring = Ring(60, 205, 40, ((60, 5.8), (100, 5.8), (140, 4.6), (175, 2.8), (207, 1.2)), 1.6)
-    front: Ring = Ring(60, 192, 40, ((60, 2.8), (83, 2.8), (90, 6.6), (98, 9.0), (115, 8.2), (150, 5.0),
-                                     (194, 1.2)), 2.4)  # rises once clear of the head's flat underside
+    petals: int = 16  # per ring
+    back: Ring = BACK
+    # front petals: level under the head, at the head's rim (center_r) as high as the yellow goes, then falling
+    # to the tip at the plate; across, their edges come down onto the back petals' midribs
+    front: Ring = Ring(60, 192, 40, ((60, 12.0), (90, 12.0), (98, 12.0), (115, 10.9), (150, 6.5), (194, 1.2)),
+                       0.0, edge=BACK.profile)
     petal_min: float = 1.0  # thinnest petal anywhere (edges, tips): 5 layers
     petal_veins: int = 9  # lengthwise grooves across each petal
     vein_depth: float = 0.4  # two layers
@@ -32,15 +42,14 @@ class Params:
     bead_w_end: float = 0.4  # one line where each bead fades in and where it tapers out
     bead_fade: float = 6.0  # fade-in length
     bead_t: float = 0.4  # two layers, flush with the petal top
-    hub_r: float = 78.0  # hub disk under the seed head, split into quarter wedges
+    hub_r: float = 78.0  # hub disk under the seed head
     back_t: float = 6.0  # back hub thickness; back petals stay below it
-    front_t: float = 3.0  # front hub thickness; the seed head sits on it
-    seam_gap: float = 0.3  # between neighbouring quarters' hub wedges
+    front_t: float = 3.0  # front hub thickness (inside the back hub and the riser)
 
-    # seed head
-    center_r: float = 90.0  # top rim radius
-    center_rb: float = 80.0  # bottom radius: a 45-degree bevel up to the rim lets petals rise out from under it
-    center_t: float = 10.0  # black body; seeds sit on top
+    # seed head: a thin black floor out to the rim, on a hidden yellow riser at the front petals' top; the seeds
+    # run out to the rim and dome up from there
+    center_r: float = 90.0  # rim radius: the front petals meet the head here
+    center_t: float = 1.0  # black floor: five layers, showing only between the seeds
     seed_c: float = 2.55  # Vogel spacing: seed i at r = c * sqrt(i), angle i * golden angle
     seed_gaps: tuple = ((14.0, 0.8), (68.0, 0.6), (999.0, 0.9))  # (out to radius, black gap between seeds)
     seed_narrow: float = 0.8  # seeds narrowed across the radius: diamonds pointing in and out
@@ -48,34 +57,17 @@ class Params:
     seed_min_edge: float = 0.6  # cell corners closer than this merge (no slivers)
     seed_shoulder: float = 0.6  # straight-sided column of a rim seed, below its pyramid
     seed_pyramid: float = 1.4  # pyramid height
-    seed_dome: float = 7.0  # middle seeds' columns this much taller than the rim's: the head domes out
-    seed_edge: float = 2.5  # bare black rim
+    seed_dome: float = 9.0  # middle seeds' columns this much taller than the rim's: the head domes up
+    seed_edge: float = 0.6  # bare black at the rim: a seed gap
 
-    # snap pins (printed flat: profile in the print plane, pin_t thick)
-    pin_r: float = 55.0  # radius of the pin circle
-    pin_w: float = 4.4  # shank width (radial in the assembly)
-    pin_t: float = 3.2  # print thickness (tangential in the assembly)
-    pin_lip: float = 1.0  # head overhang each side
-    pin_head: float = 1.6  # head height, recessed flush into the back hub
-    pin_barb: float = 0.5  # barb overhang each side
-    pin_tip: float = 2.4  # barb to tip
-    pin_slot_w: float = 1.6  # split between the barb arms
-    pin_slot_len: float = 10.0  # long arms bend gently (layout.pin_strain)
-    throat: float = 1.2  # seed head floor the barbs snap over
-    pin_play: float = 0.3  # barb clearance above the throat: three stacked prints add up
-    fit: float = 0.2  # total slide clearance in slots (from examples/fit-coupon)
-
-    # keyhole (in each back quarter's hub, on its bisector)
-    key_r: tuple = (32.0, 46.0)  # entry hole center, top of the slot
+    # keyhole behind the first front petal's root (flower.py places it from the wall measurements)
     key_head_d: float = 9.5
     key_shank_w: float = 4.6
     key_lip: float = 1.6
-    screw: tuple = (8.5, 3.0, 4.0)  # pan head diameter, head height, shank diameter (for the clash test)
 
     # AMS slots (PLA) and display colors
     filaments: tuple = (("PLA", "#E8862A"), ("PLA", "#F5C518"), ("PLA", "#161616"), ("PLA", "#5A3A1E"))
     slot_petals: int = 2  # yellow
-    slot_pins: int = 2
     slot_center: int = 3  # black
     slot_seeds: int = 4  # brown
     slot_beads: int = 1  # orange
@@ -93,6 +85,11 @@ class Params:
     @property
     def diameter(self) -> float:
         return 2 * max(self.back.r1, self.front.r1)
+
+    @property
+    def front_top(self) -> float:
+        """The tallest yellow: the front petals at the head's rim, where the black starts."""
+        return max(z for _, z in self.front.profile)
 
 
 P = Params()
