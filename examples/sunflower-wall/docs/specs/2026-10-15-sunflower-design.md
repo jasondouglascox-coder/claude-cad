@@ -125,3 +125,5 @@ at the bottom 1.6 mm lip and slides up a slot, held under the lip, with the fron
   out toward the edges ends sooner, the outermost pair `bead_falloff` = 25% of the length short
   (`layout.bead_end`). Each keeps its fade-in and taper to one line. Sliced: 9.3 h, 176 g; the beads now share layers
   42-57 with yellow (16 swaps, was 20), 18 in all.
+- 2026-10-22: Printed; the user liked it and uploaded it to MakerWorld themselves (the project they sliced and
+  printed). The `build makerworld` command and its test are removed: nothing left to generate for it.

@@ -30,7 +30,6 @@ uv sync
 uv run pytest -n 3 --dist loadfile -m "not slow"   # printable, watertight, layers, colors by height, the keyhole
 uv run pytest -n 3 --dist loadfile                 # + the build and Bambu Studio slicing the plate
 uv run python -m sunflower.build                   # out/plates, out/sunflower_10in.step, out/render
-uv run python -m sunflower.build makerworld        # out/makerworld: the sliced project, to upload
 ```
 
 Design and decisions: `docs/specs/2026-10-15-sunflower-design.md`. The pictures in `docs/images/` are

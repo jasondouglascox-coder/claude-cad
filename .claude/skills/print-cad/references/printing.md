@@ -124,7 +124,7 @@ fine. Open the files with File → Open Project (or "open as project" when asked
 ## Sharing on MakerWorld
 
 One model per project, one **print profile** per variant (a profile is one project 3MF holding all its plates):
-the railroad's starter bay in each style, its corners, the wire-rail test; the sunflower's one plate. A visitor
+the railroad's starter bay in each style, its corners, the wire-rail test. A visitor
 picks a profile and gets every plate it needs.
 
 1. **Build the profiles sliced:** a `build makerworld` command writes `out/makerworld/<profile>.3mf` through
