@@ -33,7 +33,8 @@ one, a wall sunflower (`examples/sunflower-wall`), shows organic shapes and mult
 │   ├── candle-adapter/            one black part, glued into a chandelier cup
 │   ├── refill-spool/              an 87 g screw-together spool for Bambu refills, threads and strap tracks
 │   ├── near-ceiling-track/        everything at scale: an HO railroad shelf around a room, ~220 tests
-│   └── sunflower-wall/            a 10" wall sunflower printed in one go, four AMS colors
+│   ├── sunflower-wall/            a 10" wall sunflower printed in one go, four AMS colors
+│   └── rose-wall/                 an 8" open rose printed in one go, curled petals on PETG-interface supports
 ├── docs/specs/                    decisions about the tool itself
 ├── cadkit.toml.example            every setting for your printer/slicer/folder; copy to cadkit.toml (ignored)
 ├── CLAUDE.md                      working notes for Claude Code sessions in this repo

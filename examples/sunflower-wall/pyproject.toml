@@ -1,7 +1,7 @@
 [project]
 name = "sunflower"
 version = "0.1.0"
-description = "Sunflower wall decor: 400 mm, arched petals in 8 quarter prints, a one-piece seed head, snap pins"
+description = "Sunflower wall decor: a ~10\" sunflower printed in one go, four colors by height"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "build123d==0.13.0",
