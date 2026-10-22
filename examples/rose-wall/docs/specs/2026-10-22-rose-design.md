@@ -33,3 +33,9 @@ bed, hung on a nail through a hidden keyhole.
   flower's centre should be.
 
 ## Amendments
+- 2026-10-22: No lip at the bed (the user, from Bambu: "a rose cut off at that point would not have a lip"). The
+  floor was a disc out past the shorter outer petals' feet; now it is a pad under each outer petal, a wedge from
+  the centre to the outside of its foot as wide as it wraps (`petals.pad`), so its edge is always inside a petal
+  and it still ties every foot into one piece. Tested along 24 directions (`test_no_floor_lip_past_the_petals`).
+  A black floor (1.2 mm) was rendered out of curiosity: the petals cover the floor, so it only shows as a glimpse
+  deep in the gaps and a thin black line at the base. Not used.

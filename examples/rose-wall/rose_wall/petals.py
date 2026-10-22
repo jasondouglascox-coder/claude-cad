@@ -55,12 +55,32 @@ def outer_foot(p: Params, i: int) -> float:
     return p.centre_r + (p.foot_r - p.centre_r) * outer_f(p, i) ** 0.9
 
 
+def outer_wrap(p: Params, i: int) -> float:
+    """Half the angle outer petal i wraps (deg)."""
+    return lerp(p.wrap, outer_f(p, i))
+
+
 @lru_cache
 def outer(p: Params, i: int) -> Part:
     """Outer petal i (0 innermost), placed."""
     f = outer_f(p, i)
     line = side(lerp(p.length, f), p.lean[0] + (p.lean[1] - p.lean[0]) * f ** 0.7, p.bend)
-    return Rot(0, 0, i * GOLD) * wall(p, outer_foot(p, i), line, lerp(p.wrap, f), p.point)
+    return Rot(0, 0, i * GOLD) * wall(p, outer_foot(p, i), line, outer_wrap(p, i), p.point)
+
+
+def foot_reach(p: Params, angle: float) -> float:
+    """How far out the petals' feet reach in this direction (deg): the outside of the outermost foot there."""
+    covers = [i for i in range(p.petals) if abs((angle - i * GOLD + 180) % 360 - 180) <= outer_wrap(p, i)]
+    return max(outer_foot(p, i) for i in covers) + p.wall
+
+
+def pad(p: Params, i: int) -> Part:
+    """The floor under outer petal i: a wedge from the centre out to the outside of its foot, as wide as it wraps.
+    Together the pads tie every petal into one piece, and their edge is always a petal's foot: no lip."""
+    prof = Face(Wire.make_polygon([(0, 0, 0), (outer_foot(p, i) + p.wall, 0, 0),
+                                   (outer_foot(p, i) + p.wall, 0, p.floor), (0, 0, p.floor)], close=True))
+    half = outer_wrap(p, i)
+    return Rot(0, 0, i * GOLD - half) * revolve(prof, Axis.Z, 2 * half)
 
 
 def centre_foot(p: Params, k: int) -> float:

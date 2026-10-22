@@ -66,6 +66,18 @@ def test_one_solid_flat_on_the_bed_about_8_inches(rose):
     assert off_layer_z(rose, P.printer) == []
 
 
+def test_no_floor_lip_past_the_petals(rose):
+    """Cut off at the bed, a rose has no lip: along every direction, the outermost material at the floor's height
+    is a petal's foot, never floor sticking out past it."""
+    from build123d import Rot
+    cx, cy = flower.centre_xy(P)
+    for k in range(24):
+        a = 360 * k / 24 + 3.0
+        ray = Pos(cx, cy, 0) * Rot(0, 0, a) * probe(0, -0.05, P.floor / 2, P.diameter, 0.1, 0.1)
+        reach = max((Rot(0, 0, -a) * Pos(-cx, -cy, 0) * s).bounding_box().max.X for s in (rose & ray).solids())
+        assert reach == pytest.approx(petals.foot_reach(P, a), abs=0.3), a
+
+
 def test_keyhole_hangs_it_by_its_centre(rose):
     """The nail's shank rests against the top of the slot, at the flower's centre; the head sits under a lip with
     solid material over its roof."""

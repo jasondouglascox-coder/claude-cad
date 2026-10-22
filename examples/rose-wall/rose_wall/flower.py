@@ -1,7 +1,7 @@
 """The rose, printed in one go: back flat on the bed (the wall side), petals up. Red PLA; the outer petals' curl needs
 tree supports with a PETG interface (slicer settings, `write`).
 
-Parts: a thin floor tying every petal's foot together, a solid cone under the centre holding the keyhole, the 24
+Parts: a thin floor under each petal tying their feet together (never showing past them), a solid cone under the centre holding the keyhole, the 24
 outer petals and the 8 centre petals. The keyhole's slot runs up (+Y in the print frame) to the flower's centre, so
 the nail goes where you want the centre.
 """
@@ -46,9 +46,9 @@ def key_top(p: Params) -> float:
 def parts(p: Params) -> list[Part]:
     """Every body, in the flower's frame (centre on the axis, back at z = 0): base first, then the petals."""
     cut = keyhole(p)
-    floor = Cylinder(p.foot_r + p.wall, p.floor, align=MN)
+    floor = [petals.pad(p, i) for i in range(p.petals)]  # under each petal only: no lip past the feet
     base = Cone(p.centre_r + p.base_t, p.centre_r, p.base_t, align=MN)  # flares at 45 degrees: nothing over air
-    base = Part((Part((floor + base).solids()) - cut).solids())
+    base = Part((Part((base + floor).solids()) - cut).solids())
     centre = [Part((petals.centre(p, k) - cut).solids()) for k in range(p.centre_petals)]
     outer = [petals.outer(p, i) for i in range(p.petals)]
     return [base] + centre + outer
