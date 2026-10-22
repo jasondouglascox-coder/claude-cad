@@ -34,7 +34,7 @@ class Params:
     centre_turn: float = 40.0  # the centre petals' spiral starts this far round from the outer petals'
 
     # what holds it together and hangs it
-    floor: float = 1.2  # a thin disc under every petal's foot, tying them into one piece (hidden under them)
+    floor: float = 1.2  # thin pads under each petal, tying their feet into one piece (never past a foot)
     base_t: float = 11.0  # a solid cone under the centre, for the keyhole
     key_len: float = 14.0  # entry hole to the slot's top
     key_head_d: float = 9.5

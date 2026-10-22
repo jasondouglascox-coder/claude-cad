@@ -101,6 +101,15 @@ def test_plate_opens_red_with_petg_supports(tmp_path):
     cfg = json.loads(zipfile.ZipFile(path).read("Metadata/project_settings.config"))
     assert cfg["enable_support"] == "1" and cfg["support_interface_filament"] == str(P.slot_support)
     assert cfg["filament_type"][P.slot_support - 1] == "PETG"
+    # review: tree trunks stand on the floor between petals with no PETG under them, so leave a layer's gap there;
+    # and keep the support under the smallest curl tips (the slicer drops "small" overhangs, leaving one in air)
+    assert cfg["support_bottom_z_distance"] == str(P.printer.layer)
+    assert cfg["support_remove_small_overhang"] == "0"
+    # the prime tower clears the rose
+    x, y, w = float(cfg["wipe_tower_x"][0]), float(cfg["wipe_tower_y"][0]), float(cfg["prime_tower_width"])
+    cx, cy = flower.centre_xy(P)
+    near = math.hypot(max(x - cx, 0, cx - (x + w)), max(y - cy, 0, cy - (y + w)))
+    assert near >= P.diameter / 2 + 3.0
 
 
 @pytest.mark.slow

@@ -78,16 +78,25 @@ SUPPORT = {  # Bambu project settings: tree supports under the curled petals, PE
     "support_type": "tree(auto)",
     "support_filament": "0",  # the support's body in whatever's loaded (the rose's red)
     "support_top_z_distance": "0",  # PETG doesn't bond to PLA: it can touch, and peels clean
-    "support_bottom_z_distance": "0",
+    "support_remove_small_overhang": "0",  # else the slicer drops the support under the smallest curl tips
     "support_interface_spacing": "0",
     "support_interface_top_layers": "3",
 }
 
 
+def tower(p: Params) -> tuple[float, float, float]:
+    """Prime tower (x, y, width) in the bed's front-left corner, well clear of the round rose (the template's spot
+    clears it by only a few mm)."""
+    return (4.0, 4.0, 35.0)
+
+
 def write(p: Params, out: Path) -> None:
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    support = dict(SUPPORT, support_interface_filament=str(p.slot_support))
-    settings = bambu3mf.write_settings(out / "bambu_project_settings.config", list(p.filaments), overrides=support)
+    # tree trunks standing on the floor between petals get no PETG under them: a layer's gap lets them break free
+    support = dict(SUPPORT, support_interface_filament=str(p.slot_support),
+                   support_bottom_z_distance=str(p.printer.layer))
+    settings = bambu3mf.write_settings(out / "bambu_project_settings.config", list(p.filaments), tower=tower(p),
+                                       overrides=support)
     write_plates([Plate("rose", 1, [("rose", make(p))])], out / "plates", out / "plates.csv",
                  lambda name: p.slot_rose, settings=settings)

@@ -13,7 +13,7 @@ funnel of 8 small, tightly wrapped petals whose rims step down into the middle, 
 `uv run python -m rose_wall.build` writes `out/plates/rose.3mf`, a Bambu project that opens with everything set:
 red PLA in AMS slot 1, PETG in slot 2. The outer petals' curl needs supports: tree supports, with PETG only where
 they touch the rose (PETG doesn't stick to PLA, so they peel off clean). The centre needs none.
-Sliced: 12.7 h, 304 g (289 g red, including the supports' bodies; 16 g PETG).
+Sliced: 12.75 h, 303 g (285 g red, including the supports' bodies; 18 g PETG, about 74 swaps).
 
 Hang it on a nail through the keyhole in the back: the nail goes where you want the rose's centre.
 

@@ -16,7 +16,7 @@ bed, hung on a nail through a hidden keyhole.
   curves out; the lean grows along the petal to `outer_lean` = 135 degrees at the tip for the outermost petals
   (they roll past level and back down, like an open rose), 45 degrees for the innermost. Petals sit on a golden-
   angle spiral, feet spreading out from the centre; outer petals are longer and wrap less.
-- **Centre** (7 petals, "F"): a funnel of small, tightly wrapped petals (each wraps ~300 degrees) with ~1 mm gaps,
+- **Centre** (8 petals, "F"): a funnel of small, tightly wrapped petals (each wraps ~220-300 degrees), 0.9 mm gaps,
   nearly upright with a slight outward roll at the rim; their rims step down 8 mm toward the middle, so you look
   down into a vortex of petal edges, darkest in the middle (the real photo). An earlier domed spiral bud read
   wrong: a rose centre goes down, not up.
@@ -39,3 +39,11 @@ bed, hung on a nail through a hidden keyhole.
   and it still ties every foot into one piece. Tested along 24 directions (`test_no_floor_lip_past_the_petals`).
   A black floor (1.2 mm) was rendered out of curiosity: the petals cover the floor, so it only shows as a glimpse
   deep in the gaps and a thin black line at the base. Not used.
+- 2026-10-22: Independent pre-print review (sliced and probed; nothing that would ruin the print). Fixed: tree
+  trunks stood on the floor pads between petals red-on-red (tree supports get no PETG bottom interface here), so
+  the supports now leave a layer's gap underneath (`support_bottom_z_distance`); and the slicer dropped "small"
+  overhang support under the outermost curl tips, leaving one in air (`support_remove_small_overhang` = 0). A test
+  holds the prime tower (the template's spot) 3 mm clear of the rose. Accepted as they are: 23 pairs of outer
+  petals fuse near their crests (harmless; a few dark lines fill in), and the slicer skips ~0.5 mm slivers at
+  the curl edges. Confirmed: no support anywhere in the centre, the keyhole puts the nail on the axis with 1.8 mm
+  over its head, the rose hangs within ~7 degrees of its print orientation.
