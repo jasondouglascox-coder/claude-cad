@@ -97,6 +97,15 @@ def test_settings_move_the_prime_tower(tmp_path):
     assert plain["wipe_tower_x"] == base["wipe_tower_x"] and plain["prime_tower_width"] == base["prime_tower_width"]
 
 
+def test_settings_take_overrides_last(tmp_path):
+    """Any project setting by name (supports, say), after the filaments and tower are set."""
+    got = json.loads(bambu3mf.write_settings(tmp_path / "s.config", PLA4, tower=(4.0, 5.0, 30.0),
+                                             overrides={"enable_support": "1", "wipe_tower_x": ["9"]}).read_text())
+    assert got["enable_support"] == "1" and got["wipe_tower_x"] == ["9"] and got["prime_tower_width"] == "30.0"
+    with pytest.raises(KeyError, match="no_such_setting"):
+        bambu3mf.write_settings(tmp_path / "b.config", PLA4, overrides={"no_such_setting": "1"})
+
+
 def test_filament_settings_need_a_type_the_template_has(tmp_path):
     with pytest.raises(ValueError, match="ABS"):
         bambu3mf.write_settings(tmp_path / "s.config", [("ABS", "#000000")] * 4)

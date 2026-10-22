@@ -71,13 +71,16 @@ _NOT_PER_FILAMENT = {"printable_area", "head_wrap_detect_zone", "filament_self_i
 
 
 def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SETTINGS,
-                   tower: tuple[float, float, float] | None = None) -> Path:
+                   tower: tuple[float, float, float] | None = None, overrides: dict | None = None) -> Path:
     """Project settings for your own AMS set: filaments[i] = (type, "#RRGGBB") for slot i + 1. Each slot copies every
     per-filament setting (temperatures, speeds, preset id) from the first template slot of that type, then takes
     its color. The template's slot count stays (Bambu's flush matrix is sized for it).
 
     tower = (x, y, width): the prime tower's front-left corner on the bed and its width, for prints that leave no
-    room at the template's spot (Bambu refuses to slice when the tower overlaps the print)."""
+    room at the template's spot (Bambu refuses to slice when the tower overlaps the print).
+
+    overrides = {setting: value}: any project setting by its name in the template (supports, say), set last. A name
+    the template doesn't have raises KeyError (a typo would otherwise be ignored by the slicer)."""
     cfg = json.loads(Path(base).read_text())
     types = cfg["filament_type"]
     n = len(types)
@@ -96,6 +99,10 @@ def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SE
     if tower is not None:
         x, y, w = tower
         cfg["wipe_tower_x"], cfg["wipe_tower_y"], cfg["prime_tower_width"] = [str(x)], [str(y)], str(w)
+    for key, val in (overrides or {}).items():
+        if key not in cfg:
+            raise KeyError(f"{key}: not a setting in {Path(base).name}")
+        cfg[key] = val
     path = Path(path)
     path.write_text(json.dumps(cfg, indent=4))
     return path
