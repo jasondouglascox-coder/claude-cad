@@ -106,6 +106,22 @@ def test_settings_take_overrides_last(tmp_path):
         bambu3mf.write_settings(tmp_path / "b.config", PLA4, overrides={"no_such_setting": "1"})
 
 
+def test_settings_list_what_differs_from_the_preset(tmp_path):
+    """Bambu Studio's window loads the project's presets and applies only the settings named in
+    different_settings_to_system (process; one entry per filament; printer): a support override left off it opened
+    with supports off, though the command-line slicer, reading the whole file, sliced it with supports."""
+    got = json.loads(bambu3mf.write_settings(tmp_path / "s.config", PLA4, tower=(4.0, 5.0, 30.0),
+                                             overrides={"enable_support": "1", "support_type": "tree(auto)"}).read_text())
+    base = json.loads(bambu3mf.SETTINGS.read_text())
+    diff = got["different_settings_to_system"]
+    assert len(diff) == len(PLA4) + 2 and diff[1:] == [""] * (len(PLA4) + 1)
+    changed = sorted(k for k in ("enable_support", "support_type", "wipe_tower_x", "wipe_tower_y", "prime_tower_width")
+                     if got[k] != base[k])
+    assert "enable_support" in changed and diff[0] == ";".join(changed)
+    plain = json.loads(bambu3mf.write_settings(tmp_path / "p.config", PLA4).read_text())
+    assert plain["different_settings_to_system"] == [""] * (len(PLA4) + 2)
+
+
 def test_filament_settings_need_a_type_the_template_has(tmp_path):
     with pytest.raises(ValueError, match="ABS"):
         bambu3mf.write_settings(tmp_path / "s.config", [("ABS", "#000000")] * 4)

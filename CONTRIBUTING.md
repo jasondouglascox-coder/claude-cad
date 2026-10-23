@@ -133,7 +133,7 @@ What to implement depends on what the slicer can do:
 - **Neither:** you don't need a class. `CADKIT_SLICER=none` writes standard 3MF plates any slicer can open (set
   the colors by hand) and skips the slicer checks.
 
-Every filament number is 1-based, as slicers show them. The `settings` argument to `write_project` is whatever
+Every filament number is 1-based, as slicers show them. A part whose filament is `bambu3mf.BLOCKER` is a support blocker (a volume the slicer must put no support in, from `Plate(blockers=...)`): write it as your slicer's blocker if it has one, and leave it out of `read_filaments`. The `settings` argument to `write_project` is whatever
 the project passes (the examples pass a Bambu project-settings file); ignore it if it means nothing to your slicer.
 
 ### Adding a printer

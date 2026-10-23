@@ -57,6 +57,11 @@ def slice_report(src: Path, dst: Path | None = None) -> dict:
     return parse_slice_info(zipfile.ZipFile(dst).read("Metadata/slice_info.config"))
 
 
+def plate_gcode(sliced: Path, plate: int = 1) -> str:
+    """The G-code of one plate of a sliced project (what slice_report / slice_all saved): for cadkit.gcode."""
+    return zipfile.ZipFile(sliced).read(f"Metadata/plate_{plate}.gcode").decode()
+
+
 def slice_all(src: Path, dst: Path | None = None) -> list[dict]:
     """Slice every plate and save the project with each plate's G-code and thumbnails (what MakerWorld shows).
     Returns one slice_report-style dict per plate, in plate order."""

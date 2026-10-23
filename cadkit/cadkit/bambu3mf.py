@@ -32,6 +32,7 @@ NS = 'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" ' \
      'xmlns:BambuStudio="http://schemas.bambulab.com/package/2021" ' \
      'xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" requiredextensions="p"'
 IDENTITY = "1 0 0 0 1 0 0 0 1 0 0 0"
+BLOCKER = "support_blocker"  # a part's filament for a support blocker: not printed, no support generated inside it
 
 
 def mesh(shape: Shape, tol: float = 0.01, angular: float = 0.1) -> tuple[np.ndarray, np.ndarray]:
@@ -107,13 +108,20 @@ def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SE
         if key not in cfg:
             raise KeyError(f"{key}: not a setting in {Path(base).name}")
         cfg[key] = val
+    # Bambu Studio's window loads the presets and applies only what this names (process; each filament; printer),
+    # so a setting left off it opens as the preset has it; the command-line slicer reads the whole file
+    template = json.loads(Path(base).read_text())
+    process = {"wipe_tower_x", "wipe_tower_y", "prime_tower_width"} | set(overrides or {})
+    cfg["different_settings_to_system"] = [";".join(sorted(k for k in process if cfg[k] != template[k]))] + [""] * (n + 1)
     path = Path(path)
     path.write_text(json.dumps(cfg, indent=4))
     return path
 
 
 def write(path: Path, objects: list[tuple[str, list[tuple[str, Shape, int]]]], settings: Path = SETTINGS) -> None:
-    """objects: (name, [(part name, shape in bed coordinates, filament number), ...]); one plate per file."""
+    """objects: (name, [(part name, shape in bed coordinates, filament number), ...]); one plate per file. A part
+    whose filament is BLOCKER is a support blocker (after the printed parts: the first part's filament is the
+    object's)."""
     write_plates_project(path, [("", objects)], settings)
 
 
@@ -176,6 +184,10 @@ def write_plates_project(path: Path, plates: list[tuple[str, list]], settings: P
             cfg += [f'  <object id="{oid}">', f'    <metadata key="name" value={quoteattr(name)}/>',
                     f'    <metadata key="extruder" value="{parts[0][2]}"/>']
             for i, (part, _, fil) in zip(ids, parts):
+                if fil == BLOCKER:
+                    cfg += [f'    <part id="{i}" subtype="support_blocker">',
+                            f'      <metadata key="name" value={quoteattr(part)}/>', "    </part>"]
+                    continue
                 cfg += [f'    <part id="{i}" subtype="normal_part">', f'      <metadata key="name" value={quoteattr(part)}/>',
                         f'      <metadata key="extruder" value="{fil}"/>', "    </part>"]
             cfg.append("  </object>")
@@ -219,8 +231,19 @@ def read_filaments(path: Path) -> list[tuple[str, int, dict]]:
     out = []
     for o in ET.fromstring(z.read("Metadata/model_settings.config")).iter("object"):
         meta = _meta(o)
-        parts = {_meta(pt)["name"]: int(_meta(pt).get("extruder", meta["extruder"])) for pt in o.findall("part")}
+        parts = {_meta(pt)["name"]: int(_meta(pt).get("extruder", meta["extruder"])) for pt in o.findall("part")
+                 if pt.get("subtype", "normal_part") == "normal_part"}
         out.append((meta["name"], int(meta["extruder"]), parts))
+    return out
+
+
+def read_blockers(path: Path) -> dict[str, list[str]]:
+    """{object name: [its support blockers' part names]} for the objects that have any."""
+    out = {}
+    for o in ET.fromstring(zipfile.ZipFile(path).read("Metadata/model_settings.config")).iter("object"):
+        names = [_meta(pt)["name"] for pt in o.findall("part") if pt.get("subtype") == "support_blocker"]
+        if names:
+            out[_meta(o)["name"]] = names
     return out
 
 

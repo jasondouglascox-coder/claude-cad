@@ -5,7 +5,7 @@ split and pruned. Multi-color parts never share a plate with single-color parts,
 swaps (AMS swaps are slow); on a one-color printer (settings colors = 1) everything packs together. Nest awkward pairs yourself first (e.g. two
 long panels head to tail) and pass the pair as one Compound: compounds stay together.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from build123d import Compound, Pos, Rot, Shape
 
@@ -20,6 +20,7 @@ class Plate:
     qty: int  # how many times to print it
     items: list  # (part name, shape placed on the bed)
     color_changes: int | None = None  # swaps this plate's design accepts; None = the budget in settings
+    blockers: list = field(default_factory=list)  # (part name, volume placed on the bed): no support inside it
 
 
 @dataclass

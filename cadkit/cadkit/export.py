@@ -7,7 +7,7 @@ from typing import Callable
 
 from build123d import Compound, ExportSVG, LineType, Shape
 
-from cadkit import paint
+from cadkit import bambu3mf, paint
 from cadkit.mesh import Mesh
 from cadkit.plates import Plate, bodies, is_multi_color
 from cadkit.plates import color_changes as count_changes
@@ -63,6 +63,9 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
     (default: settings) still gets written, with a warning saying what to do instead; pass the number a design
     accepts.
 
+    Plate.blockers: support blockers, each on the named object (a volume the slicer generates no support inside,
+    e.g. a keyhole support would otherwise fill).
+
     combined: also write every plate into one project, folder/<combined> + the slicer's suffix (a tab per plate,
     "(print n)" in the name of plates printed more than once): the file to share, e.g. on MakerWorld."""
     from cadkit import slicers
@@ -103,6 +106,11 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
         allowed = budget if pl.color_changes is None else pl.color_changes
         if swaps > allowed:
             warnings.warn(f"{pl.name}: {swaps} color changes, over the budget of {allowed}. " + ADVICE, stacklevel=2)
+        for name, volume in pl.blockers:  # on the object, after its printed parts: the slicer's blockers aren't printed
+            obj = next((parts for n, parts in objects if n == name), None)
+            if obj is None:
+                raise ValueError(f"plate {pl.name}: a support blocker for {name!r}, which isn't on the plate")
+            obj.append((f"{name} blocker", volume, bambu3mf.BLOCKER))
         tower = slicer.tower_keepout(settings, pad=0.0) if swaps else None  # the tower itself, not the packer's pad
         if tower is not None:
             x0, y0, x1, y1 = tower
