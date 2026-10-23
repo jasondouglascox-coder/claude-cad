@@ -24,8 +24,8 @@ they touch the rose (PETG doesn't stick to PLA, so they peel off clean). The cen
 Sliced: 12.75 h, 303 g (285 g red, including the supports' bodies; 18 g PETG, about 74 swaps).
 
 `out/plates/small_roses.3mf` is four 4" roses on one plate, the prime tower in the middle, the same filaments and
-supports. They share the PETG layers, so four cost the swaps of one: 10.25 h, 244 g (230 g red, 13 g PETG, about
-26 swaps).
+supports, and a support blocker over each keyhole. They share the PETG layers, so four cost the swaps of one:
+10 h, 241 g (229 g red, 12.5 g PETG, about 22 swaps).
 
 Hang it on a nail through the keyhole in the back: the nail goes where you want the rose's centre.
 
