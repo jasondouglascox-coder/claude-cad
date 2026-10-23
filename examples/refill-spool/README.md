@@ -2,9 +2,9 @@
 
 <img src="docs/images/iso.png" width="49%" alt="Barrel half with the cap lifted off, one strap loop in orange"> <img src="docs/images/top.png" width="49%" alt="Barrel half from above">
 
-A reusable spool for Bambu Lab 1 kg refill coils, made to use as little filament as possible: about 106 g of PLA
-for both halves, against ~220 g for a solid printed spool. Spoked flanges with a thin rim and a middle ring, a Ø82 barrel with strap
-tracks, and a cap that screws into the barrel top. It fits the AMS lite (Ø55 bore, 67 mm wide). A key at the barrel
+A reusable spool for Bambu Lab 1 kg refill coils, made to use as little filament as possible: about 89 g of PLA
+for both halves, against ~220 g for a solid printed spool. Spoked flanges with a thin rim and a middle ring, a Ø80 barrel with ribs out
+to the core and strap tracks, and a cap that screws into the barrel top. It fits the AMS lite (Ø55 bore, 67 mm wide). A key at the barrel
 half's flange pokes into the notch in the refill's cardboard core, so the coil turns with the spool. Zip ties run
 down the tracks under the core and round the coil, so the coil comes off in one piece.
 

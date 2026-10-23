@@ -19,8 +19,8 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 105.6 g; the tests hold
-  it under 115 g.
+- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 89.3 g; the tests hold
+  it under 95 g.
 
 All sizes live in `refill_spool/params.py`.
 
@@ -89,3 +89,9 @@ All sizes live in `refill_spool/params.py`.
   inside and the strap tracks' floor (and their 1.4 mm tunnel) stay where they were. The 3 mm key stays (the user:
   it works); on the bigger barrel its tip is at Ø88, past the forum's unmeasured Ø87 for the core's outside, so that
   check is gone. 105.6 g sliced (barrel half 76.9 g, cap 28.8 g); budget 115 g.
+- **2026-10-23: back to a Ø80 barrel, with ribs to Ø82.** The user measured the core again: 82 inside, 87 outside
+  (the forum figure was right). The solid Ø82 barrel cost 18 g, and its 3 mm key would have reached Ø88, past the
+  cardboard into the filament. Now the barrel is Ø80 × 1.2 mm again, with 12 ribs 2 mm wide out to Ø82 (snug in the
+  core), round on the outside with a 1 mm lead-in chamfer at the top, midway between the key and the strap tracks.
+  The 3 mm key on the Ø80 barrel ends at Ø86, inside the cardboard. The thread printed and screws together
+  perfectly (user). 89.3 g sliced (barrel half 61.0 g, cap 28.3 g); budget 95 g.

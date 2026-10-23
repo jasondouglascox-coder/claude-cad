@@ -2,7 +2,7 @@
 the spool axis (Z) for the assembly."""
 import math
 
-from build123d import Align, Box, Cylinder, Part, Pos, Rot
+from build123d import Align, Box, Cone, Cylinder, Part, Pos, Rot
 
 from cadkit.shapes import thread, thread_gap
 from refill_spool.params import P, Params
@@ -72,11 +72,22 @@ def engaged(p: Params) -> float:
     return min(n1, p.width - b0) - max(n0, p.width - b1)
 
 
+def ribs(p: Params) -> Part:
+    """Ribs along the barrel out to rib_d, round on the outside, chamfered at the top so the core slides on."""
+    top, r, c = p.barrel_top, p.rib_d / 2, p.rib_chamfer
+    bars = Part()
+    for a in p.rib_angles():
+        bars += radial_box(a, p.barrel_d / 2 - 0.3, r + 0.5, p.rib_w, top)
+    envelope = Cylinder(r, top - c, align=UP) + Pos(0, 0, top - c) * Cone(r, r - c, c, align=UP)
+    return bars & envelope
+
+
 def barrel_half_centered(p: Params = P) -> Part:
     top = p.barrel_top
     part = flange(p) + ring(p.bore_d / 2, p.barrel_d / 2, p.flange_t)  # solid floor under barrel
     part += ring(p.bore_d / 2, p.bore_d / 2 + p.bore_wall, top)  # the cap's flange lands on its end
     part += ring(p.nut_root, p.barrel_d / 2, top)
+    part += ribs(p)
     z0, z1 = nut_span(p)
     part += thread(p.nut_root, p.thread_depth, p.pitch, z1 - z0, p.thread_crest, inward=True, z0=z0,
                    flank=p.thread_flank)

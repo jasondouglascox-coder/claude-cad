@@ -38,8 +38,9 @@ def test_coil_sits_between_the_flanges_with_room_each_side():
 
 
 def test_core_key_sits_in_the_cores_notch():
-    """The key reaches into the core's wall: the coil's notch takes it with core_notch_clear round it."""
+    """The key reaches into the core's wall, not past it: the coil's notch takes it with core_notch_clear round it."""
     assert P.barrel_d / 2 + P.key_h > P.core_d / 2 + 1.0
+    assert P.barrel_d / 2 + P.key_h < P.core_od / 2
     (_, barrel), _ = placed_parts(P)
     key = barrel & radial_box(P.key_angle, P.barrel_d / 2 + 0.01, P.barrel_d / 2 + P.key_h + 1, P.key_w + 2,
                               P.key_len + 1, P.flange_t + 0.01)

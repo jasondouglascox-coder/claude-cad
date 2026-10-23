@@ -11,8 +11,13 @@ from cadkit import Printer
 class Params:
     # the refill and the AMS (docs/measurements.md)
     bore_d: float = 55.0  # AMS lite hub
-    barrel_d: float = 82.0  # snug in the 82 core (80 printed loose, user 2026-10-23)
+    barrel_d: float = 80.0  # ribs bring it out to the core (80 alone printed loose, user 2026-10-23)
     core_d: float = 82.0
+    core_od: float = 87.0  # the cardboard's outside (user): the key has to stop inside its wall
+    rib_d: float = 82.0  # ribs along the barrel, snug in the core
+    ribs: int = 12  # midway between the key and the strap tracks
+    rib_w: float = 2.0
+    rib_chamfer: float = 1.0  # lead-in at the top, where the core slides on
     coil_d: float = 171.5  # filament OD of a full 1 kg coil (6.75"): straps pass over it inside the rim
     coil_w: float = 60.0  # the cardboard core, measured at its middle
     coil_side_clear: float = 0.5  # each side, between the coil and a flange
@@ -27,10 +32,10 @@ class Params:
     spokes: int = 6
     spoke_w: float = 6.0
     # barrel half
-    barrel_wall: float = 2.2  # grown outward with barrel_d: the thread and the strap tracks' floor stay put
+    barrel_wall: float = 1.2
     bore_wall: float = 1.2  # tube round the bore, the barrel half's full height (like the official spool)
     key_len: float = 3.0  # core key: on the barrel's outside at the flange, into a notch in the refill's core
-    key_h: float = 3.0  # radial, out from the barrel (the user's print: it works)
+    key_h: float = 3.0  # radial, out from the barrel
     key_w: float = 2.0
     key_angle: float = 0.0  # on a spoke, so it stands on the flange
     core_notch_clear: float = 0.5  # the core's notch round the key, as modelled (unmeasured)
@@ -51,7 +56,7 @@ class Params:
     strap_t: float = 1.2  # thickest strap the track must pass (zip ties up to ~6 x 1.2 mm)
     track_wall: float = 0.8  # barrel wall left behind the track
     filament: int = 3  # AMS slot: the user's PLA
-    max_grams: float = 115.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
+    max_grams: float = 95.0  # both halves, as Bambu Studio slices them (the user's solid printed ones are ~220)
     printer: Printer = Printer()
 
     def __post_init__(self):
@@ -94,6 +99,9 @@ class Params:
 
     def spoke_angles(self) -> list[float]:
         return [360 * k / self.spokes for k in range(self.spokes)]
+
+    def rib_angles(self) -> list[float]:
+        return [360 * (k + 0.5) / self.ribs for k in range(self.ribs)]
 
     def strap_angles(self) -> list[float]:
         """Midway between spokes, evenly spread."""

@@ -75,6 +75,23 @@ def test_middle_ring_is_whole_on_both_flanges(barrel, capp, angle):
         assert radial(part, C, angle, LOW, r0=R_OUT + 0.5, r1=P.rim_in - 0.5) == [MID_RING]
 
 
+@pytest.mark.parametrize("angle", P.rib_angles())
+def test_ribs_reach_the_core_with_a_lead_in(barrel, angle):
+    """Ribs bring the Ø80 barrel out to the core's Ø82 (snug), round on the outside, chamfered at the top."""
+    assert radial(barrel, C, angle, P.barrel_top / 2)[-1][1] == pytest.approx(P.rib_d / 2, abs=0.02)
+    assert radial(barrel, C, angle, P.barrel_top - 0.1)[-1][1] < P.rib_d / 2 - P.rib_chamfer + 0.2  # 0.15 down
+    between = angle + 180 / P.ribs
+    if min(abs((between - a + 180) % 360 - 180) for a in P.strap_angles() + [P.key_angle]) > 5:
+        assert radial(barrel, C, between, P.barrel_top / 2)[-1][1] == pytest.approx(R_OUT, abs=0.02)
+
+
+def test_ribs_clear_the_key_and_strap_tracks():
+    for a in P.rib_angles():
+        for other, half in [(s, P.strap_w / 2) for s in P.strap_angles()] + [(P.key_angle, P.key_w / 2)]:
+            gap = math.radians(abs((a - other + 180) % 360 - 180)) * P.rib_d / 2 - P.rib_w / 2 - half
+            assert gap >= 2.0, (a, other, gap)
+
+
 def test_barrel_is_one_tube_with_the_thread_unbroken(barrel):
     """No through-slots: the barrel above the floor is one piece, and the nut ridge runs all round."""
     above = barrel & (Pos(*C, LOW + P.flange_t) * ring(P.nut_root - P.thread_depth - 0.5, R_OUT + 1, P.barrel_top))
