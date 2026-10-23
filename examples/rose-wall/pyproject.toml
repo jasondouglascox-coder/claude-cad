@@ -18,6 +18,9 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-markers = ["slow: drives Bambu Studio's CLI (minutes); skipped when it isn't installed"]
+markers = [
+    "slow: drives Bambu Studio's CLI (minutes); skipped when it isn't installed",
+    "whole: builds a whole rose (15-20 GB peak, even the small one); CI skips these, run them locally",
+]
 pythonpath = ["."]
 testpaths = ["tests"]
