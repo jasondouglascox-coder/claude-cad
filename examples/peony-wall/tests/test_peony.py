@@ -148,3 +148,18 @@ def test_slicer_prints_both_plates_in_one_color_each(tmp_path):
 def test_every_petal_prints_without_supports(i):
     from peony_wall import petals
     assert sum(a for _, a in overhangs(petals.local(P, layout.specs(P)[i]), 47)) < 25.0
+
+
+def test_one_project_with_both_plates_and_an_assembled_one_to_look_at(tmp_path):
+    """peony-wall: both prints in one Bambu project, a plate each (the file to share); peony_assembled: the flower
+    with the insert in place, pink and yellow, to show what it makes (not to print: it would swap every layer)."""
+    from cadkit import bambu3mf, slicers
+    flower.write(P, tmp_path)
+    s = slicers.active()
+    both = tmp_path / "plates" / f"peony-wall{s.project_suffix}"
+    assert [name for name, _ in bambu3mf.read_plates(both)] == ["peony", "stamens"]
+    assert sorted((n, f) for n, f, _ in s.read_filaments(both)) == [("peony", P.slot_flower), ("stamens", P.slot_insert)]
+    shown = tmp_path / "plates" / f"peony_assembled{s.project_suffix}"
+    [(_, _, parts)] = s.read_filaments(shown)  # one object, a part per colour
+    assert parts == {"peony": P.slot_flower, "stamens": P.slot_insert}
+    assert len(bambu3mf.read_plates(shown)) == 1

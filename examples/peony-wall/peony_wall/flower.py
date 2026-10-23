@@ -12,7 +12,7 @@ from pathlib import Path
 
 from build123d import Align, Cone, Cylinder, Part, Pos, Rot, SlotCenterToCenter, Sphere, extrude, scale
 
-from cadkit import bambu3mf
+from cadkit import bambu3mf, slicers
 from cadkit.export import write_plates
 from cadkit.mesh import Mesh
 from cadkit.plates import Plate
@@ -133,6 +133,12 @@ def write(p: Params, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     settings = bambu3mf.write_settings(out / "bambu_project_settings.config", list(p.filaments))
     stamens = insert(p).translate((*centre_xy(p), 0))
+    slot = lambda name: p.slot_flower if name == "peony" else p.slot_insert
     write_plates([Plate("peony", 1, [("peony", make(p))]), Plate("stamens", 1, [("stamens", stamens)])],
-                 out / "plates", out / "plates.csv",
-                 lambda name: p.slot_flower if name == "peony" else p.slot_insert, settings=settings)
+                 out / "plates", out / "plates.csv", slot, settings=settings, combined="peony-wall")
+    # to look at, not to print: the flower with the insert in place (printed together it'd swap every layer)
+    s = slicers.active()
+    at = (*centre_xy(p), 0)
+    s.write_project(out / "plates" / f"peony_assembled{s.project_suffix}",
+                    [("peony_assembled", [("peony", make(p), slot("peony")),
+                                          ("stamens", insert_placed(p).translate(at), slot("stamens"))])], settings)

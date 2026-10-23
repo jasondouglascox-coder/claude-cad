@@ -30,6 +30,9 @@ no STEP: each plate comes with an STL.
 - `peony.3mf`: soft pink PLA, AMS slot 1, supports off. Sliced: 10.9 h, 353 g (the fills make it fuller than the
   rose; lightning infill saves only 15 g).
 - `stamens.3mf`: yellow PLA, slot 2. Sliced: 0.8 h, 9 g.
+- `peony-wall.3mf`: both in one project, a plate each (the file to share).
+- `peony_assembled.3mf`: the flower with the insert in place, pink and yellow, to look at (not to print: together
+  they'd swap colour every layer).
 
 Push the insert into the centre hole from the back until its flared foot stops it; on the wall, the wall holds it
 in. Hang it on a nail through the keyhole in the back: the nail goes 70 mm above where you want the centre.
