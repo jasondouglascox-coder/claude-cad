@@ -3,6 +3,7 @@ full size, so its centre has fewer, taller petals that lean together and a nub i
 flat on the bed, curved petals with pointed tips, a funnel centre that needs no supports, PETG-interface supports
 under the curled outer petals only, and a keyhole that hangs it by its centre."""
 import math
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -75,6 +76,29 @@ def test_small_nub_plugs_the_middle_below_the_innermost_rim():
     assert SMALL.printer.on_layer(top) and SMALL.base_t < top < petals.centre_line(SMALL, 0)[-1][1]
     assert overhangs(flower.nub(SMALL)) == []
     assert flower.nub(P) is None  # the 8" rose's deep funnel needs none
+
+
+def test_small_inner_curls_rest_on_hidden_fills():
+    """The user: only supports on the outside. Petals 1..filled curl over other petals, so each gets a fill under its
+    curl with a 45-degree underside (from the tip down-in to its own stem, or the bed just outside its foot): no
+    support. The outer ones curl over bare bed, where a fill would show: they keep their supports."""
+    assert 0 < SMALL.filled < SMALL.petals - 1 and P.filled == 0
+    for i in range(1, SMALL.filled + 1):
+        assert overhangs(petals.outer(SMALL, i)) == [], i
+    for i in range(SMALL.filled + 1, SMALL.petals):
+        assert overhangs(petals.outer(SMALL, i)), i  # still curled past 45
+
+
+def test_small_fills_are_hidden_from_the_front():
+    """Straight on, the curls cover their fills: the filled rose looks like the unfilled one, but for thin lines
+    where a fill raises the bottom of a gap between petals (~1.2% of the rose in the spike)."""
+    bare = replace(SMALL, filled=0)
+    r_max, step = SMALL.diameter / 2 + 5, 0.25
+    box = ((-r_max, -r_max), (r_max, r_max))
+    h0, h1 = (np.nan_to_num(heights(flower.parts(q), box, step=step), nan=-1.0) for q in (bare, SMALL))
+    rose = (h0 > -1).sum()
+    assert ((h1 > h0 + 0.05) & (h0 > -1)).sum() <= 0.02 * rose  # higher where the rose was
+    assert ((h1 > -1) & (h0 == -1)).sum() <= 0.005 * rose  # past its outline
 
 
 def floor_showing(p) -> float:
@@ -211,3 +235,9 @@ def test_slicer_supports_the_curls_with_petg(p, tmp_path):
                   if f.startswith("Support") and z <= flower.key_top(p)
                   and x0 <= (ax + bx) / 2 - cx <= x1 and y0 <= (ay + by) / 2 - cy <= y1]
         assert inside == []
+        if p.filled:  # the user: supports only on the outside. Every one stands on the bed past the petals' feet
+            reach = max(petals.outer_foot(p, i) for i in range(p.petals)) + p.wall
+            near = min(min(math.hypot((ax + bx) / 2 - cx, (ay + by) / 2 - cy) for cx, cy in flower.spots(p))
+                       for ax, ay, bx, by, z, f in gcode.extrusions(bambu.plate_gcode(tmp_path / "s.3mf"))
+                       if f.startswith("Support"))  # from the nearest rose's centre
+            assert near > reach

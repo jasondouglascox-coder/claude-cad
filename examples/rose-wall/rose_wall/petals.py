@@ -30,13 +30,32 @@ def side(length: float, lean: float, bend: float, lip: float = 0.0) -> list[tupl
     return pts
 
 
-def wall(p: Params, foot: float, line: list, half: float, point: float, back: bool = False) -> Part:
-    """The petal along +X: its side `line` from a foot `foot` out, swept through +-half deg, trimmed to a lens.
-    back: stretch the lens along X past the far side of the ring, so it shapes only the tip and the wrap stays whole."""
+def profile(p: Params, foot: float, line: list, fill: bool = False) -> list[tuple[float, float]]:
+    """The petal's cross-section (x out, z up), round its edge: up the inside of its side, back down the outside.
+    fill: everything under the curl above a 45-degree line from the tip down-in to the petal's own stem (or to the
+    bed, just outside the foot, when the curl reaches out further than it is high): the curl rests on it."""
     inner = [(foot + x, z) for x, z, _ in line]
     outer = [(foot + x + p.wall * math.cos(a), z - p.wall * math.sin(a)) for x, z, a in line]
     outer[0] = (foot + p.wall, 0.0)
-    prof = Face(Wire.make_polygon([(x, 0, max(z, 0)) for x, z in inner + outer[::-1]], close=True))
+    over = [k for k, (_, _, a) in enumerate(line) if math.degrees(a) > 45]
+    if not fill or not over:
+        return inner + outer[::-1]
+    tx, tz = outer[-1]
+    c = tx - tz  # the line: x - z = c
+    for k in range(over[0]):  # where it meets the stem, on which x - z falls going up
+        (x0, z0), (x1, z1) = outer[k], outer[k + 1]
+        d0, d1 = x0 - z0 - c, x1 - z1 - c
+        if d0 >= 0 >= d1:
+            t = d0 / (d0 - d1) if d0 != d1 else 0.0
+            return inner + [outer[-1], (x0 + t * (x1 - x0), z0 + t * (z1 - z0))] + outer[k::-1]
+    return inner + [outer[-1], (c, 0.0), outer[0]]
+
+
+def wall(p: Params, foot: float, line: list, half: float, point: float, back: bool = False, fill: bool = False) -> Part:
+    """The petal along +X: its side `line` from a foot `foot` out, swept through +-half deg, trimmed to a lens.
+    back: stretch the lens along X past the far side of the ring, so it shapes only the tip and the wrap stays whole.
+    fill: with a hidden fill under its curl (`profile`)."""
+    prof = Face(Wire.make_polygon([(x, 0, max(z, 0)) for x, z in profile(p, foot, line, fill)], close=True))
     swept = Rot(0, 0, -half) * revolve(prof, Axis.Z, 2 * half)
     tip = math.hypot(line[-1][0], line[-1][1])
     reach = foot + line[-1][0] + (p.wall if back else 0.0)
@@ -68,7 +87,8 @@ def outer(p: Params, i: int) -> Part:
     """Outer petal i (0 innermost), placed."""
     f = outer_f(p, i)
     line = side(lerp(p.length, f), p.lean[0] + (p.lean[1] - p.lean[0]) * f ** 0.7, p.bend)
-    return Rot(0, 0, i * GOLD) * wall(p, outer_foot(p, i), line, outer_wrap(p, i), p.point)
+    return Rot(0, 0, i * GOLD) * wall(p, outer_foot(p, i), line, outer_wrap(p, i), p.point,
+                                      fill=1 <= i <= p.filled)
 
 
 def foot_reach(p: Params, angle: float) -> float:

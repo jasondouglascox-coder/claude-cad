@@ -13,7 +13,8 @@ funnel of 8 small, tightly wrapped petals whose rims step down into the middle, 
 <img src="docs/images/small_front.png" width="49%" alt="4 inch rose, straight on"> <img src="docs/images/small_side.png" width="49%" alt="4 inch rose, three-quarter view">
 
 Half the size across, but with the same 1.6 mm petal walls, so it's no flimsier. Its centre has 4 taller petals
-that lean together round a nub, so the middle looks filled in, with no floor showing. It hangs on a smaller nail
+that lean together round a nub, so the middle looks filled in, with no floor showing. Its supports are only on
+the outside: the inner petals' curls rest on hidden 45-degree fills, and only the outer five curl over the bed. It hangs on a smaller nail
 (head 7 mm or less).
 
 ## Printing it

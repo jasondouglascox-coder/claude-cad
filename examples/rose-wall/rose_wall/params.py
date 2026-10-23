@@ -20,6 +20,7 @@ class Params:
     bend: float = 1.4  # how the lean grows along the petal (lean ~ t ** bend): lower bends sooner
     wrap: tuple = (80.0, 42.0)  # half the angle each petal wraps round the centre (deg), innermost .. outermost
     point: float = 0.45  # how sharp each petal's tip is: 0 round
+    filled: int = 0  # outer petals 1..filled curl over other petals: a hidden 45-degree fill under each, no support
 
     # centre: a funnel of small, tightly wrapped petals whose rims step down into the middle
     centre_petals: int = 8
@@ -78,14 +79,16 @@ def small(p: Params = P) -> Params:
     """The rose at half size, four to a plate. Only the plan halves: the walls (four lines), the centre's gaps and
     the nail stay full size, so the centre has four petals, not eight. Its base drops to 6 mm (a smaller keyhole
     with a flat roof) to stay under them, and so the base doesn't read as a floor a few mm down, the centre petals
-    keep their backs, stand taller and lean out together (you can't see down between them), round a nub."""
+    keep their backs, stand taller and lean out together (you can't see down between them), round a nub. Supports
+    only on the outside: the 18 inner curls hang over other petals and rest on hidden fills; the outer five hang
+    over bare bed and keep theirs."""
     s = 0.5
     return replace(p, diameter=p.diameter * s, foot_r=p.foot_r * s, length=tuple(x * s for x in p.length),
                    centre_petals=4, centre_first=p.centre_first * s,
                    centre_top=13.5, centre_drop=3.5, centre_lean=(30.0, 33.0), centre_lip=10.0,
                    centre_wrap=(175.0, 165.0), centre_backs=True, nub=(2.0, 0.8, 1.5),
                    base_t=6.0, key_len=8.0, key_head_d=8.0, key_lip=1.2, key_head_room=2.4, key_roof_left=7.6,
-                   name="small_roses", per_plate=4, pitch=120.0)
+                   filled=18, name="small_roses", per_plate=4, pitch=120.0)
 
 
 SMALL = small()

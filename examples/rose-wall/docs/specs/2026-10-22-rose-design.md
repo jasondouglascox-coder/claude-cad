@@ -83,3 +83,17 @@ bed, hung on a nail through a hidden keyhole.
   write, so every support override (and the tower's spot) opened as the stock 0.20 mm Standard preset has it. The
   command-line slicer reads the whole file, so the slicer tests sliced with supports and missed it. cadkit now
   writes the list; a test holds the support settings on it.
+- 2026-10-23: **Small rose: supports only on the outside** (the user: "can all inside petals just end at 45 deg so
+  only supports are on the outside?"). Measured first: of the 23 curls, 1-15 hang wholly over other petals, 16-18
+  nearly so, and only the outer five (19-23) mostly over bare bed. Spiked both ways and sliced one rose each:
+  - A, petals 1-18 lean only to 45 degrees: the inner petals stand up as a cup with a few flared outer ones, a
+    different rose; and 45 is on the limit, so the slicer still supported some 30-40 mm out. 60.5 g + 4.2 g PETG,
+    2.64 h.
+  - B, chosen: petals 1-18 keep their curl and rest on a hidden fill (`params.filled` = 18, `petals.profile`):
+    everything under the curl above a 45-degree line from the tip down-in to the petal's own stem, or to the bed
+    just outside its foot. Straight on the curls cover their fills (height maps: ~1.2% of the rose reads higher,
+    thin lines where a fill raises the bottom of a gap by ~1 mm; test: <= 2%). The rose is heavier (55.8 cm3, was
+    37.6) but takes less filament: 52.7 g + 3.2 g PETG, 2.69 h, 18 swaps a rose (was 61.5 g + 4.7 g, 3.11 h, 22).
+    Every support now stands on the bed outside the petals' feet (nearest 39.6 mm from the centre, feet end at
+    37.7; a slow test holds it), so cleanup is round the rim, none in the tight gaps.
+  The 8" rose is unchanged (`filled` = 0).
