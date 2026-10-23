@@ -152,13 +152,23 @@ def test_keyhole_hangs_it_by_its_centre(rose):
 @ROSES
 def test_plate_opens_red_with_petg_supports(p, tmp_path):
     import json, zipfile
-    from cadkit import slicers
+    from cadkit import bambu3mf, slicers
     flower.write(p, tmp_path)
     s = slicers.active()
     path = tmp_path / "plates" / f"{p.name}{s.project_suffix}"
     assert [f for _, f, _ in s.read_filaments(path)] == [p.slot_rose] * p.per_plate
+    # review: a flat keyhole roof gets tree support filling the nail's pocket, trapped behind the lip; a blocker on
+    # every rose keeps it out
+    assert bambu3mf.read_blockers(path) == {name: [f"{name} blocker"] for name, _, _ in s.read_filaments(path)}
     cfg = json.loads(zipfile.ZipFile(path).read("Metadata/project_settings.config"))
     assert cfg["enable_support"] == "1" and cfg["support_interface_filament"] == str(p.slot_support)
+    # the user: "supports are not set" in Bambu Studio's window, which applies only the settings this lists
+    # (the ones that differ from the preset)
+    preset = json.loads(bambu3mf.SETTINGS.read_text())
+    listed = set(cfg["different_settings_to_system"][0].split(";"))
+    support = {k for k in cfg if k.startswith("support_") or k == "enable_support"}
+    changed = {k for k in support if cfg[k] != preset[k]}
+    assert "enable_support" in changed and changed <= listed
     assert cfg["filament_type"][p.slot_support - 1] == "PETG"
     # review: tree trunks stand on the floor between petals with no PETG under them, so leave a layer's gap there;
     # and keep the support under the smallest curl tips (the slicer drops "small" overhangs, leaving one in air)
@@ -193,3 +203,11 @@ def test_slicer_supports_the_curls_with_petg(p, tmp_path):
     used = {f for r in report["layers"] for f in r[0]}
     assert used == {p.slot_rose, p.slot_support}
     assert report["grams"][p.slot_support] < report["grams"][p.slot_rose] / 5  # PETG only at the interface
+    if s.name == "bambu":  # the G-code: no support anywhere in a keyhole's pocket
+        from cadkit import bambu, gcode
+        x0, y0, x1, y1 = flower.pocket(p)
+        inside = [(round(z, 2), cx, cy) for cx, cy in flower.spots(p)
+                  for ax, ay, bx, by, z, f in gcode.extrusions(bambu.plate_gcode(tmp_path / "s.3mf"))
+                  if f.startswith("Support") and z <= flower.key_top(p)
+                  and x0 <= (ax + bx) / 2 - cx <= x1 and y0 <= (ay + by) / 2 - cy <= y1]
+        assert inside == []

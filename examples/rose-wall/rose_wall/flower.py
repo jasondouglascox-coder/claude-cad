@@ -8,7 +8,7 @@ the nail goes where you want the centre.
 from functools import lru_cache
 from pathlib import Path
 
-from build123d import Align, Cone, Cylinder, Part, Pos, SlotCenterToCenter, extrude
+from build123d import Align, Box, Cone, Cylinder, Part, Pos, SlotCenterToCenter, extrude
 
 from cadkit import bambu3mf
 from cadkit.export import write_plates
@@ -40,6 +40,22 @@ def keyhole(p: Params) -> list:
 
 def key_top(p: Params) -> float:
     return p.key_lip + p.key_head_room + p.printer.snap(p.key_head_d / 2 - p.key_roof_left / 2)
+
+
+def pocket(p: Params) -> tuple[float, float, float, float]:
+    """(x0, y0, x1, y1) of the keyhole's footprint, from the flower's centre: the nail head's pocket and slot."""
+    end, r = keyhole_end(p), p.key_head_d / 2
+    return (-r, end - p.key_len - r, r, end + r)
+
+
+def blocker(p: Params) -> Part:
+    """No support in the keyhole: a box over its whole footprint from the bed to just over its roof. It has to take
+    in the whole roof (Bambu grows support back from any strip of overhang left outside it); a flat roof otherwise
+    gets tree support up through the head hole, filling the pocket and trapped behind the lip."""
+    x0, y0, x1, y1 = pocket(p)
+    m = 1.0  # past the pocket's sides
+    return Pos(x0 - m, y0 - m, 0) * Box(x1 - x0 + 2 * m, y1 - y0 + 2 * m, key_top(p) + 2 * p.printer.layer,
+                                        align=(Align.MIN, Align.MIN, Align.MIN))
 
 
 def nub_top(p: Params) -> float:
@@ -127,11 +143,13 @@ def write(p: Params, out: Path) -> None:
                    support_bottom_z_distance=str(p.printer.layer))
     settings = bambu3mf.write_settings(out / f"{p.name}_settings.config", list(p.filaments), tower=tower(p),
                                        overrides=support)
-    one = body(p)
-    roses = []
+    one, block = body(p), blocker(p)
+    roses, blockers = [], []
     for k, (x, y) in enumerate(spots(p)):
         rose = Pos(x, y, 0) * one
         rose.color = p.color(p.slot_rose)
-        roses.append(("rose" if p.per_plate == 1 else f"rose#{k + 1}", rose))
-    write_plates([Plate(p.name, 1, roses)], out / "plates", out / f"{p.name}.csv",
+        name = "rose" if p.per_plate == 1 else f"rose#{k + 1}"
+        roses.append((name, rose))
+        blockers.append((name, Pos(x, y, 0) * block))
+    write_plates([Plate(p.name, 1, roses, blockers=blockers)], out / "plates", out / f"{p.name}.csv",
                  lambda name: p.slot_rose, settings=settings)

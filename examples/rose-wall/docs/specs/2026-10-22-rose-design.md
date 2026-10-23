@@ -55,7 +55,7 @@ bed, hung on a nail through a hidden keyhole.
   - The 11 mm keyhole base is taller than the halved centre petals and capped the funnel flat, and the nail
     head's pocket broke out of its side. The base is 6 mm, with a smaller keyhole: an 8 mm head pocket 2.4 mm
     tall over a 1.2 mm lip, 8 mm slot, a flat 7.6 mm roof (a short bridge) and 2.2 mm over it. Use a small nail:
-    head under ~7.5 mm, shank under 4.6 mm.
+    head 7 mm or less (the head hole slices to ~7.7 mm), shank under 4.6 mm.
   - With the base only a few mm under the centre rims it read as a floor; the user: "slightly fill in the middle
     so you don't see the floor". Measured straight on, 78% of the centre was the base's flat top. Now the centre
     petals keep their whole wrap (`centre_backs`: the tip's lens no longer trims their backs off; at 8" it does,
@@ -68,3 +68,18 @@ bed, hung on a nail through a hidden keyhole.
   - The small rose's outer petals, with full-size walls, fuse more near their crests and leave a few mm2 nearly
     flat under a curl (off the layer grid); they're out past the feet, on the supports. The tests allow exactly
     that and nothing else.
+- 2026-10-22: Independent pre-print review of the small roses (G-code of all four parsed, arcs included, and
+  compared layer by layer with the model). Fixed: tree supports (Bambu's tree(auto) goes "hybrid" under the flat
+  roof) stood on the bed, came up through the head hole and filled the nail's pocket, PETG-capped, 6.8 mm wide
+  behind a 4.6 mm slot: trapped, and 4 of the 24 swaps. `bridge_no_support` changed nothing; a support blocker
+  over each keyhole does (`flower.blocker`, through cadkit's `Plate(blockers=...)`); a slow test scans the G-code
+  for support inside any keyhole. A blocker must take in the whole overhang: Bambu grows support back from any
+  strip left outside it. The 8" rose (45-degree roof, no support there) gets one too. Head hole: 7 mm heads.
+  Accepted: ~25 patches of 0.3-8 mm2 at the fused crests (z 12-13.2, r 30-42) print over air facing down under
+  the curls: a rougher hidden underside. Fine: every curl tip supported; nothing supported in the centre;
+  supports start on the bed and keep 0.11 mm off the petals; ~10 mm between roses, 5.4 mm to the tower.
+- 2026-10-23: The user opened small_roses.3mf in Bambu Studio: "supports are not set". The window loads the
+  project's presets and applies only the settings named in `different_settings_to_system`, which cadkit didn't
+  write, so every support override (and the tower's spot) opened as the stock 0.20 mm Standard preset has it. The
+  command-line slicer reads the whole file, so the slicer tests sliced with supports and missed it. cadkit now
+  writes the list; a test holds the support settings on it.

@@ -37,6 +37,25 @@ the footprint and the bed, and you split it.
     upper color to the lower color's footprint fixed every case at once.
 - Walls at least two nozzle widths; nothing under one nozzle width survives slicing.
 
+## When a design takes supports
+
+Some do (a flower's curled petals). Set them per project, and prove them in the G-code:
+
+- **Settings:** `bambu3mf.write_settings(overrides={"enable_support": "1", ...})`. It also writes
+  `different_settings_to_system`, the list of settings Bambu Studio's window applies over the presets. A setting
+  left off that list opens as the preset has it: a rose opened with supports off while the CLI, reading the
+  whole file, sliced it with supports, and every test passed. When a project relies on a setting, test that the
+  list names it (`examples/rose-wall`, `test_plate_opens_red_with_petg_supports`).
+- **A PETG interface** under PLA (`support_interface_filament`) peels clean. Keep the support's body in the part's
+  own filament, or Bambu warns and swaps on every layer.
+- **Where support must not go** (a keyhole, a slot, a pocket the part needs open): `Plate(blockers=[(object,
+  volume)])` writes a Bambu support blocker on that object. The volume has to take in the *whole* overhang, from
+  the bed to just over it. Bambu drops only the overhang area inside it and grows support back from any strip
+  left outside. `bridge_no_support` didn't stop it; tree(auto) goes "hybrid" under a flat roof.
+- **Check the slice:** `cadkit.gcode.extrusions(bambu.plate_gcode(sliced))` gives every extruding move with its layer
+  and feature (`Support`, `Support interface`, `Overhang wall`...). Assert there's no support inside the regions
+  that must stay open, and that the overhangs you meant to support have some under them.
+
 ## Layers
 
 Every top, color seam and inlay sits on a multiple of the layer height: `checks.off_layer_z(part, printer) == []`.
@@ -158,6 +177,9 @@ r = bambu.slice_report("out/plates/p1.3mf")            # {"grams": {1: 0.6, 2: 1
   back as 60.149…, which rounds to 60.1 instead of 60.2 and reports a false mismatch.
 - Make the slicer test `@pytest.mark.slow` and `skipif(not slicers.active().available())`, so the suite runs
   without one.
+- The CLI is not the window: it reads every setting in the file, but the window applies only the ones listed in
+  `different_settings_to_system` (see "When a design takes supports"). If the user says a setting is missing
+  in Bambu Studio, compare against a project Bambu saved itself.
 
 ## Before the first real print
 

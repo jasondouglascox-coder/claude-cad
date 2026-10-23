@@ -14,7 +14,7 @@ funnel of 8 small, tightly wrapped petals whose rims step down into the middle, 
 
 Half the size across, but with the same 1.6 mm petal walls, so it's no flimsier. Its centre has 4 taller petals
 that lean together round a nub, so the middle looks filled in, with no floor showing. It hangs on a smaller nail
-(head under ~7.5 mm).
+(head 7 mm or less).
 
 ## Printing it
 
