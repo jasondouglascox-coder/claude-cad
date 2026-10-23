@@ -26,7 +26,7 @@ Sliced: 12.75 h, 303 g (285 g red, including the supports' bodies; 18 g PETG, ab
 
 `out/plates/small_roses.3mf` is four 4" roses on one plate, the prime tower in the middle, the same filaments and
 supports, and a support blocker over each keyhole. They share the PETG layers, so four cost the swaps of one:
-10 h, 241 g (229 g red, 12.5 g PETG, about 22 swaps).
+8.6 h, 202 g (194 g red, 7.8 g PETG, about 18 swaps).
 
 Hang it on a nail through the keyhole in the back: the nail goes where you want the rose's centre.
 
