@@ -106,6 +106,7 @@ def flat_faces_off_layer(p, rose):
             if abs(abs(f.normal_at().Z) - 1) < 1e-9 and round(f.center().Z, 4) in zs]
 
 
+@pytest.mark.whole
 def test_one_solid_flat_on_the_bed(rose):
     p, rose = rose
     assert printable_problems(rose, p.printer) == []
@@ -117,6 +118,7 @@ def test_one_solid_flat_on_the_bed(rose):
     assert all(r > reach for r, _ in flat_faces_off_layer(p, rose))
 
 
+@pytest.mark.whole
 def test_no_floor_lip_past_the_petals(rose):
     """Cut off at the bed, a rose has no lip: along every direction, the outermost material at the floor's height
     is a petal's foot, never floor sticking out past it."""
@@ -130,6 +132,7 @@ def test_no_floor_lip_past_the_petals(rose):
         assert reach == pytest.approx(petals.foot_reach(p, a), abs=0.3), a
 
 
+@pytest.mark.whole
 def test_keyhole_hangs_it_by_its_centre(rose):
     """The nail's shank rests against the top of the slot, at the flower's centre; the head sits under a lip with
     solid material over its roof."""
@@ -145,6 +148,7 @@ def test_keyhole_hangs_it_by_its_centre(rose):
     assert inside and all(z == pytest.approx(flower.key_top(p)) for z in inside)
 
 
+@pytest.mark.whole
 @ROSES
 def test_plate_opens_red_with_petg_supports(p, tmp_path):
     import json, zipfile

@@ -36,6 +36,11 @@ jobs:
           # alongside the rest; run them locally. The petal, seed head and layout tests run here.
           - project: examples/sunflower-wall
             pytest: -p no:xdist -m "not slow" --ignore=tests/test_flower.py
+          # Building a whole rose peaks at 15-20 GB, even the small one (and once per xdist worker), so the runner
+          # shut down mid-run. CI runs the petal, centre and layout tests (~1 min, <1 GB); the whole-rose ones
+          # (marked whole) run locally.
+          - project: examples/rose-wall
+            pytest: -p no:xdist -m "not slow and not whole"
     defaults:
       run:
         working-directory: ${{ matrix.project }}
