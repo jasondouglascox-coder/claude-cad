@@ -66,7 +66,10 @@ class Params:
     flare: float = 2.5  # the foot flares this much wider at the back (45 degrees), still inside the feet
     ring_t: float = 8.0  # the pink ring round the hole, up to this height
     ring_r: float = 26.0
-    fit_slide: float = 0.3  # diametral clearance round the plug (held by the wall, so a slide fit)
+    fit_slide: float = 0.3  # diametral clearance round the plug; as a smooth fit it fell back out, so:
+    ribs: int = 8  # crush ribs up the plug, their tips crushed as it's pushed in
+    rib_w: float = 1.2  # each rib's width at the plug
+    rib_bite: float = 0.2  # how far the tips reach past the hole's wall (radial)
     stamens: int = 120  # dense, so the yellow reads as stamens, not a disc
     stamen_d: float = 1.6
     stamen_r: tuple = (6.0, 13.5)  # where they stand on the plug; tilts clip so tips stay in the hole (it goes in from the back)

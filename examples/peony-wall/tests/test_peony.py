@@ -2,10 +2,11 @@
 goes in from the back past nothing and can't go through, and a keyhole that takes the nail. Builds the flower
 once per worker (about a minute): run with -n 2 at most."""
 import math
+from dataclasses import replace
 
 import numpy as np
 import pytest
-from build123d import Align, Box, Pos
+from build123d import Align, Box, Cylinder, Pos, Rot
 
 from cadkit.checks import downward_faces, off_layer_z, overhangs, printable_problems
 from cadkit.render import heights
@@ -13,6 +14,7 @@ from peony_wall import flower, layout
 from peony_wall.params import P
 
 MIN = (Align.MIN, Align.MIN, Align.MIN)
+MIN_Z = (Align.CENTER, Align.CENTER, Align.MIN)
 
 
 def probe(x, y, z, dx, dy, dz):
@@ -90,12 +92,36 @@ def test_insert_prints_flat_without_supports(insert):
 
 
 def test_insert_goes_in_from_the_back_and_stops(peony):
-    """It slides in from behind (from below, as printed) touching nothing on the way, and the flare stops it."""
-    placed = flower.insert_placed(P)
+    """It slides in from behind (from below, as printed) touching nothing on the way but its crush ribs' tips
+    (`test_crush_ribs_grip_the_hole`), and the flare stops it."""
+    placed = flower.insert_placed(replace(P, ribs=0))
     assert placed.bounding_box().min.Z == pytest.approx(0, abs=1e-6)  # flush with the back: the wall holds it in
     for dz in (0.0, -2.0, -P.ring_t / 2, -P.ring_t - 1.0, -placed.bounding_box().max.Z):
         assert (peony & placed.translate((0, 0, dz))).volume < 1.0, dz
     assert (peony & placed.translate((0, 0, 0.6))).volume > 5.0  # pushed further, the flare hits the flower
+
+
+def test_crush_ribs_grip_the_hole(insert):
+    """A smooth slide fit fell back out: ribs up the plug reach rib_bite past the hole's wall, their tips crushed as
+    it's pushed in. They bite only the straight hole (and where the flare narrows to them), one bite per rib, and nothing else does."""
+    ring = Cylinder(P.ring_r, P.ring_t, align=MIN_Z) - flower.hole(P)
+    bites = (flower.insert_placed(P) & ring).solids()
+    assert len(bites) == P.ribs
+    wall = P.hole_r + P.fit_slide / 2
+    for k in range(P.ribs):  # evenly round, each reaching rib_bite into the wall
+        on = [b for b in bites if (b & Rot(0, 0, 360 * k / P.ribs) * probe(wall - 1, -0.5, 0, 2, 1, 50)).volume > 0]
+        assert len(on) == 1, k
+        bb = on[0].bounding_box()
+        assert bb.min.Z >= P.flare - P.rib_bite - 0.05 and bb.max.Z <= P.ring_t + 1e-6  # the flare is 45 degrees
+        reach = max(math.hypot(*v[:2]) for v in on[0].verts)
+        assert reach == pytest.approx(wall + P.rib_bite, abs=0.02)
+
+
+def test_crush_ribs_lead_in(insert):
+    """The plug's top goes into the hole first: there (the top layer) the ribs are still inside the wall, then grow
+    at 45 degrees, so the insert starts in square before it has to crush anything."""
+    top = insert & probe(-50, -50, P.ring_t - P.printer.layer, 100, 100, P.printer.layer)
+    assert max(math.hypot(*v[:2]) for v in top.verts) <= P.hole_r + P.fit_slide / 2
 
 
 def test_stamens_fit_through_the_hole(insert):

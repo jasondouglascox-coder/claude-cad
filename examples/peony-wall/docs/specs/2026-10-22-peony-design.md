@@ -59,3 +59,9 @@ nail through a hidden keyhole. The yellow stamens are a separate small print.
   is the same without the boss.
 - 2026-10-22: Sliced (Bambu Studio): peony 10.9 h, 353 g, no supports generated; stamens 0.8 h, 9 g. The 45-degree
   fill under the low outer ring shows as a thicker band at the bed from a low angle; from the front it's hidden.
+- 2026-10-23: **Crush ribs on the insert.** The first print came out well, but the insert's 0.3 mm slide fit was
+  smooth enough that it fell back out. Eight ribs now run up the plug, 1.2 mm wide, each reaching 0.2 mm past the
+  hole's wall (`ribs`, `rib_w`, `rib_bite`). They're cut back at 45 degrees at the plug's top so it starts in
+  square, and the tips crush as it's pressed home. The hole is unchanged, so only the insert needs reprinting.
+  Tested: one bite per rib, only in the straight hole (and the last 0.2 mm of its 45-degree flare); the top layer
+  is inside the wall. If it's still loose, raise `rib_bite`; if it won't go in, lower it.

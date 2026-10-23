@@ -34,8 +34,8 @@ no STEP: each plate comes with an STL.
 - `peony_assembled.3mf`: the flower with the insert in place, pink and yellow, to look at (not to print: together
   they'd swap colour every layer).
 
-Push the insert into the centre hole from the back until its flared foot stops it; on the wall, the wall holds it
-in. Hang it on a nail through the keyhole in the back: the nail goes 70 mm above where you want the centre.
+Press the insert into the centre hole from the back until its flared foot stops it. Eight crush ribs up its plug
+grip the hole, so it stays in off the wall too (too loose: raise `rib_bite`; too tight: lower it). Hang it on a nail through the keyhole in the back: the nail goes 70 mm above where you want the centre.
 
 ## Commands
 

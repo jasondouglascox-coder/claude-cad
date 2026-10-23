@@ -10,7 +10,7 @@ import random
 from functools import lru_cache
 from pathlib import Path
 
-from build123d import Align, Cone, Cylinder, Part, Pos, Rot, SlotCenterToCenter, Sphere, extrude, scale
+from build123d import Align, Cone, Cylinder, Part, Polygon, Pos, Rot, SlotCenterToCenter, Sphere, extrude, scale
 
 from cadkit import bambu3mf, slicers
 from cadkit.export import write_plates
@@ -97,6 +97,8 @@ def insert(p: Params) -> Mesh:
     Each stamen's tilt is clipped so its anther stays inside the hole: it goes in from the back."""
     r = p.hole_r - p.fit_slide / 2
     plug = Cone(r + p.flare, r, p.flare, align=MN) + Cylinder(r, p.ring_t, align=MN)
+    if p.ribs:
+        plug += ribs(p)
     rng = random.Random(p.seed)
     bits = []
     for k in range(p.stamens):
@@ -114,6 +116,16 @@ def insert(p: Params) -> Mesh:
     whole = Mesh.union([Mesh.from_shape(b, tol=0.02) for b in [plug] + bits], label="stamens",
                        color=p.color(p.slot_insert))
     return whole.trimmed(0.0)
+
+
+def ribs(p: Params) -> Part:
+    """Crush ribs up the plug: triangles reaching rib_bite past the hole's wall, cut back at 45 degrees to the plug
+    at its top, so it starts into the hole square before anything has to crush."""
+    r = p.hole_r - p.fit_slide / 2
+    tip = p.hole_r + p.fit_slide / 2 + p.rib_bite
+    rib = extrude(Polygon((r - 0.5, -p.rib_w / 2), (tip, 0), (r - 0.5, p.rib_w / 2), align=None), p.ring_t)
+    lead = Cone(r + p.ring_t, r, p.ring_t, align=MN)
+    return lead & sum((Rot(0, 0, 360 * k / p.ribs) * rib for k in range(1, p.ribs)), rib)
 
 
 def anther(p: Params) -> Part:
