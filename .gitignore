@@ -1,4 +1,6 @@
 out/
+# Committed so a pull brings the print files. The railroad's and sunflower's stay ignored: too big for GitHub.
+!examples/refill-spool/out/
 .venv/
 __pycache__/
 *.pyc

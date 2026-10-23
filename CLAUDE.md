@@ -64,6 +64,7 @@ cd examples/lily-wall && uv run pytest -n 6                           # ~30 s, t
   example's README opens with renders in `docs/images/` (a cadkit test checks); refresh them when the look changes.
 - **Before printing a new batch**, run an independent review of the changed parts: print orientation, bridges
   (`cadkit.checks.downward_faces`), thin walls, mating fits and assembly order.
-- `out/` is generated and gitignored. Never commit it.
+- `out/` is generated. The refill spool's is committed so a pull brings its print files: rebuild it and commit it
+  with any change. Other projects' stay gitignored (the railroad's has a 208 MB STEP, over GitHub's 100 MB limit).
 - Decisions live in each project's `docs/specs/*.md` with an Amendments section. **Add an amendment whenever a
   decision changes.** Real-world measurements go in `docs/measurements.md`, with where each was measured from.
