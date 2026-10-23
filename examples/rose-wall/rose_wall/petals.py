@@ -82,13 +82,36 @@ def outer_wrap(p: Params, i: int) -> float:
     return lerp(p.wrap, outer_f(p, i))
 
 
+def outer_line(p: Params, i: int) -> list[tuple[float, float, float]]:
+    f = outer_f(p, i)
+    return side(lerp(p.length, f), p.lean[0] + (p.lean[1] - p.lean[0]) * f ** 0.7, p.bend)
+
+
 @lru_cache
 def outer(p: Params, i: int) -> Part:
-    """Outer petal i (0 innermost), placed."""
-    f = outer_f(p, i)
-    line = side(lerp(p.length, f), p.lean[0] + (p.lean[1] - p.lean[0]) * f ** 0.7, p.bend)
-    return Rot(0, 0, i * GOLD) * wall(p, outer_foot(p, i), line, outer_wrap(p, i), p.point,
-                                      fill=1 <= i <= p.filled)
+    """Outer petal i (0 innermost), placed. Petals 1..filled rest on a hidden fill under the curl, cut back to inside
+    the unfilled petals: past one (out through its stem, under its curl) it would show as a skirt from the side."""
+    place = Rot(0, 0, i * GOLD)
+    bare = place * wall(p, outer_foot(p, i), outer_line(p, i), outer_wrap(p, i), p.point)
+    if not 1 <= i <= p.filled:
+        return bare
+    fill = place * wall(p, outer_foot(p, i), outer_line(p, i), outer_wrap(p, i), p.point, fill=True) - bare
+    for j in range(p.filled + 1, p.petals):
+        fill = fill - shadow(p, j)
+    return Part((bare + fill).solids()) if fill.volume > 1e-6 else bare
+
+
+@lru_cache
+def shadow(p: Params, j: int) -> Part:
+    """Everything past outer petal j's outside, across its wrap: out from its stem and under its curl."""
+    foot, line = outer_foot(p, j), outer_line(p, j)
+    under = [(foot + x + p.wall * math.cos(a), z - p.wall * math.sin(a)) for x, z, a in line]
+    under[0] = (foot + p.wall, 0.0)
+    far = 2 * p.diameter
+    prof = Face(Wire.make_polygon([(x, 0, max(z, 0)) for x, z in under + [(far, under[-1][1]), (far, 0.0)]],
+                                  close=True))
+    half = outer_wrap(p, j)
+    return Rot(0, 0, j * GOLD - half) * revolve(prof, Axis.Z, 2 * half)
 
 
 def foot_reach(p: Params, angle: float) -> float:

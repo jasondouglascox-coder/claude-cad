@@ -80,13 +80,42 @@ def test_small_nub_plugs_the_middle_below_the_innermost_rim():
 
 def test_small_inner_curls_rest_on_hidden_fills():
     """The user: only supports on the outside. Petals 1..filled curl over other petals, so each gets a fill under its
-    curl with a 45-degree underside (from the tip down-in to its own stem, or the bed just outside its foot): no
-    support. The outer ones curl over bare bed, where a fill would show: they keep their supports."""
+    curl with a 45-degree underside (from the tip down-in to its own stem, or the bed just outside its foot). The
+    outer ones curl over bare bed, where a fill would show: they keep their supports. A fill stops at the outer
+    petals (review: past them it showed as a skirt), so a curl reaching past one overhangs there, over bare bed."""
     assert 0 < SMALL.filled < SMALL.petals - 1 and P.filled == 0
+    bare = replace(SMALL, filled=0)
+    outside = [petals.shadow(SMALL, j) for j in range(SMALL.filled + 1, SMALL.petals)]
     for i in range(1, SMALL.filled + 1):
-        assert overhangs(petals.outer(SMALL, i)) == [], i
+        petal = petals.outer(SMALL, i)
+        assert sum(a for _, a in overhangs(petal)) < sum(a for _, a in overhangs(petals.outer(bare, i))), i
+        for face in petal.faces():
+            if overhangs(face):  # the air just under it is out past an outer petal
+                under = face.position_at(0.5, 0.5) - (0, 0, 0.3)
+                assert any(o.is_inside(under) for o in outside), (i, under)
     for i in range(SMALL.filled + 1, SMALL.petals):
         assert overhangs(petals.outer(SMALL, i)), i  # still curled past 45
+
+
+def outline(p, zs=(1, 3, 5, 7, 9, 11), bins=72) -> np.ndarray:
+    """How far out the rose reaches at each height, in each direction: its cross-sections, rasterised."""
+    r_max, step = p.diameter / 2 + 8, 0.2
+    out = np.zeros((len(zs), bins))
+    for a, z in enumerate(zs):
+        slab = Pos(0, 0, z) * Box(2 * r_max, 2 * r_max, 0.2)
+        secs = [c for c in (part & slab for part in flower.parts(p)) if c.volume > 1e-9]
+        there = ~np.isnan(heights(secs, ((-r_max, -r_max), (r_max, r_max)), step=step))
+        n = there.shape[0]
+        yy, xx = (np.mgrid[0:n, 0:n] + 0.5) * step - r_max
+        way = ((np.degrees(np.arctan2(yy, xx)) % 360) / 360 * bins).astype(int) % bins
+        np.maximum.at(out[a], way[there], np.hypot(xx, yy)[there])
+    return out
+
+
+def test_small_fills_make_no_skirt():
+    """Review: the fills of petals 14-18 reached the bed outside their feet and poked out through the outer petals'
+    stems, a 45-degree skirt up to 6.5 mm out, seen from near the wall. Now nothing reaches past the unfilled rose."""
+    assert (outline(SMALL) - outline(replace(SMALL, filled=0))).max() <= 0.3
 
 
 def test_small_fills_are_hidden_from_the_front():
@@ -236,8 +265,10 @@ def test_slicer_supports_the_curls_with_petg(p, tmp_path):
                   and x0 <= (ax + bx) / 2 - cx <= x1 and y0 <= (ay + by) / 2 - cy <= y1]
         assert inside == []
         if p.filled:  # the user: supports only on the outside. Every one stands on the bed past the petals' feet
-            reach = max(petals.outer_foot(p, i) for i in range(p.petals)) + p.wall
-            near = min(min(math.hypot((ax + bx) / 2 - cx, (ay + by) / 2 - cy) for cx, cy in flower.spots(p))
-                       for ax, ay, bx, by, z, f in gcode.extrusions(bambu.plate_gcode(tmp_path / "s.3mf"))
-                       if f.startswith("Support"))  # from the nearest rose's centre
-            assert near > reach
+            inside = 0
+            for ax, ay, bx, by, z, f in gcode.extrusions(bambu.plate_gcode(tmp_path / "s.3mf")):
+                if f.startswith("Support"):  # from the nearest rose's centre, against its feet in that direction
+                    x, y = min((((ax + bx) / 2 - cx, (ay + by) / 2 - cy) for cx, cy in flower.spots(p)),
+                               key=lambda v: math.hypot(*v))
+                    inside += math.hypot(x, y) <= petals.foot_reach(p, math.degrees(math.atan2(y, x)))
+            assert inside == 0

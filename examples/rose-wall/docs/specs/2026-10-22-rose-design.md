@@ -97,3 +97,15 @@ bed, hung on a nail through a hidden keyhole.
     Every support now stands on the bed outside the petals' feet (nearest 39.6 mm from the centre, feet end at
     37.7; a slow test holds it), so cleanup is round the rim, none in the tight gaps.
   The 8" rose is unchanged (`filled` = 0).
+- 2026-10-23: Pre-print review of the fills (G-code of all four roses rasterised per layer against the mesh):
+  nothing prints over air but the keyhole's bridge, every PETG contact is under petals 19-23, no support touches
+  a fill, supports start only on the bed, slivers and narrow gaps fewer than before. One visible flaw, fixed: the
+  fills of petals 14-18 reached the bed outside their feet and poked out through the outer petals' stems, a
+  45-degree skirt (median ~4 mm, up to 6.5 mm out at z 5-11, in ~85% of directions), dark under the outer curls
+  seen from ~12 degrees off the wall. Each fill is now cut back to inside the unfilled petals (`petals.shadow`:
+  everything out from a petal's stem and under its curl); measured the same way, nothing reaches past the
+  unfilled rose (<= 0.1 mm; test <= 0.3). Where curls 14-18 reach past an outer petal they overhang again, over
+  bare bed: supports stand there, and per direction every support move is still past that direction's feet (a
+  slow test now checks per direction, not against the outermost foot). One rose: 54.1 g + 3.8 g PETG, 2.8 h, 18
+  swaps (unclipped 52.7 g + 3.2 g, 2.69 h). Also from the review, accepted: two sealed air pockets in the base
+  (43 and 26 mm3, harmless); supports passing 0.15-0.2 mm from the fills now have more room.
