@@ -30,19 +30,22 @@ def side(length: float, lean: float, bend: float, lip: float = 0.0) -> list[tupl
     return pts
 
 
-def wall(p: Params, foot: float, line: list, half: float, point: float) -> Part:
-    """The petal along +X: its side `line` from a foot `foot` out, swept through +-half deg, trimmed to a lens."""
+def wall(p: Params, foot: float, line: list, half: float, point: float, back: bool = False) -> Part:
+    """The petal along +X: its side `line` from a foot `foot` out, swept through +-half deg, trimmed to a lens.
+    back: stretch the lens along X past the far side of the ring, so it shapes only the tip and the wrap stays whole."""
     inner = [(foot + x, z) for x, z, _ in line]
     outer = [(foot + x + p.wall * math.cos(a), z - p.wall * math.sin(a)) for x, z, a in line]
     outer[0] = (foot + p.wall, 0.0)
     prof = Face(Wire.make_polygon([(x, 0, max(z, 0)) for x, z in inner + outer[::-1]], close=True))
     swept = Rot(0, 0, -half) * revolve(prof, Axis.Z, 2 * half)
     tip = math.hypot(line[-1][0], line[-1][1])
-    width = (foot + line[-1][0]) * math.sin(math.radians(min(half, 85)))
+    reach = foot + line[-1][0] + (p.wall if back else 0.0)
+    width = reach * math.sin(math.radians(min(half, 85)))
     e = point * width
+    along = max(tip, 2 * reach) if back else tip
     lens = None
     for sgn in (1, -1):
-        ell = Pos(foot, sgn * e, 0) * scale(Sphere(1), (tip * 1.01, width + e, tip * 1.01))
+        ell = Pos(foot, sgn * e, 0) * scale(Sphere(1), (along * 1.01, width + e, tip * 1.01))
         lens = ell if lens is None else lens & ell
     return Part((swept & lens).solids())
 
@@ -87,11 +90,16 @@ def centre_foot(p: Params, k: int) -> float:
     return p.centre_first + k * (p.wall + p.centre_gap)
 
 
+def centre_line(p: Params, k: int) -> list[tuple[float, float, float]]:
+    """Centre petal k's side, from its foot: shorter toward the middle (the funnel)."""
+    g = k / max(p.centre_petals - 1, 1)
+    return side(p.centre_top - p.centre_drop * (1 - g), lerp(p.centre_lean, g), 1.6, lip=p.centre_lip)
+
+
 @lru_cache
 def centre(p: Params, k: int) -> Part:
     """Centre petal k (0 innermost), placed: small, nearly upright, wrapped most of the way round, shorter toward the
     middle (the funnel)."""
     g = k / max(p.centre_petals - 1, 1)
-    line = side(p.centre_top - p.centre_drop * (1 - g), lerp(p.centre_lean, g), 1.6, lip=p.centre_lip)
-    return Rot(0, 0, k * GOLD + p.centre_turn) * wall(p, centre_foot(p, k), line, lerp(p.centre_wrap, g),
-                                                      p.centre_point)
+    return Rot(0, 0, k * GOLD + p.centre_turn) * wall(p, centre_foot(p, k), centre_line(p, k),
+                                                      lerp(p.centre_wrap, g), p.centre_point, back=p.centre_backs)
