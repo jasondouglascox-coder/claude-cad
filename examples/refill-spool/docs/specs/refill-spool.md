@@ -19,8 +19,8 @@ the spool in one piece.
 - **Straps:** 3 slots, 10 mm wide, run the barrel's full length midway between spokes. A strap goes under the core
   in a slot, out through both flanges between the spokes, and back over the coil inside the rim (needs the coil
   under Ø190; measure a full one). Tests model each loop at 1.5 mm thick and require it to touch nothing.
-- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 87.6 g; the tests hold
-  it under 95 g.
+- **Filament:** PLA, AMS slot 3 (see amendments). Bambu Studio slices the pair at 105.6 g; the tests hold
+  it under 115 g.
 
 All sizes live in `refill_spool/params.py`.
 
@@ -84,3 +84,8 @@ All sizes live in `refill_spool/params.py`.
 - **2026-10-21: the middle ring is whole on both flanges.** From the user: the gap ends on the barrel half would
   snag filament; they'll move each tie round the ring when lifting a strapped coil off. The lift-off test now
   checks the coil alone. 87.6 g sliced.
+- **2026-10-23: barrel Ø82, snug in the core.** From the user's first print: the Ø80 barrel was loose in the core
+  (a 1.75 mm filament slid in beside it). The barrel is now Ø82 with a 2.2 mm wall, grown outward, so the thread
+  inside and the strap tracks' floor (and their 1.4 mm tunnel) stay where they were. The 3 mm key stays (the user:
+  it works); on the bigger barrel its tip is at Ø88, past the forum's unmeasured Ø87 for the core's outside, so that
+  check is gone. 105.6 g sliced (barrel half 76.9 g, cap 28.8 g); budget 115 g.

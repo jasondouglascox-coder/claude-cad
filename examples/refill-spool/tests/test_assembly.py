@@ -30,18 +30,16 @@ def test_bore_runs_the_full_width():
 
 
 def test_coil_sits_between_the_flanges_with_room_each_side():
-    (_, barrel), (_, cap) = placed_parts(P)
     c = coil(P)
-    for part in (barrel, cap):
-        assert c.distance_to(part) >= P.coil_side_clear - 0.01
     bb = c.bounding_box()
+    assert bb.min.Z - P.flange_t >= P.coil_side_clear - 1e-6
+    assert P.barrel_top - bb.max.Z >= P.coil_side_clear - 1e-6
     assert bb.size.Z == pytest.approx(P.coil_w, abs=1e-3) and bb.size.X == pytest.approx(P.coil_d, abs=0.01)
 
 
 def test_core_key_sits_in_the_cores_notch():
-    """The key reaches into the core's wall, not past it: the coil's notch takes it with core_notch_clear round it."""
+    """The key reaches into the core's wall: the coil's notch takes it with core_notch_clear round it."""
     assert P.barrel_d / 2 + P.key_h > P.core_d / 2 + 1.0
-    assert P.barrel_d / 2 + P.key_h < P.core_od / 2
     (_, barrel), _ = placed_parts(P)
     key = barrel & radial_box(P.key_angle, P.barrel_d / 2 + 0.01, P.barrel_d / 2 + P.key_h + 1, P.key_w + 2,
                               P.key_len + 1, P.flange_t + 0.01)

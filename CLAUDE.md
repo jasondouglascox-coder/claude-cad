@@ -22,7 +22,7 @@
 - `examples/sharpie-colorizer/`: an inline Sharpie colorizer for the A1's external-spool guide tube (package
   `sharpie_colorizer`): a snap clip on the 40 × 20 frame bar and a block holding three tilted markers; fit-test
   plate first.
-- `examples/refill-spool/`: a ~87 g two-piece spool for Bambu refill coils (package `refill_spool`): spoked flanges,
+- `examples/refill-spool/`: a ~106 g two-piece spool for Bambu refill coils (package `refill_spool`): spoked flanges,
   barrel with zip-tie strap tracks, screw-on cap, a key into the refill core's notch. Threads from `cadkit.shapes.thread`.
 - `examples/sunflower-wall/`: a ~10" wall sunflower printed in one go (package `sunflower`, `flower.py`): lofted
   arched petals with orange valley beads, a domed Fibonacci head of diamond seeds, four colors by height.
