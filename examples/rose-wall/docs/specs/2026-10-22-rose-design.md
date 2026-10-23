@@ -47,3 +47,24 @@ bed, hung on a nail through a hidden keyhole.
   petals fuse near their crests (harmless; a few dark lines fill in), and the slicer skips ~0.5 mm slivers at
   the curl edges. Confirmed: no support anywhere in the centre, the keyhole puts the nail on the axis with 1.8 mm
   over its head, the rose hangs within ~7 degrees of its print orientation.
+- 2026-10-22: **A 4" rose, four to a plate** (`params.small`, plate `small_roses`; the user: "3 or 4 smaller ones
+  vs one large"). The 8" rose stays as it was. Only the plan halves: walls stay 1.6 mm (0.8 would be two lines),
+  the centre's 0.9 mm gaps stay (narrower would fuse), and so does the nail. Consequences, found by halving
+  straight and looking:
+  - The centre has 4 petals, not 8 (8 with full-size walls and gaps need 21 mm of radius: half the small rose).
+  - The 11 mm keyhole base is taller than the halved centre petals and capped the funnel flat, and the nail
+    head's pocket broke out of its side. The base is 6 mm, with a smaller keyhole: an 8 mm head pocket 2.4 mm
+    tall over a 1.2 mm lip, 8 mm slot, a flat 7.6 mm roof (a short bridge) and 2.2 mm over it. Use a small nail:
+    head under ~7.5 mm, shank under 4.6 mm.
+  - With the base only a few mm under the centre rims it read as a floor; the user: "slightly fill in the middle
+    so you don't see the floor". Measured straight on, 78% of the centre was the base's flat top. Now the centre
+    petals keep their whole wrap (`centre_backs`: the tip's lens no longer trims their backs off; at 8" it does,
+    and 69% of that centre is base, but 3-12 mm down it reads as depth), stand 4-7 mm above the base, lean out
+    30-33 degrees together (with the lip, 40-43: still no supports) so you can't see down between them, and wrap
+    nearly all the way round; a nub plugs the very middle. 21% shows, as thin dark lines (test: <= 25%). Near
+    their rims neighbouring centre petals come within 0.3-0.6 mm and may print fused: one colour, fine.
+  - Plate: four in a 2 x 2 square 120 mm apart, the prime tower in the middle (about 9 mm clear of each). They share
+    the PETG layers, so four together cost the swaps of one.
+  - The small rose's outer petals, with full-size walls, fuse more near their crests and leave a few mm2 nearly
+    flat under a curl (off the layer grid); they're out past the feet, on the supports. The tests allow exactly
+    that and nothing else.

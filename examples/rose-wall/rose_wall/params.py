@@ -1,5 +1,5 @@
 """Every dimension in one place (mm). A design change is a one-line edit here; tests derive from these."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from build123d import Color
 
@@ -32,6 +32,8 @@ class Params:
     centre_wrap: tuple = (150.0, 110.0)  # half wrap (deg), innermost .. outermost
     centre_point: float = 0.12
     centre_turn: float = 40.0  # the centre petals' spiral starts this far round from the outer petals'
+    centre_backs: bool = False  # keep each centre petal's whole wrap (the tip's lens otherwise trims its back off)
+    nub: tuple = ()  # (foot r, top r, how far under the innermost centre rim): a plug in the very middle; () none
 
     # what holds it together and hangs it
     floor: float = 1.2  # thin pads under each petal, tying their feet into one piece (never past a foot)
@@ -50,6 +52,11 @@ class Params:
     slot_support: int = 2
     printer: Printer = field(default_factory=default)
 
+    # the plate: one rose in the middle, or four in a square `pitch` apart (centre to centre) round the prime tower
+    name: str = "rose"
+    per_plate: int = 1
+    pitch: float = 0.0
+
     def __post_init__(self):
         for name in ("floor", "base_t", "key_lip", "key_head_room"):
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
@@ -65,3 +72,20 @@ class Params:
 
 
 P = Params()
+
+
+def small(p: Params = P) -> Params:
+    """The rose at half size, four to a plate. Only the plan halves: the walls (four lines), the centre's gaps and
+    the nail stay full size, so the centre has four petals, not eight. Its base drops to 6 mm (a smaller keyhole
+    with a flat roof) to stay under them, and so the base doesn't read as a floor a few mm down, the centre petals
+    keep their backs, stand taller and lean out together (you can't see down between them), round a nub."""
+    s = 0.5
+    return replace(p, diameter=p.diameter * s, foot_r=p.foot_r * s, length=tuple(x * s for x in p.length),
+                   centre_petals=4, centre_first=p.centre_first * s,
+                   centre_top=13.5, centre_drop=3.5, centre_lean=(30.0, 33.0), centre_lip=10.0,
+                   centre_wrap=(175.0, 165.0), centre_backs=True, nub=(2.0, 0.8, 1.5),
+                   base_t=6.0, key_len=8.0, key_head_d=8.0, key_lip=1.2, key_head_room=2.4, key_roof_left=7.6,
+                   name="small_roses", per_plate=4, pitch=120.0)
+
+
+SMALL = small()
