@@ -1,9 +1,9 @@
 name: CI
 
+# Pushes to main run nothing (the owner pushes directly and checks locally). Pull requests run it, because the
+# main ruleset requires all-tests on them; run it by hand from the Actions tab any time.
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
