@@ -1,9 +1,8 @@
 """uv run python -m rose_wall.build [all|plates|step|render] [--out out]
 
-plates: out/plates/rose.3mf, the 8" rose, and out/plates/small_roses.3mf, four 4" ones (Bambu projects: red PLA, tree
-        supports with a PETG interface) + .step, out/<plate>.csv
-step:   out/rose.step, out/small_rose.step for CAD
-render: out/render/*.png shaded previews, small_*.png for the small one (copy to docs/images/ after a visible change)
+plates: out/plates/rose.3mf (a Bambu project: red PLA, tree supports with a PETG interface) + .step, out/plates.csv
+step:   out/rose.step for CAD
+render: out/render/*.png shaded previews (copy to docs/images/ after a visible change)
 """
 import argparse
 import sys
@@ -13,7 +12,7 @@ from build123d import export_step
 
 from cadkit.render import ISO, TOP, render
 from rose_wall import flower
-from rose_wall.params import P, SMALL
+from rose_wall.params import P
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,15 +22,14 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    for p, prefix in ((P, ""), (SMALL, "small_")):
-        if a.what in ("all", "plates"):
-            flower.write(p, out)
-        if a.what in ("all", "step"):
-            export_step(flower.make(p), str(out / f"{prefix}rose.step"))
-        if a.what in ("all", "render"):
-            rose = flower.make(p)
-            for name, view in (("front", TOP), ("iso", ISO), ("side", (-0.3, -1.0, 0.9))):
-                render([(rose, rose.color)], out / "render" / f"{prefix}{name}.png", view=view)
+    if a.what in ("all", "plates"):
+        flower.write(P, out)
+    if a.what in ("all", "step"):
+        export_step(flower.make(P), str(out / "rose.step"))
+    if a.what in ("all", "render"):
+        rose = flower.make(P)
+        for name, view in (("front", TOP), ("iso", ISO), ("side", (-0.3, -1.0, 0.9))):
+            render([(rose, rose.color)], out / "render" / f"{name}.png", view=view)
     print(f"wrote {out}/")
     return 0
 

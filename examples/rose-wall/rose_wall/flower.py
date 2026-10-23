@@ -2,7 +2,7 @@
 tree supports with a PETG interface (slicer settings, `write`).
 
 Parts: a thin floor under each petal tying their feet together (never showing past them), a solid cone under the centre holding the keyhole, the 24
-outer petals and the 8 centre petals (the small rose: 4, round a nub). The keyhole's slot runs up (+Y in the print frame) to the flower's centre, so
+outer petals and the 8 centre petals. The keyhole's slot runs up (+Y in the print frame) to the flower's centre, so
 the nail goes where you want the centre.
 """
 from functools import lru_cache
@@ -42,16 +42,6 @@ def key_top(p: Params) -> float:
     return p.key_lip + p.key_head_room + p.printer.snap(p.key_head_d / 2 - p.key_roof_left / 2)
 
 
-def nub_top(p: Params) -> float:
-    """The nub's top, on a layer, `nub[2]` under the innermost centre petal's rim."""
-    return p.printer.snap(petals.centre_line(p, 0)[-1][1] - p.nub[2])
-
-
-def nub(p: Params) -> Part | None:
-    """A cone plugging the very middle, inside the innermost centre petal (None when the rose has none)."""
-    return Cone(p.nub[0], p.nub[1], nub_top(p), align=MN) if p.nub else None
-
-
 @lru_cache
 def parts(p: Params) -> list[Part]:
     """Every body, in the flower's frame (centre on the axis, back at z = 0): base first, then the petals."""
@@ -60,8 +50,6 @@ def parts(p: Params) -> list[Part]:
     base = Cone(p.centre_r + p.base_t, p.centre_r, p.base_t, align=MN)  # flares at 45 degrees: nothing over air
     base = Part((Part((base + floor).solids()) - cut).solids())
     centre = [Part((petals.centre(p, k) - cut).solids()) for k in range(p.centre_petals)]
-    if p.nub:
-        centre.insert(0, Part((nub(p) - cut).solids()))
     outer = [petals.outer(p, i) for i in range(p.petals)]
     return [base] + centre + outer
 
@@ -96,42 +84,19 @@ SUPPORT = {  # Bambu project settings: tree supports under the curled petals, PE
 }
 
 
-TOWER_W = 35.0
-
-
-def spots(p: Params) -> list[tuple[float, float]]:
-    """Where each rose's centre goes on the plate: one in the middle, or four in a square `pitch` apart."""
-    cx, cy = centre_xy(p)
-    if p.per_plate == 1:
-        return [(cx, cy)]
-    assert p.per_plate == 4, "one rose a plate, or four"
-    d = p.pitch / 2
-    return [(cx - d, cy - d), (cx + d, cy - d), (cx - d, cy + d), (cx + d, cy + d)]
-
-
 def tower(p: Params) -> tuple[float, float, float]:
-    """Prime tower (x, y, width): in the bed's front-left corner, well clear of one round rose (the template's spot
-    clears it by only a few mm); in the middle of four, where they leave the most room."""
-    if p.per_plate == 1:
-        return (4.0, 4.0, TOWER_W)
-    cx, cy = centre_xy(p)
-    return (cx - TOWER_W / 2, cy - TOWER_W / 2, TOWER_W)
+    """Prime tower (x, y, width) in the bed's front-left corner, well clear of the round rose (the template's spot
+    clears it by only a few mm)."""
+    return (4.0, 4.0, 35.0)
 
 
 def write(p: Params, out: Path) -> None:
-    """out/plates/<p.name>.3mf (+ .step), its settings and its plates CSV, named after the plate."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     # tree trunks standing on the floor between petals get no PETG under them: a layer's gap lets them break free
     support = dict(SUPPORT, support_interface_filament=str(p.slot_support),
                    support_bottom_z_distance=str(p.printer.layer))
-    settings = bambu3mf.write_settings(out / f"{p.name}_settings.config", list(p.filaments), tower=tower(p),
+    settings = bambu3mf.write_settings(out / "bambu_project_settings.config", list(p.filaments), tower=tower(p),
                                        overrides=support)
-    one = body(p)
-    roses = []
-    for k, (x, y) in enumerate(spots(p)):
-        rose = Pos(x, y, 0) * one
-        rose.color = p.color(p.slot_rose)
-        roses.append(("rose" if p.per_plate == 1 else f"rose#{k + 1}", rose))
-    write_plates([Plate(p.name, 1, roses)], out / "plates", out / f"{p.name}.csv",
+    write_plates([Plate("rose", 1, [("rose", make(p))])], out / "plates", out / "plates.csv",
                  lambda name: p.slot_rose, settings=settings)
