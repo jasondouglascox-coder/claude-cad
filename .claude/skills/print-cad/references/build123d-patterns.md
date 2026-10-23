@@ -123,6 +123,17 @@ there is no flat underside.
   (`Rot(180, 0, 0)`: angle → −angle, z → width − z) meshes when its ridge starts at width − nut_z0 − pitch/2 − play
   (mod pitch), with play = the flank gap, since tightening pulls that flank tight.
 
+## Meshes, when B-rep booleans give up
+
+Dozens of freeform bodies overlapping at shallow angles (a peony's petals) fuse into invalid pieces in OCC, or
+hang. Build each body as a `cadkit.mesh.Mesh` instead (`Mesh.from_grids(top, under)` straight from your own
+point grids, or `Mesh.from_shape` for simple B-rep parts), `Mesh.union` them (manifold3d, exact, under a second),
+cut with `-` / `&`, `drop_crumbs()`. The checks, `render`, `heights` and `write_plates` take a Mesh like a part;
+there's no STEP (its plate goes out as STL). manifold3d keeps vertices in float32: about 1e-5 mm off at 100 mm.
+
+`cadkit.render.heights(shapes, bounds)` is the front view as numbers: compare two versions on the same bounds to
+prove a hidden change (a fill, a boss) doesn't show.
+
 ## Misc traps
 
 - `extrude` of a Compound returns a Compound; wrap results with `Part(x.solids())` before boolean chains, or you

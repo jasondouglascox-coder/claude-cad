@@ -11,6 +11,9 @@ dependencies = [
 [project.optional-dependencies]
 viewer = ["ocp-viewer>=1.1.3"]
 render = ["numba", "pillow"]  # cadkit.render: shaded PNG previews
+mesh = [
+    "manifold3d>=3.5.4",
+]
 
 [dependency-groups]
 dev = [
@@ -18,6 +21,7 @@ dev = [
     "pytest-xdist>=3.8.0",
     "numba",
     "pillow",
+    "manifold3d>=3.5.4",
 ]
 
 [build-system]

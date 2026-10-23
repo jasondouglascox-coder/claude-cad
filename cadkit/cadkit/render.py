@@ -42,6 +42,24 @@ def _rgb(color) -> np.ndarray:
     return np.array(tuple(color)[:3] if isinstance(color, Color) else color, float)
 
 
+def heights(shapes: list[Shape], bounds: tuple, step: float = 0.5, tol: float = 0.1) -> np.ndarray:
+    """What you see looking straight down: the highest Z over each step x step cell of bounds ((x0, y0), (x1, y1)),
+    as [y row, x column], NaN where there's nothing. Compare two versions of a model on the same bounds to prove a
+    change (a hidden fill, say) doesn't show from the front."""
+    (x0, y0), (x1, y1) = bounds
+    nx, ny = round((x1 - x0) / step), round((y1 - y0) / step)
+    from cadkit.mesh import triangles
+    tris = [t for t in (triangles(shape, tol) for shape in shapes) if len(t)]
+    size = max(nx, ny)
+    zbuf = np.full((size, size), -1e18)
+    if tris:
+        tri = np.concatenate(tris)
+        _raster((tri[..., 0] - x0) / step, (tri[..., 1] - y0) / step, tri[..., 2].copy(),
+                np.zeros((len(tri), 3), np.uint8), size, zbuf, np.empty((size, size, 3), np.uint8))
+    h = zbuf[:ny, :nx]
+    return np.where(h > -1e17, h, np.nan)
+
+
 def render(items: list[tuple[Shape, Color]], path: Path, view: tuple = ISO, px: int = 1000, tol: float = 0.1,
            bg: tuple = (201, 183, 156), crop: bool = False) -> None:
     """Orthographic view of (shape, color) items looking along -view, z-up (or y-up when looking straight down).
@@ -54,11 +72,11 @@ def render(items: list[tuple[Shape, Color]], path: Path, view: tuple = ISO, px: 
     yr = np.cross(v, xr)
     light = np.array(LIGHT) / np.linalg.norm(LIGHT)
     tris, cols = [], []
+    from cadkit.mesh import triangles
     for shape, color in items:
-        verts, idx = shape.tessellate(tol, 0.2)
-        if not idx:
+        tri = triangles(shape, tol)
+        if not len(tri):
             continue
-        tri = np.array([(q.X, q.Y, q.Z) for q in verts])[np.array(idx)]
         n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
         nl = np.linalg.norm(n, axis=1)
         keep = nl > 1e-12

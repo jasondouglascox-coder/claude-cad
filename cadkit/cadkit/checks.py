@@ -27,9 +27,32 @@ def printable_problems(part: Shape, printer: Printer | None = None) -> list[str]
     return probs
 
 
+def _facets(m) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """A cadkit.mesh.Mesh's triangles: (corners (m, 3, 3), unit normals, areas)."""
+    tri = m.triangles()
+    n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    size = np.linalg.norm(n, axis=1)
+    keep = size > 1e-12
+    return tri[keep], n[keep] / size[keep, None], size[keep] / 2
+
+
+def _by_z(z: np.ndarray, area: np.ndarray) -> list[tuple[float, float]]:
+    out = {}
+    for zz, a in zip(np.round(z, 4), area):
+        out[float(zz)] = out.get(float(zz), 0.0) + float(a)
+    return sorted((z, round(a, 3)) for z, a in out.items())
+
+
 def open_edges(shape: Shape, tol: float = 1e-4) -> int:
     """Mesh edges not shared by exactly two triangles (0 = watertight). Catches edge-to-edge unions, which make
     valid B-reps but meshes the slicer rejects."""
+    from cadkit.mesh import Mesh
+    if isinstance(shape, Mesh):
+        _, idx = np.unique(np.round(shape.verts / tol).astype(np.int64), axis=0, return_inverse=True)
+        t = idx.ravel()[shape.tris]
+        e = np.sort(np.concatenate([t[:, [0, 1]], t[:, [1, 2]], t[:, [2, 0]]]), axis=1)
+        _, counts = np.unique(e, axis=0, return_counts=True)
+        return int((counts != 2).sum())
     bad = 0
     for s in shape.solids():
         verts, tris = s.tessellate(0.05, 0.2)
@@ -47,7 +70,13 @@ def open_edges(shape: Shape, tol: float = 1e-4) -> int:
 
 def off_layer_z(shape: Shape, printer: Printer | None = None) -> list[float]:
     """Z of every horizontal face that isn't on a layer boundary (a slicer splits that layer)."""
+    from cadkit.mesh import Mesh
     printer = printer or default()
+    if isinstance(shape, Mesh):
+        tri, n, _ = _facets(shape)
+        flat = np.abs(np.abs(n[:, 2]) - 1) < 1e-9
+        # tol: manifold3d keeps vertices in float32, about 1e-5 mm off at 100 mm
+        return sorted({round(float(z), 4) for z in tri[flat, 0, 2] if not printer.on_layer(float(z), tol=1e-4)})
     out = set()
     for f in shape.faces():
         n = f.normal_at()
@@ -71,6 +100,11 @@ def unsupported(upper: Shape, lower: Shape, probe: float = 0.1) -> float:
 def downward_faces(part: Shape) -> list[tuple[float, float]]:
     """(z, area) of every face facing straight down above the bed: each one is a bridge or needs support. For
     review: list them, then check each spans less than a few mm between supports."""
+    from cadkit.mesh import Mesh
+    if isinstance(part, Mesh):
+        tri, n, area = _facets(part)
+        down = (n[:, 2] < -1 + 1e-9) & (tri[:, :, 2].mean(axis=1) > 1e-6)
+        return _by_z(tri[down, :, 2].mean(axis=1), area[down])
     out = []
     for f in part.faces():
         n = f.normal_at()
@@ -82,7 +116,12 @@ def downward_faces(part: Shape) -> list[tuple[float, float]]:
 def overhangs(part: Shape, max_deg: float = 45.0) -> list[tuple[float, float]]:
     """(z, area) of every face with an underside steeper than max_deg from vertical, above the bed: angled
     overhangs that need support. Flat ones (bridges) are downward_faces; a 45° roof or flare prints fine."""
+    from cadkit.mesh import Mesh
     limit = np.sin(np.radians(max_deg)) + 1e-3
+    if isinstance(part, Mesh):  # by height, to 0.1 mm: a mesh has no faces to group by
+        tri, n, area = _facets(part)
+        over = (-n[:, 2] > limit) & (tri[:, :, 2].max(axis=1) > 1e-6)
+        return _by_z(np.round(tri[over, :, 2].mean(axis=1), 1), area[over])
     out = []
     for f in part.faces():
         verts, tris = f.tessellate(0.05, 0.2)

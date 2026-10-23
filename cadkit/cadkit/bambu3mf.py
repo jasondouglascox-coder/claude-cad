@@ -37,7 +37,11 @@ IDENTITY = "1 0 0 0 1 0 0 0 1 0 0 0"
 def mesh(shape: Shape, tol: float = 0.01, angular: float = 0.1) -> tuple[np.ndarray, np.ndarray]:
     """Watertight triangle mesh within tol mm of the true surface: OCC tessellates each face separately, so merge
     coincident vertices. Meshed here with an absolute deflection first: build123d's tessellate asks OCC for one
-    relative to each edge's size, which let an 18° arc of a 550 mm radius stray 0.14 mm."""
+    relative to each edge's size, which let an 18° arc of a 550 mm radius stray 0.14 mm. A cadkit.mesh.Mesh is
+    already one."""
+    from cadkit.mesh import Mesh
+    if isinstance(shape, Mesh):
+        return shape.verts, shape.tris
     from OCP.BRepMesh import BRepMesh_IncrementalMesh
     BRepMesh_IncrementalMesh(shape.wrapped, tol, False, angular, True)
     verts, tris = shape.tessellate(tol, angular)

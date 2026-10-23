@@ -35,3 +35,17 @@ def test_crop_trims_the_background_to_a_margin(tmp_path):
     render([(box(0, 0, 0, 40, 10, 2), RED)], path, view=(0, 0, 1), px=200, crop=True)
     w, h = Image.open(path).size
     assert w == 200 and 0.25 * w < h < 0.35 * w
+
+
+def test_heights_is_what_you_see_looking_straight_down():
+    """The highest surface over each cell, NaN where there's nothing; a body hidden under another changes nothing."""
+    import numpy as np
+    from cadkit.render import heights
+    low, high, hidden = box(0, 0, 0, 40, 40, 2), box(10, 10, 2, 10, 10, 3), box(25, 25, 0, 5, 5, 1)
+    bounds = ((-5, -5), (45, 45))
+    h = heights([low, high], bounds, step=1.0)
+    assert h.shape == (50, 50)
+    assert h[20, 20] == pytest.approx(5)  # y row 20, x col 20 (15, 15): on the raised block
+    assert h[35, 5] == pytest.approx(2)  # (0, 30): on the slab
+    assert np.isnan(h[2, 2])  # (-3, -3): nothing there
+    assert np.array_equal(heights([low, high, hidden], bounds, step=1.0), h, equal_nan=True)

@@ -8,6 +8,7 @@ from typing import Callable
 from build123d import Compound, ExportSVG, LineType, Shape
 
 from cadkit import paint
+from cadkit.mesh import Mesh
 from cadkit.plates import Plate, bodies, is_multi_color
 from cadkit.plates import color_changes as count_changes
 
@@ -79,8 +80,13 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
         for name, s in pl.items:
             s.label = name
             children.append(s)
-        comp = Compound(children=children, label=pl.name)
-        paint.export_step(comp, folder / f"{pl.name}.step")
+        if any(isinstance(s, Mesh) for s in children):  # no B-rep, so no STEP: the plate's geometry as STL
+            whole = [s if isinstance(s, Mesh) else Mesh.from_shape(s) for s in children]
+            (whole[0] if len(whole) == 1 else Mesh.union(whole)).write_stl(folder / f"{pl.name}.stl")
+            comp = None
+        else:
+            comp = Compound(children=children, label=pl.name)
+            paint.export_step(comp, folder / f"{pl.name}.step")
         objects = []
         for s in children:
             if is_multi_color(s):
@@ -107,7 +113,7 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
                               f"cadkit.plates.pack, or move the tower in the slicer.", stacklevel=2)
         slicer.write_project(folder / f"{pl.name}{slicer.project_suffix}", objects, settings)
         everything.append((pl.name + (f" (print {pl.qty})" if pl.qty > 1 else ""), objects))
-        if preview_dir is not None:
+        if preview_dir is not None and comp is not None:
             write_svg(comp, preview_dir / f"plate_{pl.name}.svg", TOP)
         counts = {}
         for name, _ in pl.items:

@@ -28,6 +28,9 @@
   arched petals with orange valley beads, a domed Fibonacci head of diamond seeds, four colors by height.
 - `examples/rose-wall/`: an 8" open rose printed in one go (package `rose_wall`): petals swept round the axis
   and trimmed to pointed lenses, curling past level (PETG-interface tree supports), a funnel centre, a keyhole.
+- `examples/peony-wall/`: an 8" tight peony, soft pink, no supports (package `peony_wall`): 81 freeform ruffled
+  petals, each resting on the one below through a hidden 45-degree fill, built as meshes and unioned with
+  `cadkit.mesh` (B-rep booleans gave up); a yellow stamen insert pushed in from the back.
 
 ## Commands
 
@@ -41,6 +44,7 @@ cd examples/sunflower-wall && uv run pytest -n 3 --dist loadfile -m "not slow"  
 cd examples/sharpie-colorizer && uv run pytest -n 4                  # ~30 s, both plates through Bambu
 cd examples/refill-spool && uv run pytest -n 2                       # ~20 s, both halves through Bambu
 cd examples/rose-wall && uv run pytest -m "not slow"                  # ~4 min (fusing the petals); slow: Bambu
+cd examples/peony-wall && uv run pytest -n 4 -m "not slow"            # ~40 s; slow (-n 6, ~3 min): every petal, Bambu
 ```
 
 ## Rules
