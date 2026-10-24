@@ -109,3 +109,9 @@ bed, hung on a nail through a hidden keyhole.
   slow test now checks per direction, not against the outermost foot). One rose: 54.1 g + 3.8 g PETG, 2.8 h, 18
   swaps (unclipped 52.7 g + 3.2 g, 2.69 h). Also from the review, accepted: two sealed air pockets in the base
   (43 and 26 mm3, harmless); supports passing 0.15-0.2 mm from the fills now have more room.
+- 2026-10-23: Re-review of the cut-back fills: skirt gone (outline <= 0.1 mm past the unfilled rose in 180
+  directions; grazing renders at 12/25/40 degrees match it), no support starts on a petal or fill, nothing prints
+  over air but the keyhole bridge, nothing sealed in with the supports (unreachable with a 1.2 mm probe: 0.03%,
+  was 0.12%), each fill still one piece. Accepted: one tree trunk hugs petal 21's foot (~5 degrees, z 0.2-4.2,
+  0.07-0.2 mm off; may tack to the stem's outside near the wall); ~36 mm2 of PETG lands on the hidden cut faces
+  of fills 16-18 (releases the same); a few sub-0.4 mm lens-edge crescents of curls 17-18 skip their first layer.
