@@ -33,6 +33,9 @@
   `cadkit.mesh` (B-rep booleans gave up); a yellow stamen insert pushed in from the back.
 - `examples/lily-wall/`: a 180 mm lily (package `lily_wall`): six arched, recurved mesh tepals, white fading to
   purple by height through 40 dithered layers (21 swaps), tree supports in the loaded PLA.
+- `examples/lily-of-the-valley/`: a 188 mm arching sprig (package `lily_of_the_valley`): six white bells with
+  scalloped, curled rims on a green stem, green below 5 mm and white above (one swap), no supports: every part a
+  tube of sections round on top with a hidden 46-degree fill under it (`shapes.py`), unioned with `cadkit.mesh`.
 
 ## Commands
 
@@ -48,6 +51,7 @@ cd examples/refill-spool && uv run pytest -n 2                       # ~20 s, bo
 cd examples/rose-wall && uv run pytest -n 4 -m "not slow"             # ~12 min, both sizes (fusing petals); slow: Bambu
 cd examples/peony-wall && uv run pytest -n 4 -m "not slow"            # ~40 s; slow (-n 6, ~3 min): every petal, Bambu
 cd examples/lily-wall && uv run pytest -n 6                           # ~30 s, through Bambu
+cd examples/lily-of-the-valley && uv run pytest -n 6                  # ~15 s, through Bambu
 ```
 
 ## Rules

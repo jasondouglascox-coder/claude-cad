@@ -96,6 +96,15 @@ class Mesh:
         m = self.from_manifold(self._manifold().trim_by_plane((0, 0, 1), z))
         return self._like(m.verts, m.tris)
 
+    def simplify(self, tol: float = 1e-3) -> "Mesh":
+        """Edges shorter than tol collapsed (and flat runs of triangles merged): the slivers a union leaves where
+        faces nearly line up, which a vertex-rounding check (open_edges) or a slicer can see as holes. A collapse can
+        lift a bed vertex by up to tol; those go back on the bed."""
+        m = self.from_manifold(self._manifold().simplify(tol))
+        verts = m.verts.copy()
+        verts[np.abs(verts[:, 2]) < tol, 2] = 0.0
+        return self._like(verts, m.tris)
+
     def translate(self, offset) -> "Mesh":
         return self._like(self.verts + np.asarray(tuple(offset), float), self.tris)
 
@@ -106,6 +115,13 @@ class Mesh:
     @property
     def volume(self) -> float:
         return float(self._manifold().volume())
+
+    @property
+    def centroid(self) -> tuple[float, float, float]:
+        """The centre of mass (uniform density): signed tetrahedra from the origin to each triangle."""
+        t = self.triangles()
+        v = np.einsum("ij,ij->i", t[:, 0], np.cross(t[:, 1], t[:, 2]))
+        return tuple(float(c) for c in (t.sum(axis=1) * v[:, None]).sum(axis=0) / (4 * v.sum()))
 
     @property
     def is_valid(self) -> bool:

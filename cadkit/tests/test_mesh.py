@@ -32,6 +32,25 @@ def test_trim_cuts_below_a_height_and_translate_moves():
     assert m.volume == pytest.approx(200) and bb.min.Z == pytest.approx(0) and bb.min.X == pytest.approx(5)
 
 
+def test_centroid_is_the_centre_of_mass():
+    """Where a mesh balances: what a wall piece hangs plumb under."""
+    a = Mesh.from_shape(box(0, 0, 0, 10, 10, 2))  # 200 mm3 centred at (5, 5, 1)
+    b = Mesh.from_shape(box(20, 0, 0, 10, 10, 6))  # 600 mm3 centred at (25, 5, 3)
+    assert Mesh.union([a, b]).centroid == pytest.approx((20, 5, 2.5))
+
+
+def test_simplify_clears_slivers_a_union_leaves():
+    """Bodies whose faces nearly line up union into steps thinner than open_edges' rounding; simplify collapses them
+    without moving the shape."""
+    a, b = Mesh.from_shape(box(0, 0, 0, 10, 10, 2)), Mesh.from_shape(box(5.00003, 0.00003, 0, 10, 10, 2.00003))
+    u = Mesh.union([a, b])
+    assert checks.open_edges(u) > 0
+    s = u.simplify()
+    assert checks.open_edges(s) == 0 and s.volume == pytest.approx(u.volume, rel=1e-5)
+    low = s.verts[:, 2] < 1e-3
+    assert low.any() and (s.verts[low, 2] == 0).all()  # what stood on the bed still does, exactly
+
+
 def test_from_grid_closes_two_skins_into_a_solid():
     """Two skins as [column][row] point grids with rows lined up close into a watertight solid, whichever way the
     skins run."""
@@ -57,6 +76,9 @@ def test_checks_accept_meshes():
     assert "2 separate solids (expected 1)" in checks.printable_problems(floating, pr)
     assert checks.downward_faces(floating) == [(4.0, 9.0)]
     assert checks.overhangs(floating) == [(4.0, 9.0)]  # as for a shape: a flat underside counts too
+    lower = Mesh.from_shape(box(0, 0, 0, 10, 10, 2))
+    assert checks.unsupported(Mesh.from_shape(box(2, 2, 2, 4, 4, 1)), lower) == pytest.approx(0, abs=1e-6)
+    assert checks.unsupported(Mesh.from_shape(box(8, 2, 2, 4, 4, 1)), lower) == pytest.approx(2 * 4 * 0.1, rel=1e-4)
 
 
 def test_heights_and_render_take_meshes(tmp_path):

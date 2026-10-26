@@ -90,10 +90,11 @@ def off_layer_z(shape: Shape, printer: Printer | None = None) -> list[float]:
 def unsupported(upper: Shape, lower: Shape, probe: float = 0.1) -> float:
     """Volume (mm^3) of the upper color's bottom layer that has no lower color under it. Two-color parts print the
     lower color first; anything the upper color starts over air needs supports. 0 = fine."""
+    from cadkit.mesh import Mesh
     bb = upper.bounding_box()
     mn = (Align.MIN, Align.MIN, Align.MIN)
     slab = upper & (Pos(bb.min.X - 1, bb.min.Y - 1, bb.min.Z) * Box(bb.size.X + 2, bb.size.Y + 2, probe, align=mn))
-    below = Pos(0, 0, -2 * probe) * slab
+    below = slab.translate((0, 0, -2 * probe)) if isinstance(slab, Mesh) else Pos(0, 0, -2 * probe) * slab
     return below.volume - (below & lower).volume
 
 
