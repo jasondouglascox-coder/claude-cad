@@ -74,7 +74,7 @@ A whole-room file takes a few minutes to translate.
 - **Print `fit_test` first.** Pick the variant of each joint (1/2/3 notches) that fits, then retune `fit_slide`,
   `fit_snap` and `rail_base_w` in `hotrain/params.py` and rebuild.
   - `uv run python -m hotrain.build latch-test` writes a small latch coupon: three latches with the hook at
-    1.0/1.2/1.4 mm (1-3 notches; the brackets use 1.2) and two pier stubs. Pick the one that clicks, holds, and
+    1.0/1.2/1.4 mm (1-3 notches; the brackets use 1.4) and two pier stubs. Pick the one that clicks, holds, and
     can still be unlatched by bending the bracket back gently.
   - The three rivet strips (1/2/3 notches = 0.6/0.8/1.0 mm heads) show how the deck truss rivets come out. If
     you like another size better, set `rivet_d`; if PETG strings between the heads, fix that before printing

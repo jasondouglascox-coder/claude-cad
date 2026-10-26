@@ -13,7 +13,7 @@ def test_brackets_latch_rigid_with_the_tighter_slot_and_longer_hook():
     assert P.latch_finger_len == 0.0  # no spring slot
     assert bracket.slot_w(P) == pytest.approx(P.panel_t + P.fit_pier)
     assert P.fit_pier < P.fit_slide
-    assert P.latch_engage in fit_test.LATCH_ENGAGES
+    assert P.latch_engage == fit_test.LATCH_ENGAGES[2]  # coupon 3 (1.4 mm) was "perfect", 2026-10-26
 
 
 def _hook_reach(block):

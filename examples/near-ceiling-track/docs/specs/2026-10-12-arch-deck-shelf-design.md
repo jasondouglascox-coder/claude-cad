@@ -234,4 +234,6 @@ Only after this passes: batch-print the run.
   now have **no spring slot** (`latch_finger_len = 0`), a **tighter pier slot** (`fit_pier = 0.10`, from 0.20) and a
   **longer hook** (`latch_engage = 1.2`, from 0.8). PETG gives enough to unlatch by bending the bracket back. The
   latch coupon now tries the hook at 1.0, 1.2 and 1.4 mm (1-3 notches) to confirm.
+- **Latch hook 1.4 mm (2026-10-26):** on the second latch coupon the user found variant 3 "perfect"
+  (`latch_engage = 1.4`).
 

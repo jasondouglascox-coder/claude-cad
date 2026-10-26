@@ -126,7 +126,7 @@ class Params:
     screw_zs: tuple = (15.0, 65.0)  # below tie underside
     latch_top: float = 8.5  # below tie underside
     latch_win_h: float = 3.0
-    latch_engage: float = 1.2  # hook into the pier's window (latch coupon 2: 0.8 held too loosely)
+    latch_engage: float = 1.4  # hook into the pier's window: latch coupon 2, variant 3 (0.8 held too loosely)
     latch_finger_w: float = 2.0
     latch_relief: float = 1.0
     latch_finger_len: float = 0.0  # spring slot beside the hook: 0 = none (coupon 1: the 40 mm slot let the pier fall out)
