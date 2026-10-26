@@ -241,4 +241,11 @@ Only after this passes: batch-print the run.
   from `first_layer_speed` / `first_layer_infill_speed` in params (`build.print_settings`). The textured plate also
   runs 80 °C for PETG's first layer (`first_layer_bed_temp`; 70 after, PLA unchanged). If parts still lift, try a
   brim (`brim_type`) next, after drying the PETG and washing the plate.
+- **The room prints a bay at a time (2026-10-26):** the 16" "starter" bay was a free-standing test bay, the wrong
+  length for the room (406 vs 418/443 mm), and it got printed as the room's first bay. It's removed.
+  - `build sections` writes section kits: each run between two corners is a first bay (with the corner-end
+    ladder), middle bays, and a last bay (no bracket: the corner anchor holds that pier). Identical kits across
+    runs are merged, with a print count.
+  - The room is six kits: 418 mm first ×3, middle ×6, last ×3, and 443 mm first, middle and last ×1 each.
+  - The MakerWorld profiles keep a free-standing 16" bay for other people, now named `free_standing_bay_*`.
 

@@ -35,7 +35,7 @@ uv sync
 
 | Command | Output |
 |---|---|
-| `uv run python -m hotrain.build starter --run-style deck_truss` | `out/starter/`: **one 16" bay ready to print** (3 plates + the fit-test coupon) and `plates.csv` |
+| `uv run python -m hotrain.build sections --run-style deck_truss` | `out/sections/`: **the room a bay at a time**. One folder per section kit (first / middle / last bay of a run, per bay length), each with one project file holding every plate, and `sections.csv` saying how many times to print each and which bays it is |
 | `uv run python -m hotrain.build plates --run-style deck_truss` | `out/plates/*.3mf` + `.step`: every build plate for the runs and corners; `out/plates.csv` says how many of each |
 | `uv run python -m hotrain.build all --run-style deck_truss` | Every part (`out/step/*.step`), the run assembly, the fit test and `out/manifest.csv` |
 | `uv run python -m hotrain.build corners` | `out/corners/*.step`, both corner assemblies, and `out/corners_layout.csv` (where to mark anchors, brackets and ceiling cleats; rod cut lengths) |
@@ -87,7 +87,8 @@ A whole-room file takes a few minutes to translate.
 - Every other plate is single-color gray, except `bridge_corner_cleats`: the two ceiling cleats, alone in white
   PLA (PLA prints cooler than PETG, so it never shares a bed with gray).
 - Each kit also comes as **one project with every plate** (a tab per plate): `out/plates/near_ceiling_track.3mf`,
-  `out/starter/starter.3mf`, `out/wire_test/wire_test.3mf`. Plates printed more than once say "(print n)".
+  `out/sections/<section>/<section>.3mf`, `out/wire_test/wire_test.3mf`. Plates printed more than once say
+  "(print n)".
 - Brown/gray plates leave the back-left corner free for Bambu's prime tower.
 
 ## Share it on MakerWorld
@@ -97,7 +98,8 @@ uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project
 ```
 
 One model, five print profiles:
-- `starter_deck_truss` and `starter_arch`: a 16" bay plus the fit test;
+- `free_standing_bay_deck_truss` and `free_standing_bay_arch`: a 16" bay that stands on its own (end piers, a
+  bracket at each end), for people without this room;
 - `corners_pony` and `corners_bowstring`;
 - `wire_rail_test`, at 0.08 mm layers.
 

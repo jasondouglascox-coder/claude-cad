@@ -12,10 +12,10 @@
     uv run python -m hotrain.build web          # out/web: phone/web 3D viewer page + glTF JSON models + manifest
     uv run python -m hotrain.build render --run-style deck_truss   # out/render/*.png shaded previews
     uv run python -m hotrain.build check        # interference check, exit 1 on any clash
-    uv run python -m hotrain.build starter --run-style deck_truss   # out/starter: one 16" bay + fit-test coupon
     uv run python -m hotrain.build wire-test    # out/wire_test: stainless wire rail curve test plates (0.08 mm layers)
     uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project per print profile, to upload
     uv run python -m hotrain.build latch-test   # out/latch_test: three latch hook lengths + two pier stubs
+    uv run python -m hotrain.build sections --run-style deck_truss   # out/sections: the room a bay at a time
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
 """
 import argparse
@@ -149,25 +149,19 @@ def cmd_plates(p: Params, bays: list[float], out: Path, preview: bool) -> None:
                  out / "preview" if preview else None, p=p, combined="near_ceiling_track")
 
 
-def cmd_starter(p: Params, out: Path, bay_in: float = 16.0) -> Path:
-    """One free-standing straight bay (two brackets, both end piers) plus the fit-test coupon: out/starter/."""
-    d = out / "starter"
-    write_plates(starter_plates(p, bay_in), d, d / "plates.csv", p=p, combined="starter")
-    return d
-
-
-def starter_plates(p: Params, bay_in: float = 16.0) -> list:
-    from hotrain.plates import Plate
-    return plates.all_in_one(p, [bay_in * INCH]) + [Plate("fit_test", 1, [("fit_test", fit_test.make(p))])]
+def free_standing_bay(p: Params, bay_in: float = 16.0) -> list:
+    """A 16" bay that stands on its own (a bracket at each end, end piers): for MakerWorld visitors, not this room
+    (the room prints a bay at a time: `build sections`)."""
+    return plates.all_in_one(p, [bay_in * INCH], name="free_standing_bay")
 
 
 def makerworld_profiles(p: Params, d: Path) -> dict:
     """MakerWorld print profiles: {file name: (plates, slicer settings or None)}. The track variants a visitor can
-    print without this room: a starter bay in each run style, the corners in each style, the wire-rail test."""
+    print without this room: a free-standing bay in each run style, the corners in each style, the wire-rail test."""
     from hotrain.plates import Plate
     D = replace(p, run_style="deck_truss")
-    out = {"starter_deck_truss": (starter_plates(D), None),
-           "starter_arch": (starter_plates(replace(p, run_style="arch")), None)}
+    out = {"free_standing_bay_deck_truss": (free_standing_bay(D), None),
+           "free_standing_bay_arch": (free_standing_bay(replace(p, run_style="arch")), None)}
     for style in ("pony", "bowstring"):
         out[f"corners_{style}"] = (plates.corner_plates(replace(D, corner_style=style)), None)
     out["wire_rail_test"] = (plates.wire_test_plates(p), fine_layer_settings(p, d / "fine_layers.json"))
@@ -270,6 +264,23 @@ def cmd_render(p: Params, out: Path) -> list[Path]:
     return paths
 
 
+def cmd_sections(p: Params, out: Path) -> Path:
+    """The room a bay at a time: out/sections/<section>/<section>.3mf (every plate of one bay's kit as tabs) and
+    sections.csv (each kit, how many bays print it, and which bays)."""
+    d = out / "sections"
+    rows = []
+    for sec in plates.sections(p):
+        sd = d / sec.name
+        pls = plates.section_plates(p, sec)
+        write_plates(pls, sd, sd / "plates.csv", p=p, combined=sec.name)
+        rows.append([sec.name, sec.qty, len(pls), "; ".join(f"{run} bay {i}" for run, i in sec.where)])
+    with open(d / "sections.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["section", "print", "plates", "bays"])
+        w.writerows(rows)
+    return d
+
+
 def cmd_latch_test(p: Params, out: Path) -> Path:
     """The latch coupon on its own plate: out/latch_test/."""
     from hotrain.plates import Plate
@@ -295,7 +306,7 @@ def params_from_args(a: argparse.Namespace) -> Params:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="hotrain.build", description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["all", "parts", "assembly", "fit-test", "plates", "corners", "room", "show", "glb", "web",
-                                        "check", "starter", "render", "wire-test", "makerworld", "latch-test"])
+                                        "check", "render", "wire-test", "makerworld", "latch-test", "sections"])
     ap.add_argument("target", nargs="?", default="room", help="for show: room | run | inside | bridge | fit-test")
     ap.add_argument("--out", default="out")
     ap.add_argument("--mesh", action="store_true")
@@ -332,9 +343,8 @@ def main(argv: list[str] | None = None) -> int:
         for path in room.export_glbs(p, out / "glb"):
             print(f"{path}  {path.stat().st_size / 1e6:.1f} MB")
         return 0
-    if a.command == "starter":
-        d = cmd_starter(p, out)
-        print(f"wrote {d}/ (plates.csv lists what to print and how many)")
+    if a.command == "sections":
+        print(f"wrote {cmd_sections(p, out)}/ (sections.csv: each bay kit and how many times to print it)")
         return 0
     if a.command == "latch-test":
         print(f"wrote {cmd_latch_test(p, out)}/ (one plate: latch_test)")

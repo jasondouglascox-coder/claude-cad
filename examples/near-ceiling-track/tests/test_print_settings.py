@@ -1,5 +1,5 @@
-"""Slicer settings every railroad plate carries: a slow first layer, for bed adhesion (the starter's long thin parts
-came loose at the template's 50 / 105 mm/s)."""
+"""Slicer settings every railroad plate carries: a slow first layer, for bed adhesion (the first test
+bay's long thin parts came loose at the template's 50 / 105 mm/s)."""
 import json
 import zipfile
 
@@ -20,9 +20,9 @@ def _first_layer(cfg):
     return float(cfg["initial_layer_speed"][0]), float(cfg["initial_layer_infill_speed"][0])
 
 
-def test_starter_plates_print_a_slow_first_layer(tmp_path):
-    assert build.main(["starter", "--run-style", "deck_truss", "--out", str(tmp_path)]) == 0
-    d = tmp_path / "starter"
+def test_latch_coupon_plates_print_a_slow_first_layer(tmp_path):
+    assert build.main(["latch-test", "--out", str(tmp_path)]) == 0
+    d = tmp_path / "latch_test"
     for f in sorted(d.glob("*.3mf")):
         assert _first_layer(_settings(f)) == (P.first_layer_speed, P.first_layer_infill_speed), f.name
 

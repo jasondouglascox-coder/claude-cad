@@ -37,8 +37,8 @@ def test_single_color_parts_gray_and_cleats_white(tmp_path):
 
 @pytest.mark.slow
 @pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
-def test_starter_ladders_survive_the_slicer(tmp_path):
-    """The starter bay's three ladders open as three different ladders (only the middle one has the solder gap),
+def test_a_runs_ladders_survive_the_slicer(tmp_path):
+    """A 16" run's three ladders open as three different ladders (only the middle one has the solder gap),
     each brown and gray."""
     segs = L.segments(D, [16 * INCH])
     items = [(f"ladder_{k:02d}", Pos(0, 50 * k, 0) * tie_ladder.make_colored(D, [16 * INCH], s))

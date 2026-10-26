@@ -96,7 +96,7 @@ def test_corner_plates_keep_pla_off_petg_and_swap_at_most_once():
 
 @pytest.mark.slow
 def test_every_two_color_plate_slices(tmp_path):
-    """Bambu slices every brown/gray plate (runs, corners, starter): nothing on the bed where its prime tower
+    """Bambu slices every brown/gray plate (runs, corners, room sections): nothing on the bed where its prime tower
     prints. Before cadkit kept that corner free, all five failed with "gcode path conflicts"."""
     from concurrent.futures import ThreadPoolExecutor
     from cadkit import slicers
@@ -106,7 +106,7 @@ def test_every_two_color_plate_slices(tmp_path):
     if not s.available():
         pytest.skip("no slicer installed (settings: slicer)")
     D = replace(P, run_style="deck_truss")
-    pls = plates.plates(D) + plates.corner_plates(D) + plates.all_in_one(D, [16 * INCH])
+    pls = plates.plates(D) + plates.corner_plates(D) + [pl for sec in plates.sections(D) for pl in plates.section_plates(D, sec)]
     two = [pl for pl in pls if any(is_multi_color(sh) for _, sh in pl.items)]
     assert len(two) >= 6
     build.write_plates(two, tmp_path, tmp_path / "p.csv", p=D)

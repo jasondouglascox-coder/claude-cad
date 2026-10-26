@@ -3,6 +3,7 @@
 Parts are packed with cadkit's MaxRects packer; two arch halves are nested head-to-tail first, since that is
 what lets a half span fit on one A1 plate.
 """
+from dataclasses import dataclass, field
 from functools import lru_cache
 
 from build123d import Compound, Pos, Rot, Shape
@@ -135,7 +136,7 @@ def _flatten(pl: list) -> list:
     return flat
 
 
-def all_in_one(p: Params, bays: list[float], ends: tuple = L.RUN_ENDS, name: str = "starter") -> list[Plate]:
+def all_in_one(p: Params, bays: list[float], ends: tuple = L.RUN_ENDS, name: str = "kit") -> list[Plate]:
     """Every part of a short run packed together on as few plates as possible (no per-bay kits), e.g. a
     single test bay."""
     items = [it for _, _, kit in _kits(p, bays, ends) for it in kit]
@@ -196,3 +197,44 @@ def wire_test_plates(p: Params = P) -> list[Plate]:
     corner = pack(p, [(f"wire_curve#{k}", wire_curve.make_colored(p)) for k in range(p.wire_test_pieces)])
     return single + [Plate("wire_curve_corner" + (f"_{n + 1}" if len(corner) > 1 else ""), 1, pl)
                      for n, pl in enumerate(corner)]
+
+
+@dataclass
+class Section:
+    name: str
+    qty: int  # how many bays print this kit
+    items: list  # (part name, shape), unpacked
+    where: list = field(default_factory=list)  # (run, bay number from 1)
+
+
+def sections(p: Params = P) -> list[Section]:
+    """The room a bay at a time. Each run between two corners is a first bay (with the run's corner-end ladder), middle
+    bays and a last bay (no bracket: the corner anchor holds that pier). Identical sections across runs are one kit."""
+    from hotrain import room
+    seen: dict[tuple, Section] = {}
+    for sec in room.sections(p):
+        if sec.kind != "run":
+            continue
+        bays = list(sec.bays)
+        kits = _kits(p, bays, sec.ends)
+        ends = kits[-1]
+        for i, b in enumerate(bays):
+            a, bb = kits[2 * i], kits[2 * i + 1]
+            kind = "only" if len(bays) == 1 else "first" if i == 0 else "last" if i == len(bays) - 1 else "middle"
+            first = i == 0
+            key = (kind, round(b, 1), a[1], bb[1], ends[1] if first else None)
+            if key not in seen:
+                seen[key] = Section(f"section_{b:.0f}mm_{kind}", 0, a[2] + bb[2] + (ends[2] if first else []))
+            seen[key].qty += 1
+            seen[key].where.append((sec.name, i + 1))
+    out = list(seen.values())
+    names = [s.name for s in out]
+    for s in out:  # two different kits of one kind and length: number them
+        if names.count(s.name) > 1:
+            s.name = f"{s.name}_{[t for t in out if t.name == s.name].index(s) + 1}"
+    return out
+
+
+def section_plates(p: Params, sec: Section) -> list[Plate]:
+    """One section's parts packed onto as few plates as possible (ladders on their own two-color plates)."""
+    return [Plate(f"{sec.name}_{n + 1}", 1, _flatten(pl)) for n, pl in enumerate(pack(p, sec.items))]

@@ -1,5 +1,5 @@
-"""Print readiness of the starter bay: every part watertight, flat, on the bed; at most one color change per
-plate (two-color parts never share a plate with single-color parts)."""
+"""Print readiness of a room section (the first 418 mm bay of a run): every part watertight, flat, on the bed; at most
+one color change per plate (two-color parts never share a plate with single-color parts)."""
 from dataclasses import replace
 
 import pytest
@@ -13,13 +13,14 @@ D = replace(P, run_style="deck_truss")
 
 
 @pytest.fixture(scope="module")
-def starter():
-    return plates.all_in_one(D, [16 * INCH])
+def section():
+    sec = next(s for s in plates.sections(D) if s.name == "section_418mm_first")
+    return plates.section_plates(D, sec)
 
 
 @pytest.mark.slow
-def test_starter_parts_watertight_flat_on_bed(starter):
-    for pl in starter:
+def test_section_parts_watertight_flat_on_bed(section):
+    for pl in section:
         for name, s in pl.items:
             bb = s.bounding_box()
             assert bb.min.Z == pytest.approx(0, abs=1e-6), name
@@ -30,8 +31,8 @@ def test_starter_parts_watertight_flat_on_bed(starter):
                 assert open_edges(b) == 0, name
 
 
-def test_at_most_one_color_change_per_plate(starter):
-    for pl in starter:
+def test_at_most_one_color_change_per_plate(section):
+    for pl in section:
         two = [s for _, s in pl.items if plates.is_two_color(s)]
         assert not two or len(two) == len(pl.items), f"{pl.name} mixes two-color and single-color parts"
         if two:

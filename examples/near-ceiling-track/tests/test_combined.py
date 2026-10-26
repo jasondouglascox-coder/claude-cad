@@ -17,20 +17,6 @@ def _sheet(path):
         return [(r["plate"], int(r["quantity"])) for r in csv.DictReader(f)]
 
 
-@pytest.fixture(scope="module")
-def starter(tmp_path_factory):
-    out = tmp_path_factory.mktemp("st")
-    assert build.main(["starter", "--run-style", "deck_truss", "--out", str(out)]) == 0
-    return out / "starter"
-
-
-def test_starter_kit_is_one_project_with_every_plate(starter):
-    plates = read_plates(starter / f"starter{SUFFIX}")
-    want = [n + (f" (print {q})" if q > 1 else "") for n, q in _sheet(starter / "plates.csv")]
-    assert [name for name, _ in plates] == want
-    assert all(objs for _, objs in plates)
-
-
 def test_wire_test_kit_is_one_project_at_fine_layers(tmp_path):
     import json
     import zipfile
@@ -49,7 +35,8 @@ def test_makerworld_files_are_sliced_with_a_thumbnail_per_plate(tmp_path):
     if not s.available():
         pytest.skip("no slicer installed (settings: slicer)")
     assert build.main(["makerworld", "--out", str(tmp_path)]) == 0
-    for kit in ("starter_deck_truss", "starter_arch", "corners_pony", "corners_bowstring", "wire_rail_test"):
+    for kit in ("free_standing_bay_deck_truss", "free_standing_bay_arch", "corners_pony", "corners_bowstring",
+                "wire_rail_test"):
         path = tmp_path / "makerworld" / f"{kit}{SUFFIX}"
         names = zipfile.ZipFile(path).namelist()
         n = len(read_plates(path))
