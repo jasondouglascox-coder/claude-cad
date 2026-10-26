@@ -7,7 +7,7 @@ from hotrain.params import P, Params
 
 
 def slot_w(p: Params) -> float:
-    return p.panel_t + p.fit_slide
+    return p.panel_t + p.fit_pier
 
 
 def slots_and_latch(p: Params, slot_bottom: float, ys: tuple) -> tuple[list, Sketch]:

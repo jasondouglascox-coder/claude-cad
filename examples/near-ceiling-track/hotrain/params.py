@@ -126,10 +126,10 @@ class Params:
     screw_zs: tuple = (15.0, 65.0)  # below tie underside
     latch_top: float = 8.5  # below tie underside
     latch_win_h: float = 3.0
-    latch_engage: float = 0.8
+    latch_engage: float = 1.2  # hook into the pier's window (latch coupon 2: 0.8 held too loosely)
     latch_finger_w: float = 2.0
     latch_relief: float = 1.0
-    latch_finger_len: float = 40.0
+    latch_finger_len: float = 0.0  # spring slot beside the hook: 0 = none (coupon 1: the 40 mm slot let the pier fall out)
 
     # handrail
     handrail_h: float = 19.0  # above rail top
@@ -222,6 +222,7 @@ class Params:
     fit_snap: float = 0.05
     fit_key: float = 0.0  # keystone in its socket: fit-test variant 1 (2026-10-26; 0.05 and 0.10 were loose)
     fit_tab: float = 0.10  # truss tab into the tie ladder's slot: fit-test variant 1 (0.10 and 0.20 both fit)
+    fit_pier: float = 0.10  # pier in the bracket's (and corner anchors') slot: tighter than fit_slide (latch coupon)
 
     # printer: yours, from cadkit.settings (CADKIT_BED... or cadkit.toml); with nothing set, the A1's 256 x 256 mm.
     # Half spans and ladders are sized to fit bed_usable; a smaller bed fails the fit tests with the numbers.

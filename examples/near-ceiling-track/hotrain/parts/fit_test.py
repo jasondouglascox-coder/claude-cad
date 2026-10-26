@@ -18,7 +18,7 @@ ROD_SEAT_FITS = (0.1, 0.2, 0.3)  # clearance of the corner deck's rod grooves on
 RIVET_SIZES = (0.6, 0.8, 1.0)  # deck-truss rivet head diameters: smaller -> larger (rivet_d is the middle one)
 RIVET_STRIP = (40.0, 10.0)  # strip length, width
 LATCH_DEPTH = 45.0
-LATCH_SLOTS = (40.0, 25.0, 15.0, 0.0)  # latch coupon: spring slot length per variant; 1 = today's, 4 = none
+LATCH_ENGAGES = (1.0, 1.2, 1.4)  # latch coupon: hook length per variant (1-3 notches), no spring slot
 LATCH_NOTCH = 1.0  # the coupon's short latch sample keeps a shallow pier notch
 
 
@@ -68,15 +68,15 @@ def latch_block(p: Params, n: int = 0) -> Part:
     return extrude(Pos(-y0, LATCH_DEPTH + 4) * prof, p.bracket_t)
 
 
-def latch_variant(p: Params, slot: float, n: int) -> Part:
-    """The latch with a spring slot `slot` mm long (0 = none), n notches."""
-    return latch_block(replace(p, latch_finger_len=slot), n)
+def latch_variant(p: Params, engage: float, n: int) -> Part:
+    """The latch with its hook standing `engage` mm into the pier slot, n notches."""
+    return latch_block(replace(p, latch_engage=engage), n)
 
 
 def latch_coupon(p: Params = P) -> Compound:
-    """The latch coupon: the LATCH_SLOTS variants (1-4 notches) and two pier stubs, flat on one bed."""
-    pieces = [Pos(22.0 * i, 0, 0) * latch_variant(p, slot, i + 1) for i, slot in enumerate(LATCH_SLOTS)]
-    x = 22.0 * len(LATCH_SLOTS) + 4
+    """The latch coupon: the LATCH_ENGAGES hooks (1-3 notches) and two pier stubs, flat on one bed."""
+    pieces = [Pos(22.0 * i, 0, 0) * latch_variant(p, e, i + 1) for i, e in enumerate(LATCH_ENGAGES)]
+    x = 22.0 * len(LATCH_ENGAGES) + 4
     pieces += [Pos(x + 28.0 * k, 0, 0) * latch_pier(p) for k in range(2)]
     return Compound(children=pieces)
 
@@ -126,7 +126,7 @@ def make(p: Params = P) -> Compound:
     for i, f in enumerate(KEY_FITS):
         pieces.append(Pos(110 + 22 * i, 0, 0) * key_block(p, f, i + 1))
     pieces.append(Pos(110, 35, 0) * key(p))
-    pieces.append(Pos(60, 60, 0) * latch_block(p))  # (the latch coupon tries spring-slot lengths)
+    pieces.append(Pos(60, 60, 0) * latch_block(p))  # (the latch coupon tries hook lengths)
     pieces.append(Pos(110, 60, 0) * latch_pier(p))
     for i, f in enumerate(ROD_SEAT_FITS):
         pieces.append(Pos(180 + 25 * i, 0, 0) * rod_seat_sample(p, f, i + 1))

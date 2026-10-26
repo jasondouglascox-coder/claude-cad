@@ -15,7 +15,7 @@
     uv run python -m hotrain.build starter --run-style deck_truss   # out/starter: one 16" bay + fit-test coupon
     uv run python -m hotrain.build wire-test    # out/wire_test: stainless wire rail curve test plates (0.08 mm layers)
     uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project per print profile, to upload
-    uv run python -m hotrain.build latch-test   # out/latch_test: four latch spring-slot lengths + two pier stubs
+    uv run python -m hotrain.build latch-test   # out/latch_test: three latch hook lengths + two pier stubs
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
 """
 import argparse

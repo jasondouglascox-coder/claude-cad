@@ -226,11 +226,12 @@ Only after this passes: batch-print the run.
 - **Keystone: variant 1, no clearance** (`fit_key = 0.0`; 0.05 and 0.10 were loose). The key fits tight when its bed
   side meets the panel's bed side, and loose flipped. The README says to match bed side to bed side.
 - **Tab slots: variant 1, 0.10 mm** (`fit_tab`; 0.10 and 0.20 both fit, and the user chose the tighter).
-- Only the keystone and tab slots get their own fits. The rail grooves, brackets, cross-frames and rods keep
-  `fit_slide` (0.20) until their samples are tried: the tie-plate grooves need the rail, the rod seats a 1/4" rod.
-- **Latch:** the coupon's pier stub falls out of the fork. The user thinks the hook's size is right and the finger
-  flexes too much. A latch coupon (`build latch-test`) tries the spring slot at 40 (today's), 25 and 15 mm, and
-  none (1-4 notches), with two pier stubs. Fingers are stiffer the shorter the slot, about 1/length³. The user
-  expects PETG to give enough to unlatch even with no slot. `latch_finger_len = 0` drops the slot in the
-  brackets.
+- The keystone, tab slots and (below) the pier slot get their own fits. The rail grooves, cross-frames and rods
+  keep `fit_slide` (0.20) until their samples are tried: the tie-plate grooves need the rail, the rod seats a 1/4"
+  rod.
+- **Latch:** the first coupon's pier stub fell out of the fork. A latch coupon then tried the spring slot at 40, 25,
+  15 mm and none: no slot was best, but still a little loose. So the brackets (and the corner anchors' latches)
+  now have **no spring slot** (`latch_finger_len = 0`), a **tighter pier slot** (`fit_pier = 0.10`, from 0.20) and a
+  **longer hook** (`latch_engage = 1.2`, from 0.8). PETG gives enough to unlatch by bending the bracket back. The
+  latch coupon now tries the hook at 1.0, 1.2 and 1.4 mm (1-3 notches) to confirm.
 
