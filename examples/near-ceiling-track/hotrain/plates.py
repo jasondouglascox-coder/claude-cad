@@ -43,9 +43,10 @@ def nested_arch_pair(p: Params, bay_len: float) -> Compound:
     return Compound(children=[low, up])
 
 
-def pack(p: Params, items: list[tuple[str, Shape]]) -> list[list[tuple[str, Shape]]]:
-    """cadkit's MaxRects packer on this project's printer (two-color parts get their own plates)."""
-    return cadkit_plates.pack(items, p.printer)
+def pack(p: Params, items: list[tuple[str, Shape]], fill_gaps: bool = False) -> list[list[tuple[str, Shape]]]:
+    """cadkit's MaxRects packer on this project's printer (two-color parts get their own plates); fill_gaps also
+    nests parts by their real outlines (what the user did by hand to a starter plate)."""
+    return cadkit_plates.pack(items, p.printer, fill_gaps=fill_gaps)
 
 
 def _ladder_key(p: Params, bays: list[float], seg: L.Segment, ends: tuple) -> tuple:
@@ -237,4 +238,4 @@ def sections(p: Params = P) -> list[Section]:
 
 def section_plates(p: Params, sec: Section) -> list[Plate]:
     """One section's parts packed onto as few plates as possible (ladders on their own two-color plates)."""
-    return [Plate(f"{sec.name}_{n + 1}", 1, _flatten(pl)) for n, pl in enumerate(pack(p, sec.items))]
+    return [Plate(f"{sec.name}_{n + 1}", 1, _flatten(pl)) for n, pl in enumerate(pack(p, sec.items, fill_gaps=True))]

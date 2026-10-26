@@ -248,4 +248,7 @@ Only after this passes: batch-print the run.
     runs are merged, with a print count.
   - The room is six kits: 418 mm first ×3, middle ×6, last ×3, and 443 mm first, middle and last ×1 each.
   - The MakerWorld profiles keep a free-standing 16" bay for other people, now named `free_standing_bay_*`.
+- **Section kits nest by real outlines (2026-10-26):** the user merged two starter plates by hand. Section kits
+  now pack with cadkit's `fill_gaps`, which moves parts into the open space around earlier plates' real
+  outlines. The other plate commands keep rectangle packing.
 

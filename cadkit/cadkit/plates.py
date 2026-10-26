@@ -129,23 +129,143 @@ _SLICER = object()  # pack(keepout=...) default: ask the active slicer
 
 
 def pack(items: list[tuple[str, Shape]], printer: Printer | None = None, gap: float = GAP,
-         colors: int | None = None, keepout=_SLICER) -> list[list[tuple[str, Shape]]]:
+         colors: int | None = None, keepout=_SLICER, fill_gaps: bool = False) -> list[list[tuple[str, Shape]]]:
     """Pack (name, flat shape) items onto as few beds as possible; multi-color parts get their own plates unless
     the printer has one color. printer and colors default to your settings.
 
     keepout: (x0, y0, x1, y1) on the bed that multi-color plates leave free for the slicer's prime tower; by default
-    the active slicer's (cadkit.slicers.active().tower_keepout()), None for none."""
+    the active slicer's (cadkit.slicers.active().tower_keepout()), None for none.
+
+    fill_gaps: after packing by bounding rectangles, move parts from later plates into the open space around the
+    real outlines on earlier ones (an L's empty corner, the inside of a frame), dropping plates that empty."""
     from cadkit.settings import settings
     printer = printer or default()
     colors = settings().colors if colors is None else colors
+    run = (lambda its, ko=None: _fill(_pack(its, printer, gap, ko), printer, gap, ko)) if fill_gaps else \
+        (lambda its, ko=None: _pack(its, printer, gap, ko))
     if colors == 1:
-        return _pack(items, printer, gap)
+        return run(items)
     if keepout is _SLICER:
         from cadkit import slicers
         keepout = slicers.active().tower_keepout()
     two = [it for it in items if is_multi_color(it[1])]
     one = [it for it in items if not is_multi_color(it[1])]
-    return (_pack(two, printer, gap, keepout) if two else []) + (_pack(one, printer, gap) if one else [])
+    return (run(two, keepout) if two else []) + (run(one) if one else [])
+
+
+RES = 0.5  # mm per cell of the footprint grid that fill_gaps searches
+
+
+def _footprint(s: Shape, res: float = RES):
+    """Boolean grid (rows = y, cols = x) of the shape's XY shadow from its bounding box's min corner: every face that
+    isn't vertical, tessellated and filled (top and bottom faces together cover the shadow, either winding)."""
+    import numpy as np
+    bb = s.bounding_box()
+    ox, oy = bb.min.X, bb.min.Y
+    w, h = int(np.ceil(bb.size.X / res)) + 1, int(np.ceil(bb.size.Y / res)) + 1
+    m = np.zeros((h, w), bool)
+    for f in s.faces():
+        try:
+            if abs(f.normal_at(f.center()).Z) < 1e-3:
+                continue
+        except Exception:
+            pass
+        verts, tris = f.tessellate(0.2, 0.5)
+        if not tris:
+            continue
+        pts = np.array([((v.X - ox) / res, (v.Y - oy) / res) for v in verts])
+        for t in tris:
+            (x0, y0), (x1, y1), (x2, y2) = pts[list(t)]
+            d = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
+            if abs(d) < 1e-12:
+                continue
+            c0, c1 = max(int(min(x0, x1, x2)), 0), min(int(max(x0, x1, x2)) + 1, w)
+            r0, r1 = max(int(min(y0, y1, y2)), 0), min(int(max(y0, y1, y2)) + 1, h)
+            gx, gy = np.meshgrid(np.arange(c0, c1) + 0.5, np.arange(r0, r1) + 0.5)
+            a = ((y1 - y2) * (gx - x2) + (x2 - x1) * (gy - y2)) / d
+            b = ((y2 - y0) * (gx - x2) + (x0 - x2) * (gy - y2)) / d
+            m[r0:r1, c0:c1] |= (a >= -1e-6) & (b >= -1e-6) & (a + b <= 1 + 1e-6)
+            for x, y in ((x0, y0), (x1, y1), (x2, y2)):  # slivers thinner than a cell still mark their corners
+                m[min(int(y), h - 1), min(int(x), w - 1)] = True
+    return m
+
+
+def _grow(m, r: int):
+    """Dilate a boolean grid by r cells (square)."""
+    import numpy as np
+    out = np.zeros((m.shape[0] + 2 * r, m.shape[1] + 2 * r), bool)
+    for dy in range(2 * r + 1):
+        for dx in range(2 * r + 1):
+            out[dy:dy + m.shape[0], dx:dx + m.shape[1]] |= m
+    return out
+
+
+def _spot(occ, item, r: int):
+    """Lowest, then leftmost (row, col) where the item's core fits inside occ's bed and its r-cell halo touches
+    nothing; None if nowhere."""
+    import numpy as np
+    H, W = occ.shape
+    h, w = item.shape
+    if h > H or w > W:
+        return None
+    halo = _grow(item, r).astype(float)
+    pad = np.zeros((H + 2 * r, W + 2 * r))
+    pad[r:r + H, r:r + W] = occ
+    shape = (pad.shape[0] + halo.shape[0], pad.shape[1] + halo.shape[1])
+    corr = np.fft.irfft2(np.fft.rfft2(pad, shape) * np.conj(np.fft.rfft2(halo, shape)), shape)
+    ok = corr[:H - h + 1, :W - w + 1] < 0.5
+    hits = np.argwhere(ok)
+    return None if not len(hits) else tuple(hits[0])
+
+
+def _fill(plates_out: list, printer: Printer, gap: float, keepout=None) -> list:
+    """Move parts from later plates into gaps on earlier ones, by their real footprints (fill_gaps)."""
+    import numpy as np
+    if len(plates_out) < 2:
+        return plates_out
+    off, res = printer.margin / 2, RES
+    H, W = int(printer.usable_y / res), int(printer.usable_x / res)
+    r = int(np.ceil(gap / res))
+
+    def occupancy(pl):
+        o = np.zeros((H, W), bool)
+        if keepout is not None:
+            x0, y0, x1, y1 = keepout
+            o[max(int((y0 - off) / res), 0):max(int(np.ceil((y1 - off) / res)), 0),
+              max(int((x0 - off) / res), 0):max(int(np.ceil((x1 - off) / res)), 0)] = True
+        for _, s in pl:
+            stamp(o, s)
+        return o
+
+    def stamp(o, s):
+        bb = s.bounding_box()
+        m = _footprint(s)
+        i, j = int(round((bb.min.Y - off) / res)), int(round((bb.min.X - off) / res))
+        i0, j0 = max(i, 0), max(j, 0)
+        hh, ww = min(m.shape[0] - (i0 - i), H - i0), min(m.shape[1] - (j0 - j), W - j0)
+        if hh > 0 and ww > 0:
+            o[i0:i0 + hh, j0:j0 + ww] |= m[i0 - i:i0 - i + hh, j0 - j:j0 - j + ww]
+
+    occ = [occupancy(pl) for pl in plates_out]
+    for k in range(len(plates_out) - 1, 0, -1):
+        for name, s in sorted(plates_out[k], key=lambda it: -_footprint(it[1]).sum()):
+            done = False
+            for t in range(k):
+                for turn in (0, 90, 180, 270):
+                    cand = zeroed(Rot(0, 0, turn) * zeroed(s)) if turn else zeroed(s)
+                    m = _footprint(cand)
+                    at = _spot(occ[t], m, r)
+                    if at is None:
+                        continue
+                    placed = Pos(off + at[1] * res, off + at[0] * res, 0) * cand
+                    plates_out[t].append((name, placed))
+                    stamp(occ[t], placed)
+                    plates_out[k] = [it for it in plates_out[k] if it[0] != name or it[1] is not s]
+                    done = True
+                    break
+                if done:
+                    break
+    return [pl for pl in plates_out if pl]
 
 
 def _pack(items: list[tuple[str, Shape]], printer: Printer, gap: float,

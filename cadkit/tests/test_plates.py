@@ -87,3 +87,42 @@ def test_pack_takes_the_keep_out_from_the_slicer(two_color, monkeypatch):
     monkeypatch.setattr(slicers, "active", lambda: slicers.get("bambu"))
     pls = pack([(f"deck{i}", two_color(60.0)) for i in range(30)], A1, colors=4)
     assert all(not _overlaps(s, TOWER) for pl in pls for _, s in pl)
+
+
+# --- filling gaps: shapes nest where their rectangles can't --------------------------------------------------
+def _l_and_square():
+    from build123d import Align, Box, Pos
+    lshape = box(0, 0, 0, 200, 20, 3) + box(0, 0, 0, 20, 200, 3)  # 200 x 200 bounding box, arms 20 wide
+    return [("L", lshape), ("square", box(0, 0, 0, 150, 150, 3))]
+
+
+def test_rectangles_alone_need_two_beds():
+    assert len(pack(_l_and_square(), A1)) == 2
+
+
+def test_fill_gaps_nests_a_part_into_the_open_corner_of_another():
+    from cadkit.plates import GAP
+    pls = pack(_l_and_square(), A1, fill_gaps=True)
+    assert len(pls) == 1
+    (a, b) = [s for _, s in pls[0]]
+    assert a.distance_to(b) >= GAP - 0.6  # the footprint grid is 0.5 mm
+    for _, s in pls[0]:
+        bb = s.bounding_box()
+        assert bb.min.X >= 0 and bb.min.Y >= 0 and bb.max.X <= A1.bed and bb.max.Y <= A1.bed
+
+
+def test_fill_gaps_keeps_the_tower_corner_free_on_multi_color_plates(two_color):
+    from cadkit.plates import GAP
+    tower = (32.0, 211.0, 77.0, 256.0)
+    parts = [(f"deck{i}", two_color(60.0)) for i in range(40)]
+    pls = pack(parts, A1, colors=4, keepout=tower, fill_gaps=True)
+    assert len(pls) <= len(pack(parts, A1, colors=4, keepout=tower))
+    for pl in pls:
+        for _, s in pl:
+            bb = s.bounding_box()
+            assert not (bb.min.X < tower[2] and bb.max.X > tower[0] and bb.min.Y < tower[3] and bb.max.Y > tower[1])
+        shapes = [s for _, s in pl]
+        for i, a in enumerate(shapes):
+            for b in shapes[i + 1:]:
+                if a.bounding_box().max.X + GAP > b.bounding_box().min.X - GAP:
+                    assert a.distance_to(b) >= GAP - 0.6

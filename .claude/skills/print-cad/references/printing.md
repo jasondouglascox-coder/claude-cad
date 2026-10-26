@@ -132,6 +132,10 @@ fine. Open the files with File → Open Project (or "open as project" when asked
   - `cadkit.plates.pack` keeps that corner free on multi-color plates: `slicers.active().tower_keepout()`, read from
     `wipe_tower_x/y` and `prime_tower_width`; on the A1 template it's x 31-78, y 210-257.
   - A plate that needs the corner (a round 10" flower) moves the tower with `bambu3mf.write_settings(tower=...)`.
+- **Nesting by real outlines:** `pack(..., fill_gaps=True)` packs by bounding rectangles first, then moves parts
+  from later plates into the open space around earlier plates' real footprints: an L's empty corner, the inside
+  of a frame. It works on a 0.5 mm grid with an FFT search, tries four rotations, and keeps the gap and the tower
+  corner. It's opt-in, because it's slower (seconds per part) and changes plates.
 - **Every plate in one project:** `write_plates(..., combined="kit")` also writes `kit.3mf`, a tab per plate.
   - Plates printed more than once are named "(print n)".
   - Bambu lays plates out every 1.2 beds, left to right then down, about √n columns. The tower spot is a list

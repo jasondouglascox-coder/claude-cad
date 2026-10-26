@@ -68,3 +68,11 @@ def test_build_writes_a_combined_project_per_section(tmp_path):
     assert rows == {s.name: s.qty for s in secs()}
     first = d / "section_418mm_first" / f"section_418mm_first{slicers.active().project_suffix}"
     assert len(read_plates(first)) >= 2
+
+
+def test_section_kits_fill_the_gaps_between_parts():
+    """Packed by real outlines, no kit needs more plates than by rectangles, and the kits together need fewer."""
+    by_rect = {s.name: len(plates.pack(D, s.items)) for s in secs()}
+    filled = {s.name: len(plates.section_plates(D, s)) for s in secs()}
+    assert all(filled[n] <= by_rect[n] for n in by_rect)
+    assert sum(filled.values()) < sum(by_rect.values())
