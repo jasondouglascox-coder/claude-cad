@@ -77,7 +77,7 @@ class Params:
     dt_key_head: float = 8.0
     dt_key_waist: float = 4.5
     dt_lap: float = 1.0  # members overlap so joints are areas (3MF-safe)
-    rivet_d: float = 0.8  # deck truss rivet heads on the room face: smallest round bump the 0.4 nozzle prints
+    rivet_d: float = 0.6  # deck truss rivet heads on the room face: fit-test pick (0.8 and 1.0 came out rough)
     rivet_h: float = 0.4  # two 0.2 mm layers (snapped to your layers)
     rivet_pitch: float = 2.5  # along each member row
     rivet_margin: float = 0.2  # heads stay this far inside a member's edges
@@ -220,6 +220,8 @@ class Params:
     # fits
     fit_slide: float = 0.20
     fit_snap: float = 0.05
+    fit_key: float = 0.0  # keystone in its socket: fit-test variant 1 (2026-10-26; 0.05 and 0.10 were loose)
+    fit_tab: float = 0.10  # truss tab into the tie ladder's slot: fit-test variant 1 (0.10 and 0.20 both fit)
 
     # printer: yours, from cadkit.settings (CADKIT_BED... or cadkit.toml); with nothing set, the A1's 256 x 256 mm.
     # Half spans and ladders are sized to fit bed_usable; a smaller bed fails the fit tests with the numbers.

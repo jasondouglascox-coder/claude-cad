@@ -221,3 +221,16 @@ Only after this passes: batch-print the run.
   `build makerworld` slices five print profiles for one MakerWorld model: starter bay (deck truss, arch), corners
   (pony, bowstring), wire-rail test.
 
+## 15. Amendments (2026-10-26): fit-test results
+
+- **Keystone: variant 1, no clearance** (`fit_key = 0.0`; 0.05 and 0.10 were loose). The key fits tight when its bed
+  side meets the panel's bed side, and loose flipped. The README says to match bed side to bed side.
+- **Tab slots: variant 1, 0.10 mm** (`fit_tab`; 0.10 and 0.20 both fit, and the user chose the tighter).
+- Only the keystone and tab slots get their own fits. The rail grooves, brackets, cross-frames and rods keep
+  `fit_slide` (0.20) until their samples are tried: the tie-plate grooves need the rail, the rod seats a 1/4" rod.
+- **Latch:** the coupon's pier stub falls out of the fork. The user thinks the hook's size is right and the finger
+  flexes too much. A latch coupon (`build latch-test`) tries the spring slot at 40 (today's), 25 and 15 mm, and
+  none (1-4 notches), with two pier stubs. Fingers are stiffer the shorter the slot, about 1/length³. The user
+  expects PETG to give enough to unlatch even with no slot. `latch_finger_len = 0` drops the slot in the
+  brackets.
+

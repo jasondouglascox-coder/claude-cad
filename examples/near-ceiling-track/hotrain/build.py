@@ -15,6 +15,7 @@
     uv run python -m hotrain.build starter --run-style deck_truss   # out/starter: one 16" bay + fit-test coupon
     uv run python -m hotrain.build wire-test    # out/wire_test: stainless wire rail curve test plates (0.08 mm layers)
     uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project per print profile, to upload
+    uv run python -m hotrain.build latch-test   # out/latch_test: four latch spring-slot lengths + two pier stubs
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
 """
 import argparse
@@ -258,6 +259,14 @@ def cmd_render(p: Params, out: Path) -> list[Path]:
     return paths
 
 
+def cmd_latch_test(p: Params, out: Path) -> Path:
+    """The latch coupon on its own plate: out/latch_test/."""
+    from hotrain.plates import Plate
+    d = out / "latch_test"
+    write_plates([Plate("latch_test", 1, [("latch_test", fit_test.latch_coupon(p))])], d, d / "plates.csv", p=p)
+    return d
+
+
 def cmd_fit_test(p: Params, out: Path, mesh: bool, preview: bool) -> None:
     export(fit_test.make(p), out, "fit_test", mesh, preview)
 
@@ -275,7 +284,7 @@ def params_from_args(a: argparse.Namespace) -> Params:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="hotrain.build", description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["all", "parts", "assembly", "fit-test", "plates", "corners", "room", "show", "glb", "web",
-                                        "check", "starter", "render", "wire-test", "makerworld"])
+                                        "check", "starter", "render", "wire-test", "makerworld", "latch-test"])
     ap.add_argument("target", nargs="?", default="room", help="for show: room | run | inside | bridge | fit-test")
     ap.add_argument("--out", default="out")
     ap.add_argument("--mesh", action="store_true")
@@ -315,6 +324,9 @@ def main(argv: list[str] | None = None) -> int:
     if a.command == "starter":
         d = cmd_starter(p, out)
         print(f"wrote {d}/ (plates.csv lists what to print and how many)")
+        return 0
+    if a.command == "latch-test":
+        print(f"wrote {cmd_latch_test(p, out)}/ (one plate: latch_test)")
         return 0
     if a.command == "makerworld":
         d = cmd_makerworld(p, out)

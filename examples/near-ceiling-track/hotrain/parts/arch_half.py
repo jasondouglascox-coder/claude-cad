@@ -76,7 +76,7 @@ def deck_profile(p: Params, bay_len: float) -> Sketch:
     for u in posts[1:]:
         adds.append(rect(u - p.dt_vert_w / 2, u + p.dt_vert_w / 2, zb - lap, -tb + lap))
     more, cuts = _shared(p, bay_len)
-    cuts.append(Pos(h, keystone.key_z(p)) * butterfly(keystone.key_params(p), p.fit_snap))
+    cuts.append(Pos(h, keystone.key_z(p)) * butterfly(keystone.key_params(p), p.fit_key))
     return (Sketch() + adds + more) - cuts
 
 
@@ -105,7 +105,7 @@ def arch_profile(p: Params, bay_len: float) -> Sketch:
         adds.append(rect(u - p.post_w / 2, u + p.post_w / 2, L.rib_low(p, bay_len, u) + 1, -p.top_band_h / 2))
     more, cuts = _shared(p, bay_len)
     adds += more
-    cuts.append(Pos(h, -cd / 2) * butterfly(p, p.fit_snap))  # keystone socket
+    cuts.append(Pos(h, -cd / 2) * butterfly(p, p.fit_key))  # keystone socket
     return (Sketch() + adds) - cuts
 
 

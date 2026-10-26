@@ -73,6 +73,9 @@ A whole-room file takes a few minutes to translate.
 - Bambu A1 (256 × 256 mm bed), PETG, 0.4 mm nozzle, 0.2 mm layers, **no supports**.
 - **Print `fit_test` first.** Pick the variant of each joint (1/2/3 notches) that fits, then retune `fit_slide`,
   `fit_snap` and `rail_base_w` in `hotrain/params.py` and rebuild.
+  - `uv run python -m hotrain.build latch-test` writes a small latch coupon: four latches whose spring slot is
+    40/25/15 mm/none (1-4 notches) and two pier stubs. Pick the one that clicks and holds, and can still be
+    unlatched.
   - The three rivet strips (1/2/3 notches = 0.6/0.8/1.0 mm heads) show how the deck truss rivets come out. If
     you like another size better, set `rivet_d`; if PETG strings between the heads, fix that before printing
     panels.
@@ -122,7 +125,7 @@ uv run python -m hotrain.build wire-test   # out/wire_test: plates, plates.csv, 
 
 <img src="docs/images/rivets_closeup.png" width="45%" alt="Close-up of a deck truss end: rows of small round rivet heads along the chords, end post and diagonals; the concrete pier is bare">
 
-The deck truss has gray rivet heads on its room face: 0.8 mm dots, two layers proud, in rows along every member.
+The deck truss has gray rivet heads on its room face: 0.6 mm dots, two layers proud, in rows along every member.
 The pier stays bare, and its concrete face stands two layers proud of the steel so the two read as different
 materials. Each panel prints one normal half and one mirror-image half (`…_start`), so both halves show
 their rivets to the room. Set `rivet_d = 0` in `hotrain/params.py` for flat panels. The corner trusses have none
@@ -135,6 +138,9 @@ yet: their room face prints against the bed.
 2. **On the bench:**
    - Join each side's two truss halves with the bow-tie keys: one `arch_half_…` and one `arch_half_…_start` (its
      mirror image), **rivet side out toward the room**. Both panels of a bay are built the same way.
+   - Push each key in with its **bed side (the side that was down on the printer) on the panel's bed side** (the
+     side without rivets). Printed parts are a touch wider at the bed, so bed to bed is a tight fit; flipped, it's
+     loose.
    - Slide the cross-frames up onto both panels at the posts. They only go in from below.
    - Glue the cross-frames (and optionally the keys), making one rigid box.
 3. **Hang the box:** drop it into the brackets. The half-lap notches seat and the latches click.

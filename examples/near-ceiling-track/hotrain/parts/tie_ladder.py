@@ -50,7 +50,7 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
             s = 1 if y > 0 else -1
             a, b = y + s * g, y + s * (p.runner_w / 2 + 0.01)
             cuts.append(rect(nx0, nx1, min(a, b), max(a, b)))
-    tl, tw = (p.tab_len + p.fit_slide) / 2, (p.panel_t + p.fit_slide) / 2
+    tl, tw = (p.tab_len + p.fit_tab) / 2, (p.panel_t + p.fit_tab) / 2
     for x in tab_xs:
         if x_start + tl < x < x_end - tl:
             cuts += [rect(x - tl, x + tl, y - tw, y + tw) for y in p.rail_ys]

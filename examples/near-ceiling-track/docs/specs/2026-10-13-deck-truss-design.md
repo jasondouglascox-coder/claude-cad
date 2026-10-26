@@ -187,4 +187,6 @@ plates and packing, and the bus cradle.
   layers) on the room face, so concrete and steel no longer blend. The raise stops at the top chord's underside.
   It leaves a 3.4 mm strip at the pier centerline flat, because the bracket (or a corner anchor) grips the plain
   3.2 mm pier there and covers that strip anyway. `pier_relief = 0` turns it off.
+- **Rivets 0.6 mm (2026-10-26):** from the fit-test strips, the 0.8 and 1.0 mm heads didn't come out smooth and
+  0.6 did. `rivet_d = 0.6`.
 

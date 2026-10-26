@@ -17,7 +17,8 @@ def slots_and_latch(p: Params, slot_bottom: float, ys: tuple) -> tuple[list, Ske
     cuts = [rect(y - sw / 2, y + sw / 2, slot_bottom, 1) for y in ys]
     wall = max(ys) + sw / 2  # room-side wall of the room-side slot
     relief = wall + p.latch_finger_w
-    cuts.append(rect(relief, relief + p.latch_relief, -p.latch_finger_len, 1))
+    if p.latch_finger_len > 0:  # the spring slot that lets the finger flex; 0 = a rigid latch
+        cuts.append(rect(relief, relief + p.latch_relief, -p.latch_finger_len, 1))
     zb = -p.latch_top - p.latch_win_h + 0.5
     e = p.latch_engage
     hook = poly((wall + 0.05, zb), (wall - e, zb), (wall - e, zb + 0.8), (wall + 0.05, zb + 0.8 + e))
