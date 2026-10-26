@@ -112,14 +112,15 @@ def filament(p: Params, name: str) -> int:
 def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = None, p: Params = P,
                  settings: Path | None = None, combined: str | None = None) -> None:
     """Each plate as STEP (painted) + Bambu Studio 3MF (a filament per color body) + the quantity sheet; with
-    combined, also one project holding every plate (combined + .3mf)."""
+    combined, also one project holding every plate (combined + .3mf). settings default: print_settings."""
+    settings = settings or print_settings(p, d / "project_settings.json")
     cad_export.write_plates(pls, d, csv_path, lambda name: filament(p, name), preview_dir, settings=settings,
                             combined=combined)
 
 
-def fine_layer_settings(p: Params, path: Path) -> Path | None:
-    """Your slicer settings at the wire web's fine layers (Bambu Studio). None for another slicer: set the layer
-    height there by hand."""
+def print_settings(p: Params, path: Path, **overrides) -> Path | None:
+    """Your slicer settings (Bambu Studio) with this project's first layer (slow, and a hotter textured plate under
+    PETG), plus any overrides (setting name -> value). None for another slicer: set those there by hand."""
     import json
     from cadkit import slicers
     from cadkit.settings import settings as cfg
@@ -127,10 +128,20 @@ def fine_layer_settings(p: Params, path: Path) -> Path | None:
     if s.name != "bambu":
         return None
     conf = json.loads(Path(cfg().slicer_settings or s.default_settings()).read_text())
-    conf["layer_height"], conf["initial_layer_print_height"] = str(p.wire_layer), str(p.wire_first_layer)
+    conf["initial_layer_speed"] = [f"{p.first_layer_speed:g}"]
+    conf["initial_layer_infill_speed"] = [f"{p.first_layer_infill_speed:g}"]
+    key = "textured_plate_temp_initial_layer"  # PETG slots: a hotter first layer; PLA keeps its own
+    conf[key] = [f"{p.first_layer_bed_temp:g}" if kind == "PETG" else t
+                 for kind, t in zip(conf["filament_type"], conf[key])]
+    conf.update({k: str(v) for k, v in overrides.items()})
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(conf, indent=4))
     return path
+
+
+def fine_layer_settings(p: Params, path: Path) -> Path | None:
+    """print_settings at the wire web's fine layers. None for another slicer: set the layer height there by hand."""
+    return print_settings(p, path, layer_height=p.wire_layer, initial_layer_print_height=p.wire_first_layer)
 
 
 def cmd_plates(p: Params, bays: list[float], out: Path, preview: bool) -> None:

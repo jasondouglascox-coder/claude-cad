@@ -236,4 +236,9 @@ Only after this passes: batch-print the run.
   latch coupon now tries the hook at 1.0, 1.2 and 1.4 mm (1-3 notches) to confirm.
 - **Latch hook 1.4 mm (2026-10-26):** on the second latch coupon the user found variant 3 "perfect"
   (`latch_engage = 1.4`).
+- **Slow first layer (2026-10-26):** the starter's long thin parts lifted off the bed. Every railroad plate file
+  now carries `initial_layer_speed` 20 mm/s and `initial_layer_infill_speed` 40 mm/s (the template's 50 and 105),
+  from `first_layer_speed` / `first_layer_infill_speed` in params (`build.print_settings`). The textured plate also
+  runs 80 °C for PETG's first layer (`first_layer_bed_temp`; 70 after, PLA unchanged). If parts still lift, try a
+  brim (`brim_type`) next, after drying the PETG and washing the plate.
 

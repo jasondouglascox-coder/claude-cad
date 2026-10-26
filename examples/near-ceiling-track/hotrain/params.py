@@ -217,6 +217,12 @@ class Params:
     wire_test_deg: float = 18.0  # one corner span; wire_test_pieces of them make the 90 degree corner
     wire_test_pieces: int = 5
 
+    # slicer: a slow first layer on every plate, for bed adhesion (the starter's long thin parts lifted at the
+    # template's 50 / 105 mm/s)
+    first_layer_speed: float = 20.0  # mm/s, walls
+    first_layer_infill_speed: float = 40.0  # mm/s
+    first_layer_bed_temp: float = 80.0  # PETG on the textured plate, first layer only (the rest stays at 70)
+
     # fits
     fit_slide: float = 0.20
     fit_snap: float = 0.05
