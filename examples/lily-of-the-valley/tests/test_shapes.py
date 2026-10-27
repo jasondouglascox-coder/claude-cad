@@ -1,5 +1,6 @@
-"""The one shape everything is made of: a tube of vertical sections, each round above (an ellipse) and running in
-to the bed below at 45 degrees or steeper, so nothing overhangs and the fill hides under the round."""
+"""The shapes everything is made of: tubes of vertical sections. A bell's are round above (an ellipse) and run in to
+the bed below at 45 degrees or steeper, so nothing overhangs and the fill hides under the round. The green parts' and
+the curled lobes' are domes: a half-oval standing on the bed, its round meeting the wall."""
 import math
 
 import numpy as np
@@ -30,6 +31,26 @@ def test_a_swept_tube_is_one_watertight_solid_with_no_overhang():
     m = shapes.sweep(path, np.linspace(2.5, 1.0, 50), np.linspace(2.4, 3.6, 50))
     assert m.is_valid and len(m.solids()) == 1 and open_edges(m) == 0
     assert m.bounding_box().min.Z == pytest.approx(0, abs=1e-9)
+    assert overhangs(m) == []
+
+
+@pytest.mark.parametrize("r, h", [(2.5, 4.0), (1.2, 4.0), (0.3, 0.4)])
+def test_a_dome_is_a_half_oval_whose_round_meets_the_bed(r, h):
+    """No flat band under the round: it comes down to the wall upright, as a stalk pressed to the wall would."""
+    w, z = shapes.dome(r, h)
+    assert len(w) == len(shapes.section(r, 2.0)[0])  # rings line up with the bells' sections
+    assert z.min() == 0.0 and z.max() == pytest.approx(h)
+    assert np.ptp(w[z == 0]) == pytest.approx(2 * r)
+    assert 0.5 * np.sum(w * np.roll(z, -1) - np.roll(w, -1) * z) > 0  # counter-clockwise
+    up = z > 0
+    assert (w[up] / r) ** 2 + (z[up] / h) ** 2 == pytest.approx(np.ones(up.sum()))  # round all the way down
+
+
+def test_a_swept_dome_is_one_watertight_solid_with_no_overhang():
+    path = shapes.bezier([(0, 0), (30, 0), (40, 20), (25, 35)], 50)
+    m = shapes.sweep_dome(path, np.linspace(2.5, 1.0, 50), 4.0)
+    assert m.is_valid and len(m.solids()) == 1 and open_edges(m) == 0
+    assert m.bounding_box().min.Z == pytest.approx(0, abs=1e-9) and m.bounding_box().max.Z == pytest.approx(4.0)
     assert overhangs(m) == []
 
 

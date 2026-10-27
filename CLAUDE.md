@@ -34,8 +34,8 @@
 - `examples/lily-wall/`: a 180 mm lily (package `lily_wall`): six arched, recurved mesh tepals, white fading to
   purple by height through 40 dithered layers (21 swaps), tree supports in the loaded PLA.
 - `examples/lily-of-the-valley/`: a 188 mm arching sprig (package `lily_of_the_valley`): five white bells with
-  scalloped, curled rims on a green stem, green below 5 mm and white above (one swap), no supports: every part a
-  tube of sections round on top with a hidden 46-degree fill under it (`shapes.py`), unioned with `cadkit.mesh`.
+  scalloped, curled rims, white to the wall, on a green stem of 4 mm half-ovals: coloured by part (20 swaps), no
+  supports: bells are tubes of sections round on top over a hidden 46-degree fill, the rest domes (`shapes.py`).
 
 ## Commands
 

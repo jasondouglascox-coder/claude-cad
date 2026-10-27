@@ -1,6 +1,6 @@
 """The sprig in the wall's plane: the stem rising up the left and arching over, a pedicel off it to each bell
-(out and up, over and down into the bell's apex), a small pointed bract at each pedicel's foot. Everything green
-stays under the seam; the bells sit above it. All are shapes.sweep tubes, so none overhangs.
+(out and up, over and down into the bell's apex), a small pointed bract at each pedicel's foot. The green parts
+are domes (shapes.sweep_dome): half-ovals green_h tall whose round meets the wall, so none overhangs.
 """
 import math
 from functools import lru_cache
@@ -25,9 +25,14 @@ def stem_radius(p: Params) -> np.ndarray:
     return np.linspace(*p.stem_r, STEM_PTS)
 
 
+def height(p: Params, r):
+    """A green tube's height off the wall: green_h, or a half-round where it's wider."""
+    return np.maximum(r, p.green_h)
+
+
 def stem(p: Params) -> Mesh:
     r = stem_radius(p)
-    return shapes.sweep(stem_path(p), r, p.seam - r, label="stem")  # its top on the seam
+    return shapes.sweep_dome(stem_path(p), r, height(p, r), label="stem")
 
 
 def _on_stem(p: Params, k: int) -> tuple[int, np.ndarray, np.ndarray]:
@@ -52,22 +57,19 @@ def placed_bell(p: Params, k: int, recess: bool = True) -> Mesh:
 
 
 def pedicel_sections(p: Params, k: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Pedicel k's path (plan) and its sections' radii and centre heights: out and up off the stem, over, and down
-    into the apex along the bell's axis (2 mm in). It stays under the seam: where it meets the bell it runs in under
-    the bell's shoulder, which hides it."""
+    """Pedicel k's path (plan) and its domes' half-widths and heights: out and up off the stem, over, and down into
+    the apex along the bell's axis (2 mm in), where it runs in under the bell's shoulder."""
     i, foot, tang = _on_stem(p, k)
     apex, axis, size = frame(p, k)
     out = p.bells[k][2]
     path = shapes.bezier([foot, foot + tang * 3 + np.array([abs(out) * 0.4 + 3, 7]), apex - axis * 9, apex + axis * 2],
                          PED_PTS)
     r = np.linspace(*p.pedicel_r, PED_PTS) * (0.85 + 0.15 * size)
-    stem_z = p.seam - stem_radius(p)[i]
-    z = np.minimum(np.full(PED_PTS, stem_z), p.seam - r - 0.2)
-    return path, r, z
+    return path, r, height(p, r)
 
 
 def pedicel(p: Params, k: int) -> Mesh:
-    return shapes.sweep(*pedicel_sections(p, k), label="pedicel")
+    return shapes.sweep_dome(*pedicel_sections(p, k), label="pedicel")
 
 
 def bract(p: Params, k: int) -> Mesh:
@@ -75,7 +77,7 @@ def bract(p: Params, k: int) -> Mesh:
     _, foot, tang = _on_stem(p, k)
     path = shapes.bezier([foot, foot + tang * 2 + np.array([3, 3]), foot + tang * 5 + np.array([5, 9])], BRACT_PTS)
     r = p.bract * np.sin(np.linspace(0.15, math.pi, BRACT_PTS)) ** 0.8 + 0.25
-    return shapes.sweep(path, r, np.minimum(r * 0.5, p.seam - 0.5 - r * 0.45), flat=0.45, label="bract")
+    return shapes.sweep_dome(path, r, np.maximum(0.6 * r, 2 * p.printer.layer), label="bract")  # lying flat
 
 
 def parts(p: Params) -> list[Mesh]:

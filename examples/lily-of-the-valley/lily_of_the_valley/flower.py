@@ -1,6 +1,6 @@
-"""The lily of the valley, printed in one go: back flat on the bed (the wall side), green PLA up to the seam and
-white above it, one swap. No supports: every part is a tube whose underside runs in to the bed at 45 degrees or
-steeper, hidden under its round top. It hangs on a nail through a keyhole under the bell over its centre of mass.
+"""The lily of the valley, printed in one go: back flat on the bed (the wall side), the bells white PLA down to the
+wall, the stem, pedicels and bracts green: one colour change a layer up to green_h. No supports: the bells are tubes
+whose underside runs in to the bed at 45 degrees or steeper, hidden under their round top; the rest are domes. It hangs on a nail through a keyhole under the bell over its centre of mass.
 """
 from functools import lru_cache
 from pathlib import Path
@@ -15,7 +15,6 @@ from lily_of_the_valley.params import Params
 
 NAIL_D = 3.0  # nail shank
 MN = (Align.CENTER, Align.CENTER, Align.MIN)
-BIG = 600.0
 ROOF = 44.0  # the keyhole roof's lean from upright: just under 45, so float error never tips it over
 
 
@@ -76,10 +75,14 @@ def body(p: Params) -> Mesh:
 
 @lru_cache
 def coloured(p: Params) -> list[tuple[Mesh, int]]:
-    """[(green body, slot), (white body, slot)]: the sprig cut at the seam, green below, white above."""
-    above = Mesh.from_shape(Pos(0, 0, p.seam) * Box(BIG, BIG, BIG, align=MN))
-    b = body(p)
-    green, white = b - above, b & above
+    """[(green body, slot), (white body, slot)], by part: the bells white, the rest green, both keyed."""
+    n = len(p.bells)
+    white = Mesh.union([sprig.placed_bell(p, k) for k in range(n)])
+    green = Mesh.union([sprig.stem(p)] + [sprig.pedicel(p, k) for k in range(n)]
+                       + [sprig.bract(p, k) for k in range(n)]) - white
+    for c in keyhole(p):
+        green, white = green - c, white - c
+    green, white = green.drop_crumbs(1.0).simplify(), white.drop_crumbs(1.0).simplify()
     green.label, green.color = "sprig_green", p.color(p.slot_green)
     white.label, white.color = "sprig_white", p.color(p.slot_white)
     return [(green, p.slot_green), (white, p.slot_white)]

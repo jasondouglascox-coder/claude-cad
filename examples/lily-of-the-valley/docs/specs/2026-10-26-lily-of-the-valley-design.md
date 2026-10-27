@@ -23,17 +23,17 @@ degrees toward you, 1 h 42, 41 g) and C (a stem arching across, seven bells in a
   pedicel's foot.
 
 ## Printing without supports
-Every part is a tube of vertical sections (`shapes.section`): an ellipse above (what you see), and below it a
-fill running in to the bed at 46 degrees or steeper. The ellipse hands over to the fill where its underside gets
+The bells are tubes of vertical sections (`shapes.section`): an ellipse above (what you see), and below it a
+fill running in to the bed at 46 degrees or steeper. The green parts and the bells' curled lobes are domes
+(`shapes.dome`): half-ovals standing on the bed, which never overhang. The ellipse hands over to the fill where its underside gets
 flatter than 50 degrees (lobed sections included). From the front only the ellipse shows; the fill is hidden
 under it. The bells' mouth hollow is a cone whose roof is far shallower than 45 degrees. Tested: no face overhangs
 past 45 degrees except the keyhole roof's 1 mm top (a 7 mm2 bridge).
 
-## Colours: one change, by height
-Green below the seam (5.0 mm), white above. The stem's top sits on the seam, the pedicels and bracts under it;
-each bell's axis is at 6 mm, so from the front every bell is white and everything else green (tested on the
-front view: over 99.5% of the bells' cells above the seam, nothing else above it). The pedicels run in under
-each bell's shoulder, hidden.
+## Colours: by part, 20 changes
+The bells (their curled lobes too) white all the way to the wall; the stem, pedicels and bracts green half-ovals
+4 mm tall (`green_h`). Every layer up to 4 mm prints both, so one colour change a layer: 20 (see the 2026-10-27
+amendment; it was one change, by height, until then).
 
 ## Hanging
 The keyhole hides under the third bell, the one over the centre of mass: the nail rests 6.6 mm down its axis from
@@ -78,3 +78,15 @@ plate comes with an STL.
   straight down near the arch's end (0.94 along the stem, 10 mm out), and a test that no two bells overlap.
   Re-sliced: 1 h 06 m, 21.6 g (green 11.8 g, white 9.8 g), one colour change, no supports; hangs 0.2 degrees off
   plumb by the G-code. Nail 68.3 mm below the top, 37 mm in from the left.
+- 2026-10-27: Green round to the wall, bells white to the wall (the user, from Bambu's view at bed level: the
+  green tubes were rounds on a flat band, the bells green for their bottom 5 mm, and "it will look odd"). Colour is
+  now by part, not by height, which the user accepted at the cost of the colour changes:
+  - The stem, pedicels and bracts are half-ovals standing on the bed (`shapes.dome`), 4 mm tall (`green_h`) or a
+    half-round where wider; the bells' curled side lobes are domes too, white to the wall.
+  - Spiked two heights first: half-rounds (2.5 mm stem, 1.2 mm pedicels: 12 changes, 1 h 16 m, 20.9 g, but the
+    key bell's pedicel snaps at about a 10 g pull out from the wall) and 4 mm half-ovals (20 changes, 1 h 31 m,
+    24.4 g, about 120 g). The user picked 4 mm: the same from the front, still round to the wall from the side.
+  - Sliced: 1 h 31 m, 24.4 g (green 6.6 g, white 17.8 g), layers 0-19 both colours (20 changes), white above, no
+    supports; hangs 0.1 degrees off plumb by the G-code. Nail 68.3 mm below the top, 38 mm in from the left.
+  - cadkit: `off_layer_z(..., min_area=)` leaves out specks where a union's surfaces cross (one of 0.0013 mm2
+    where two green rounds meet).

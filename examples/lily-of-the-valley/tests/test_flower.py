@@ -1,5 +1,5 @@
-"""The whole sprig: one piece flat-back on the bed, no supports, green below the seam and white above it so that from
-the front the bells are white and everything else green, hung plumb from a keyhole hidden under a bell."""
+"""The whole sprig: one piece flat-back on the bed, no supports, the bells white down to the wall and the stem,
+pedicels and bracts green half-ovals, hung plumb from a keyhole hidden under a bell."""
 import json
 import math
 import zipfile
@@ -41,29 +41,33 @@ def test_no_supports_needed(body):
     assert faces and all(z == pytest.approx(flower.key_top(P), abs=0.05) for z, _ in faces)
 
 
-def test_green_below_the_seam_white_above_one_change(body, bodies):
-    """A level cut through a body with no overhangs, so the white never starts over air (unsupported() would count
-    the bells' 46-degree fills, which print fine)."""
+def test_coloured_by_part_white_bells_to_the_wall_green_sprig(body, bodies):
+    """The bells (their curled lobes too) wholly white, down to the wall; the stem, pedicels and bracts green, no
+    taller than green_h. Every layer up to green_h prints both: the accepted colour changes."""
     (green, gs), (white, ws) = bodies
     assert (gs, ws) == (P.slot_green, P.slot_white)
-    assert green.volume + white.volume == pytest.approx(body.volume, rel=1e-4)
-    assert green.bounding_box().max.Z == pytest.approx(P.seam, abs=1e-3)
-    assert white.bounding_box().min.Z == pytest.approx(P.seam, abs=1e-3)
+    assert green.volume + white.volume == pytest.approx(body.volume, rel=1e-3)
+    assert (green & white).volume == pytest.approx(0, abs=0.05)
+    bells = Mesh.union([sprig.placed_bell(P, k) for k in range(len(P.bells))])
+    assert white.volume == pytest.approx((bells & body).volume, rel=1e-3)
+    assert white.bounding_box().min.Z == pytest.approx(0, abs=1e-9)
+    assert green.bounding_box().max.Z == pytest.approx(P.green_h, abs=1e-3)
+    assert P.color_changes == round(P.green_h / P.printer.layer)
     for b in (green, white):
-        assert off_layer_z(b, P.printer) == []
+        assert off_layer_z(b, P.printer, min_area=0.01) == []  # but specks where two green rounds cross
 
 
-def test_from_the_front_the_bells_are_white_and_the_rest_green(body):
-    """Straight on: wherever a bell is, what you see is above the seam (white); everywhere else (stem, pedicels,
-    bracts) it's at or below it (green)."""
+def test_from_the_front_no_green_shows_on_a_bell(body, bodies):
+    """Straight on, wherever a bell is, the white is what you see; the green sprig shows round them."""
+    (green, _), (white, _) = bodies
     bb = body.bounding_box()
     bounds = ((bb.min.X, bb.min.Y), (bb.max.X, bb.max.Y))
-    seen = heights([body], bounds, step=0.4)
+    g, w = heights([green], bounds, step=0.4), heights([white], bounds, step=0.4)
     bells = heights([sprig.placed_bell(P, k) for k in range(len(P.bells))], bounds, step=0.4)
-    on_bell, off_bell = ~np.isnan(bells), np.isnan(bells) & ~np.isnan(seen)
-    assert (seen[on_bell] > P.seam).mean() > 0.995  # a cell's corner at a bell's very edge may catch a pedicel
-    assert (seen[off_bell] <= P.seam + 1e-3).all()
-    assert off_bell.sum() > 0.25 * on_bell.sum()  # there is a green sprig to see
+    on_bell = ~np.isnan(bells)
+    white_on_top = ~np.isnan(w) & (np.isnan(g) | (w >= g - 1e-3))
+    assert white_on_top[on_bell].mean() > 0.995  # a cell's corner at a bell's very edge may catch a pedicel
+    assert (~np.isnan(g) & ~on_bell).sum() > 0.25 * on_bell.sum()  # there is a green sprig to see
 
 
 def test_every_bell_is_a_single_cup_clear_of_the_others():
@@ -93,10 +97,10 @@ def test_every_pedicel_stands_on_the_bed_two_lines_wide():
     """Narrower, and the slicer leaves the fill's foot out of the first layer: the pedicel's next layer starts over
     air (the pre-print review found each pedicel's first layer missing)."""
     for k in range(len(P.bells)):
-        _, r, z = sprig.pedicel_sections(P, k)
-        for rr, zz in zip(r, z):
-            w, h, _ = shapes.section(rr, zz)
-            assert np.ptp(w[h == 0]) >= 2 * P.printer.nozzle
+        _, r, h = sprig.pedicel_sections(P, k)
+        for rr, hh in zip(r, h):
+            w, z = shapes.dome(rr, hh)
+            assert np.ptp(w[z == 0]) >= 2 * P.printer.nozzle
 
 
 def modulus_out(w: np.ndarray, z: np.ndarray) -> float:
@@ -115,9 +119,9 @@ def test_the_key_bells_pedicel_takes_a_knock_out_from_the_wall():
     plan (the review found 47 MPa at 1 N). The pedicel next below runs into the same bell, so it has about twice that.
     """
     far = flower.unkeyed(P).verts[:, :2]
-    path, r, z = sprig.pedicel_sections(P, P.key_bell)
-    stress = [P.knock * np.hypot(*(far - q).T).max() / modulus_out(*shapes.section(rr, zz)[:2])
-              for q, rr, zz in zip(path, r, z)]
+    path, r, h = sprig.pedicel_sections(P, P.key_bell)
+    stress = [P.knock * np.hypot(*(far - q).T).max() / modulus_out(*shapes.dome(rr, hh))
+              for q, rr, hh in zip(path, r, h)]
     assert max(stress) <= P.pla_strength
 
 
@@ -155,12 +159,13 @@ def test_prime_tower_clears_the_sprig():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
-def test_slicer_prints_green_then_white_with_one_change(tmp_path):
+def test_slicer_prints_both_up_to_green_h_then_white(tmp_path):
     flower.write(P, tmp_path)
     s = slicers.active()
     report = s.slice_report(tmp_path / "plates" / f"lily_of_the_valley{s.project_suffix}", tmp_path / "s.3mf")
-    bands = [f for f, _, _ in report["layers"] if f]  # bottom up; layers with nothing on them don't count
-    assert bands == [(P.slot_green,), (P.slot_white,)]
+    bands = [(f, hi - lo + 1) for f, lo, hi in report["layers"] if f]  # bottom up; empty layers don't count
+    assert [f for f, _ in bands] == [(P.slot_green, P.slot_white), (P.slot_white,)]
+    assert bands[0][1] == P.color_changes  # one change a layer while both print
     assert set(report["grams"]) == {P.slot_green, P.slot_white}
     # and what it lays down balances under the nail
     x, y, _ = gcode.centre_of_mass(bambu.plate_gcode(tmp_path / "s.3mf"))

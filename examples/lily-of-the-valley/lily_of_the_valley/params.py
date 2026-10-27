@@ -35,8 +35,10 @@ class Params:
     pedicel_r: tuple = (1.3, 1.2)  # at the stem, at the bell (the key bell's carries the sprig: see knock)
     bract: float = 1.6  # half-width of the small pointed leaf at each pedicel's foot
 
-    # colour by height: green below the seam, white above it, one swap; the bells' widest line just above it
-    seam: float = 5.0
+    # colour by part: the bells white down to the wall, the stem, pedicels and bracts green half-ovals green_h tall
+    # (at least half-rounds); every layer up to green_h prints both, so one colour change a layer, accepted (2026-10-27)
+    green_h: float = 4.0
+    color_changes: int = 20
     bell_z: float = 6.0  # the bells' axis height
 
     key_bell: int = 2  # the keyhole hides under this bell (the one over the centre of mass)
@@ -62,7 +64,7 @@ class Params:
     printer: Printer = field(default_factory=default)
 
     def __post_init__(self):
-        for name in ("seam", "key_lip", "key_head_room"):
+        for name in ("green_h", "key_lip", "key_head_room"):
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
 
     def color(self, slot: int) -> Color:

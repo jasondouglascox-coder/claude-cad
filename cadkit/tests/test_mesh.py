@@ -96,6 +96,8 @@ def test_checks_accept_meshes():
     unioned = Mesh.union([Mesh.from_shape(box(80, 80, 0, 10, 10, 61.4)), Mesh.from_shape(box(85, 80, 0, 10, 10, 61.4))])
     assert checks.off_layer_z(unioned, pr) == []  # stored in float32 (61.4000015): still on its layer
     assert checks.off_layer_z(Mesh.from_shape(box(10, 10, 0, 5, 5, 2.25)), pr) == [2.25]
+    speck = Mesh.union([on_bed, Mesh.from_shape(box(12, 12, 0, 0.05, 0.05, 2.25))])  # a 0.0025 mm2 top
+    assert checks.off_layer_z(speck, pr) == [2.25] and checks.off_layer_z(speck, pr, min_area=0.01) == []
     floating = Mesh.union([on_bed, Mesh.from_shape(box(12, 12, 4, 3, 3, 1))])
     assert "2 separate solids (expected 1)" in checks.printable_problems(floating, pr)
     assert checks.downward_faces(floating) == [(4.0, 9.0)]

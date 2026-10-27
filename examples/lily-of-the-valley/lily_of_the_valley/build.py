@@ -1,6 +1,6 @@
 """uv run python -m lily_of_the_valley.build [all|plates|render] [--out out]
 
-plates: out/plates/lily_of_the_valley.3mf (a Bambu project: green PLA below, white above, one swap, no supports)
+plates: out/plates/lily_of_the_valley.3mf (a Bambu project: white bells, green sprig, 20 swaps, no supports)
         + lily_of_the_valley.stl (a mesh: no STEP), out/plates.csv
 render: out/render/*.png shaded previews in the planned colours (copy to docs/images/ after a visible change)
 """

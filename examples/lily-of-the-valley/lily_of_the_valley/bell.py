@@ -16,6 +16,7 @@ from lily_of_the_valley.params import Params
 ROWS = 44  # sections along the axis
 INNER = 0.4  # the mouth's cap: lobe points to a ring this fraction of the rim's size
 SHOULDER, WAIST, FLARE = 0.36, 0.84, 0.86  # where along the bell (0 apex .. 1 rim) each starts or sits
+HORN_FLAT = 0.7  # a curled lobe's height over the bell's axis, in its radii
 
 
 def profile(t, p: Params | None = None) -> np.ndarray:
@@ -64,14 +65,16 @@ def _recess(p: Params, size: float) -> Mesh:
 
 
 def _horns(p: Params, size: float) -> list[Mesh]:
-    """The side lobes, curling out and back toward the apex, lying at the bell's widest."""
+    """The side lobes, curling out and back toward the apex, lying at the bell's widest: domes, so they come down
+    to the wall as rounds (white all the way), HORN_FLAT of their radius above the bell's axis."""
     R, rr = p.bell_r * size, rim(p, size)
     L = p.bell_len * R
     out = []
     for s in (1, -1):
         path = shapes.bezier([(L - 3.0, s * (rr - 2.5)), (L + 1.8, s * (rr - 0.5)), (L + 0.8, s * (rr + 2.2)),
                               (L - 1.4, s * (rr + 2.6))], 24)
-        out.append(shapes.sweep(path, np.linspace(*p.horn, 24) * (0.6 + 0.4 * size), p.bell_z, 0.7))
+        r = np.linspace(*p.horn, 24) * (0.6 + 0.4 * size)
+        out.append(shapes.sweep_dome(path, r, p.bell_z + HORN_FLAT * r))
     return out
 
 

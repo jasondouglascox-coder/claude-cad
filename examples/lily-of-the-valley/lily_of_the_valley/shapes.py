@@ -50,6 +50,16 @@ def section(r: float, zc: float, flat: float = 1.0, lobe=None) -> tuple[np.ndarr
     return np.r_[w, fw], np.r_[z, fz], np.r_[th, np.full(len(fw), np.nan)]
 
 
+def dome(r: float, h: float) -> tuple[np.ndarray, np.ndarray]:
+    """(w, z): a closed counter-clockwise half-oval standing on the bed, half-width r and h tall: its round comes
+    down to the wall upright, no band under it. As many points as a section, so the rings line up."""
+    th = np.linspace(0, math.pi, ARC)
+    bed = 3 * FILL - 4
+    z = h * np.sin(th)
+    z[[0, -1]] = 0.0  # sin(pi) is not quite 0
+    return np.r_[r * np.cos(th), np.linspace(-r, r, bed + 2)[1:-1]], np.r_[z, np.zeros(bed)]
+
+
 def tube(rings, label: str = "", ends=None) -> Mesh:
     """A closed mesh from rings [k][n][3] (each a closed loop, all the same n, lined up), capped at both ends by a
     fan from each end ring's centre (or from the two points `ends`)."""
@@ -69,16 +79,25 @@ def tube(rings, label: str = "", ends=None) -> Mesh:
     return m if m.volume >= 0 else Mesh(m.verts, m.tris[:, ::-1], label)
 
 
-def sweep(path, r, zc, flat: float = 1.0, label: str = "") -> Mesh:
-    """A tube along a plan path (m, 2): radius r and centre height zc per point (or one for all), each section
-    square to the path."""
+def _along(path, sections, label: str) -> Mesh:
+    """A tube along a plan path (m, 2) through one (w, z) section per point, each square to the path."""
     path = np.asarray(path, float)
-    m = len(path)
     tang = np.gradient(path, axis=0)
     tang /= np.linalg.norm(tang, axis=1, keepdims=True)
     side = np.stack([-tang[:, 1], tang[:, 0]], 1)
-    rings = []
-    for p, s, ri, zi in zip(path, side, np.broadcast_to(r, m), np.broadcast_to(zc, m)):
-        w, z, _ = section(ri, zi, flat)
-        rings.append(np.stack([p[0] + w * s[0], p[1] + w * s[1], z], 1))
-    return tube(rings, label)
+    return tube([np.stack([p[0] + w * s[0], p[1] + w * s[1], z], 1) for p, s, (w, z) in zip(path, side, sections)],
+                label)
+
+
+def sweep(path, r, zc, flat: float = 1.0, label: str = "") -> Mesh:
+    """A tube of sections (round above, the fill under) along a plan path: radius r and centre height zc per
+    point (or one for all)."""
+    m = len(path)
+    return _along(path, [section(ri, zi, flat)[:2] for ri, zi in zip(np.broadcast_to(r, m), np.broadcast_to(zc, m))],
+                  label)
+
+
+def sweep_dome(path, r, h, label: str = "") -> Mesh:
+    """A tube of domes along a plan path: half-width r and height h per point (or one for all)."""
+    m = len(path)
+    return _along(path, [dome(ri, hi) for ri, hi in zip(np.broadcast_to(r, m), np.broadcast_to(h, m))], label)

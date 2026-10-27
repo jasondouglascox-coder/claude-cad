@@ -1,12 +1,11 @@
 """One bell, lying along +X from its apex at the origin: a rounded shoulder, straight-ish sides, a waist and a
-flared, scalloped rim whose two side lobes curl back, a hollow mouth; one solid that prints without supports and,
-from the front, is all above the colour seam (white)."""
+flared, scalloped rim whose two side lobes curl back, a hollow mouth; one solid that prints without supports, white
+down to the wall."""
 import numpy as np
 import pytest
 from build123d import Align, Box, Pos
 
 from cadkit.checks import open_edges, overhangs
-from cadkit.render import heights
 from lily_of_the_valley import bell
 from lily_of_the_valley.params import P
 
@@ -53,7 +52,8 @@ def test_the_mouth_is_hollow(b):
     assert (b & probe(L - P.recess * R - 1.0, 0, P.bell_z)).volume == pytest.approx(0.4 ** 3, rel=1e-4)
 
 
-def test_from_the_front_it_is_all_above_the_seam(b):
-    bb = b.bounding_box()
-    h = heights([b], ((bb.min.X, bb.min.Y), (bb.max.X, bb.max.Y)), step=0.25)
-    assert np.nanmin(h) > P.seam
+def test_the_curled_lobes_come_down_to_the_wall_as_rounds():
+    """Domes, not a round on a post: the lobes' sections stand on the bed as half-ovals up to their old tops."""
+    for horn in bell._horns(P, 1.0):
+        assert overhangs(horn) == [] and horn.bounding_box().min.Z == pytest.approx(0, abs=1e-9)
+        assert horn.bounding_box().max.Z == pytest.approx(P.bell_z + bell.HORN_FLAT * P.horn[0], rel=1e-3)

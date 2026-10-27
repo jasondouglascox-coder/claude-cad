@@ -68,15 +68,17 @@ def open_edges(shape: Shape, tol: float = 1e-4) -> int:
     return bad
 
 
-def off_layer_z(shape: Shape, printer: Printer | None = None) -> list[float]:
-    """Z of every horizontal face that isn't on a layer boundary (a slicer splits that layer)."""
+def off_layer_z(shape: Shape, printer: Printer | None = None, min_area: float = 0.0) -> list[float]:
+    """Z of every horizontal face that isn't on a layer boundary (a slicer splits that layer). For a mesh, heights
+    whose flat faces add up to min_area mm^2 or less are left out: specks where a union's surfaces cross."""
     from cadkit.mesh import Mesh
     printer = printer or default()
     if isinstance(shape, Mesh):
-        tri, n, _ = _facets(shape)
+        tri, n, area = _facets(shape)
         flat = np.abs(np.abs(n[:, 2]) - 1) < 1e-9
         # tol: manifold3d keeps vertices in float32, about 1e-5 mm off at 100 mm
-        return sorted({round(float(z), 4) for z in tri[flat, 0, 2] if not printer.on_layer(float(z), tol=1e-4)})
+        return sorted(z for z, a in _by_z(tri[flat, 0, 2], area[flat])
+                      if a > min_area and not printer.on_layer(z, tol=1e-4))
     out = set()
     for f in shape.faces():
         n = f.normal_at()
