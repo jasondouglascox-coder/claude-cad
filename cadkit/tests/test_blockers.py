@@ -1,5 +1,6 @@
 """Support blockers: a volume, not printed, inside which the slicer generates no support (a keyhole the supports
 would fill, say). And reading back what a sliced plate prints, by feature, to prove it."""
+import math
 import zipfile
 import xml.etree.ElementTree as ET
 
@@ -77,6 +78,16 @@ def test_gcode_extrusions_by_feature_and_layer():
     assert max(x1 for _, _, x1, _, _, _ in arc) == pytest.approx(25.0, abs=0.05)
     assert segs[-1] == (30.0, 10.0, 40.0, 10.0, 0.4, "Support")
     assert [s for s in segs if s[0] == 20 and s[2] == 30] == []
+
+
+def test_gcode_centre_of_mass_weighs_each_move_by_its_plastic():
+    """Where the printed part balances: each extruding move weighed by its E, supports and the like left out."""
+    assert gcode.centre_of_mass(GCODE) == pytest.approx((5.0, 0.0, 0.2))  # the outer wall alone
+    half = (20 + 2 * 5 / math.pi, 5.0)  # a half circle's centroid
+    x = (5 * 1.0 + 15 * 0.5 + half[0] * 0.8 + 35 * 0.3) / 2.6
+    y = (0 * 1.0 + 2.5 * 0.5 + half[1] * 0.8 + 10 * 0.3) / 2.6
+    z = (0.2 * 2.3 + 0.4 * 0.3) / 2.6
+    assert gcode.centre_of_mass(GCODE, skip=()) == pytest.approx((x, y, z), abs=2e-3)
 
 
 def support_under_slab(tmp_path, blockers) -> int:

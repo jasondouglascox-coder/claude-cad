@@ -24,14 +24,16 @@ def unkeyed(p: Params) -> Mesh:
     return Mesh.union(sprig.parts(p), "sprig")
 
 
+@lru_cache
 def hang_point(p: Params) -> tuple[float, float]:
     """Where the nail's centre sits: key_at down the key bell's axis from its apex, moved sideways (within the
-    bell) to straight above the centre of mass, so the sprig hangs plumb."""
+    bell) to straight above the printed centre of mass, so the sprig hangs plumb. Printed, not solid: the thin green
+    parts print solid and the bells mostly infill, which puts it a millimetre left of the solid model's."""
     apex, axis, size = sprig.frame(p, p.key_bell)
     x, y = apex + axis * p.key_at
     t = p.key_at / (p.bell_len * p.bell_r * size)
     room = p.bell_r * size * float(bell.profile(t, p)) - p.key_head_d / 2 - p.key_wall - 1.0
-    cx = unkeyed(p).centroid[0]
+    _, (cx, _, _) = unkeyed(p).printed(p.printer.layer)
     return float(np.clip(cx, x - room, x + room)), float(y)
 
 

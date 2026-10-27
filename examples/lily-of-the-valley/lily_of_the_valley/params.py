@@ -32,7 +32,7 @@ class Params:
     recess: float = 0.4  # the mouth's hollow: depth in bell radii (a wide cone, roof shallower than 45)
     horn: tuple = (2.0, 0.7)  # the two side lobes curling back in the wall's plane: radius at the rim, at the tip
 
-    pedicel_r: tuple = (1.2, 1.0)  # at the stem, at the bell
+    pedicel_r: tuple = (1.3, 1.2)  # at the stem, at the bell (the key bell's carries the sprig: see knock)
     bract: float = 1.6  # half-width of the small pointed leaf at each pedicel's foot
 
     # colour by height: green below the seam, white above it, one swap; the bells' widest line just above it
@@ -40,7 +40,7 @@ class Params:
     bell_z: float = 6.0  # the bells' axis height
 
     key_bell: int = 2  # the keyhole hides under this bell (the one over the centre of mass)
-    key_at: float = 8.0  # the nail rests this far down the bell's axis from its apex
+    key_at: float = 6.6  # the nail rests this far down the bell's axis from its apex (the mouth's hollow is below)
     key_len: float = 6.0  # entry hole to the slot's top
     key_head_d: float = 9.5
     key_shank_w: float = 4.6
@@ -48,6 +48,11 @@ class Params:
     key_head_room: float = 3.2
     key_roof_left: float = 0.8
     key_wall: float = 1.2  # solid round the keyhole, sides and roof
+
+    # as it hangs: pulled straight out from the wall at its far end with this, the key bell's pedicel alone stays
+    # under the strength of printed PLA along its lines
+    knock: float = 1.0  # N (about 100 g)
+    pla_strength: float = 45.0  # MPa
 
     # AMS: green and white PLA, no supports
     filaments: tuple = (("PLA", "#4E8A2E"), ("PLA", "#F2F2EE"),  # green, white

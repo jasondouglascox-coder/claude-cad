@@ -36,10 +36,10 @@ front view: over 99.5% of the bells' cells above the seam, nothing else above it
 each bell's shoulder, hidden.
 
 ## Hanging
-The keyhole hides under the third bell, the one over the centre of mass: the nail rests 8 mm down its axis from
-the apex, moved sideways to straight above the centre of mass, so the sprig hangs within a degree of plumb. A
-6 mm slot, a 9.5 mm head, a 44-degree roof with 1.2 mm of wall all round. Nail: 70 mm below the sprig's top, 40 mm
-in from its left edge.
+The keyhole hides under the third bell, the one over the centre of mass: the nail rests 6.6 mm down its axis from
+the apex, moved sideways to straight above the printed centre of mass, so the sprig hangs within a degree of plumb.
+A 6 mm slot, a 9.5 mm head, a 44-degree roof with 1.2 mm of wall all round, the mouth's hollow included. Nail:
+68.5 mm below the sprig's top, 39 mm in from its left edge; a 6-8 mm head about 2 mm off the wall.
 
 ## Build
 Meshes from the start (peony lesson: B-rep booleans give up on freeform bodies), one `cadkit.mesh` union, the
@@ -49,3 +49,27 @@ plate comes with an STL.
 ## Amendments
 - 2026-10-26: Sliced (Bambu Studio): 1 h 08 m, 22.1 g (green 11.4 g, white 10.8 g), one colour change at layer
   25, no supports generated.
+- 2026-10-26: Pre-print review (independent agent, every finding probed, most against the sliced G-code). Fixed:
+  - **Hangs from its printed centre of mass, not the solid model's.** The thin green parts print solid and the bells
+    are 15% infill, so the plastic balances a millimetre left of the solid centroid; with the nail only 15 mm above
+    it, that tilted the sprig 3.8 degrees. `hang_point` now uses `Mesh.printed` (new in cadkit: walls and shells solid,
+    the rest at infill), which lands within 0.05 mm of the G-code's own centre of mass. A slow test checks the
+    sliced G-code's centre of mass (`cadkit.gcode.centre_of_mass`, new): 0.4 degrees.
+  - **Keyhole wall:** the head end came within 0.63 mm of bell 3's mouth hollow (the volume test's tolerance hid
+    it). The nail moved up the bell from 8 to 6.6 mm below the apex; the test now measures the gap to the air
+    (`Mesh.gap`, new): at least `key_wall` all round.
+  - **The key bell's pedicel carries the sprig.** A pull straight out from the wall at the foot bends it: 47 MPa at
+    1 N before. Pedicels 1.2/1.0 to 1.3/1.2 mm radius, and every fill now stands on at least 0.9 of its top's width
+    (`shapes.FOOT`, was 0.25): the height is capped by the seam, so the foot is where the stiffness comes from. Now
+    26 MPa at 1 N taking that pedicel alone, the arm to the farthest point (tested against `knock`, `pla_strength`);
+    the pedicel below runs into the same bell, so about half that. The wider foot also fixes the pedicels' first
+    layer, which the slicer had dropped (0.4 mm wide; now at least two lines).
+  - Re-sliced: 1 h 11 m, 23.2 g (green 12.4 g, white 10.8 g), one colour change at layer 25, no supports.
+
+  Accepted as they are:
+  - Green shows on the bells from below (11% of the bell at 20 degrees below, 24% at 60), little from the side or
+    above: colour by height. Hang it at or above eye level.
+  - The front lobe points print about 0.5 mm short and blunter (0.2% of the front silhouette).
+  - Eight horn tips start as small separate islands on the bed (about 5 mm2 each) up to 3 mm, then join their bells.
+  - Bells 4 and 5 overlap into a double bell at the tip, and pedicels run under the next bell's lobes: as rendered.
+  - Not checked: stringing between the bells above the seam (each layer travels between them).

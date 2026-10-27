@@ -39,6 +39,30 @@ def test_centroid_is_the_centre_of_mass():
     assert Mesh.union([a, b]).centroid == pytest.approx((20, 5, 2.5))
 
 
+def test_printed_is_walls_and_shells_solid_and_the_rest_infill():
+    """What a slicer lays down, and where it balances: a thin part prints solid, a thick one mostly air, so a wall
+    piece hangs plumb under the printed centre, not the solid one."""
+    lay, walls, line, infill, top, bottom = 0.2, 2, 0.42, 0.15, 5, 3
+    block = Mesh.from_shape(box(0, 0, 0, 20, 20, 10))
+    vol, (x, y, _) = block.printed(lay, walls, line, infill, top, bottom)
+    ring = 20 ** 2 - (20 - 2 * walls * line) ** 2
+    mid = 10 / lay - top - bottom
+    assert vol == pytest.approx((top + bottom) * 400 * lay + mid * (ring + infill * (400 - ring)) * lay, rel=1e-3)
+    assert (x, y) == pytest.approx((10, 10))
+    fin = Mesh.from_shape(box(30, 0, 0, 0.8, 20, 10))  # thinner than two walls: all solid
+    both = Mesh.union([block, fin])
+    pv, (px, _, _) = both.printed(lay, walls, line, infill, top, bottom)
+    assert pv == pytest.approx(vol + 160, rel=1e-3)
+    assert px == pytest.approx((vol * 10 + 160 * 30.4) / (vol + 160), abs=0.01)
+    assert px > both.centroid[0] + 1.0  # the solid centroid sits a millimetre and more toward the block
+
+
+def test_gap_is_the_closest_distance_between_two_meshes():
+    a = Mesh.from_shape(box(0, 0, 0, 10, 10, 2))
+    assert a.gap(Mesh.from_shape(box(11.5, 0, 0, 5, 5, 2))) == pytest.approx(1.5, abs=1e-4)
+    assert a.gap(Mesh.from_shape(box(40, 0, 0, 5, 5, 2)), search=5.0) == pytest.approx(5.0)  # past search: search
+
+
 def test_simplify_clears_slivers_a_union_leaves():
     """Bodies whose faces nearly line up union into steps thinner than open_edges' rounding; simplify collapses them
     without moving the shape."""

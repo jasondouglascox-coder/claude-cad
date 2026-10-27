@@ -105,6 +105,10 @@ class Mesh:
         verts[np.abs(verts[:, 2]) < tol, 2] = 0.0
         return self._like(verts, m.tris)
 
+    def gap(self, other: "Mesh", search: float = 10.0) -> float:
+        """The closest distance between the two (0 where they touch), up to search: farther apart gives search."""
+        return float(self._manifold().min_gap(other._manifold(), search))
+
     def translate(self, offset) -> "Mesh":
         return self._like(self.verts + np.asarray(tuple(offset), float), self.tris)
 
@@ -122,6 +126,31 @@ class Mesh:
         t = self.triangles()
         v = np.einsum("ij,ij->i", t[:, 0], np.cross(t[:, 1], t[:, 2]))
         return tuple(float(c) for c in (t.sum(axis=1) * v[:, None]).sum(axis=0) / (4 * v.sum()))
+
+    def printed(self, layer: float = 0.2, walls: int = 2, line: float = 0.42, infill: float = 0.15, top: int = 5,
+                bottom: int = 3) -> tuple[float, tuple[float, float, float]]:
+        """What a slicer lays down: (mm^3 of plastic, its centre of mass). Each layer's outline `walls` lines in is
+        solid, and so is whatever lies within `top`/`bottom` layers of an upper or lower surface; the rest is sparse
+        infill at `infill`. Defaults: Bambu Studio's 0.20 mm Standard. Thin parts print solid where thick ones are
+        mostly air, so a wall piece hangs plumb under this centre, not under `centroid`."""
+        import manifold3d as m3
+        man = self._manifold()
+        n = int(np.ceil(self.verts[:, 2].max() / layer - 1e-6))
+        cuts = [man.slice((i + 0.5) * layer) for i in range(n)]
+        mass, moment = 0.0, np.zeros(3)
+        for i, cut in enumerate(cuts):
+            if cut.is_empty():
+                continue
+            inner = cut.offset(-walls * line, m3.JoinType.Miter)
+            covered = inner
+            for j in range(i - bottom, i + top + 1):
+                covered = covered ^ (cuts[j] if 0 <= j < n else m3.CrossSection())
+            z = (i + 0.5) * layer
+            for region, density in ((cut - covered, 1.0), (covered, infill)):
+                a, (cx, cy) = _area_centroid(region)
+                mass += a * density * layer
+                moment += a * density * layer * np.array([cx, cy, z])
+        return float(mass), tuple(float(c) for c in moment / mass)
 
     @property
     def is_valid(self) -> bool:
@@ -155,6 +184,19 @@ class Mesh:
         rec["n"], rec["v"] = n, tri
         with open(path, "wb") as f:
             f.write(b"cadkit mesh".ljust(80, b" ") + np.uint32(len(tri)).tobytes() + rec.tobytes())
+
+
+def _area_centroid(region) -> tuple[float, tuple[float, float]]:
+    """A manifold3d CrossSection's area and centroid (holes run clockwise, so they subtract)."""
+    a = cx = cy = 0.0
+    for poly in region.to_polygons():
+        x, y = np.asarray(poly, float).T
+        x1, y1 = np.roll(x, -1), np.roll(y, -1)
+        c = x * y1 - x1 * y
+        a += c.sum() / 2
+        cx += ((x + x1) * c).sum() / 6
+        cy += ((y + y1) * c).sum() / 6
+    return (a, (cx / a, cy / a)) if a > 0 else (0.0, (0.0, 0.0))
 
 
 def triangles(shape, tol: float = 0.1) -> np.ndarray:

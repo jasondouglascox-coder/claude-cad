@@ -51,9 +51,10 @@ def placed_bell(p: Params, k: int, recess: bool = True) -> Mesh:
     return bell.local(p, size, recess).rotate_z(math.degrees(math.atan2(axis[1], axis[0]))).translate((*apex, 0))
 
 
-def pedicel(p: Params, k: int) -> Mesh:
-    """Out and up off the stem, over, and down into the apex along the bell's axis (2 mm in). It stays under the
-    seam: where it meets the bell it runs in under the bell's shoulder, which hides it."""
+def pedicel_sections(p: Params, k: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Pedicel k's path (plan) and its sections' radii and centre heights: out and up off the stem, over, and down
+    into the apex along the bell's axis (2 mm in). It stays under the seam: where it meets the bell it runs in under
+    the bell's shoulder, which hides it."""
     i, foot, tang = _on_stem(p, k)
     apex, axis, size = frame(p, k)
     out = p.bells[k][2]
@@ -62,7 +63,11 @@ def pedicel(p: Params, k: int) -> Mesh:
     r = np.linspace(*p.pedicel_r, PED_PTS) * (0.85 + 0.15 * size)
     stem_z = p.seam - stem_radius(p)[i]
     z = np.minimum(np.full(PED_PTS, stem_z), p.seam - r - 0.2)
-    return shapes.sweep(path, r, z, label="pedicel")
+    return path, r, z
+
+
+def pedicel(p: Params, k: int) -> Mesh:
+    return shapes.sweep(*pedicel_sections(p, k), label="pedicel")
 
 
 def bract(p: Params, k: int) -> Mesh:

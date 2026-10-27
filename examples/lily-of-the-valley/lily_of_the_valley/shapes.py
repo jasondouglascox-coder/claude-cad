@@ -13,6 +13,8 @@ FILL = 6  # points down each side of the fill and along the bed
 FLOOR = 0.4  # an ellipse that dips under the bed stops this high, and its fill runs in from there
 STEEP = 50.0  # deg from level: where the round hands over to the fill (45 prints; the margin covers the chords)
 TAIL = 46.0  # deg from level: the fill's sides (45 prints; a degree's margin so float error never tips them over)
+FOOT = 0.9  # the fill's foot is at least this share of its top's width: two lines on a pedicel, and stiffer
+
 
 
 def bezier(pts, n: int) -> np.ndarray:
@@ -41,7 +43,7 @@ def section(r: float, zc: float, flat: float = 1.0, lobe=None) -> tuple[np.ndarr
     w, z = curve(th)
     (wr, zr), (wl, zl) = (w[0], z[0]), (w[-1], z[-1])
     run = 1 / math.tan(math.radians(TAIL))
-    br, bl = max(wr - zr * run, 0.25 * wr), min(wl + zl * run, 0.25 * wl)  # where each side meets the bed
+    br, bl = max(wr - zr * run, FOOT * wr), min(wl + zl * run, FOOT * wl)  # where each side meets the bed
     s = np.linspace(0, 1, FILL)
     fw = np.concatenate([wl + (bl - wl) * s[1:], bl + (br - bl) * s[1:-1], br + (wr - br) * s[:-1]])
     fz = np.concatenate([zl * (1 - s[1:]), np.zeros(FILL - 2), zr * s[:-1]])
