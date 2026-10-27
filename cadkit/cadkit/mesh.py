@@ -112,6 +112,13 @@ class Mesh:
     def translate(self, offset) -> "Mesh":
         return self._like(self.verts + np.asarray(tuple(offset), float), self.tris)
 
+    def mirror(self, axis: int = 0) -> "Mesh":
+        """Mirrored across the plane through the origin square to that axis (0 = x: left to right), its triangles
+        turned so they still face out."""
+        v = self.verts.copy()
+        v[:, axis] *= -1
+        return self._like(v, self.tris[:, ::-1])
+
     def rotate_z(self, deg: float) -> "Mesh":
         c, s = np.cos(np.radians(deg)), np.sin(np.radians(deg))
         return self._like(self.verts @ np.array([[c, s, 0], [-s, c, 0], [0, 0, 1]]), self.tris)

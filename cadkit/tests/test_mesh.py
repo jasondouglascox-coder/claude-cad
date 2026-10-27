@@ -7,6 +7,7 @@ pytest.importorskip("manifold3d")
 from build123d import Color
 
 from cadkit import checks
+from cadkit.checks import open_edges
 from cadkit.mesh import Mesh
 from conftest import box
 
@@ -55,6 +56,16 @@ def test_printed_is_walls_and_shells_solid_and_the_rest_infill():
     assert pv == pytest.approx(vol + 160, rel=1e-3)
     assert px == pytest.approx((vol * 10 + 160 * 30.4) / (vol + 160), abs=0.01)
     assert px > both.centroid[0] + 1.0  # the solid centroid sits a millimetre and more toward the block
+
+
+def test_mirror_flips_left_to_right_and_stays_a_solid():
+    m = Mesh.union([Mesh.from_shape(box(0, 0, 0, 10, 10, 2)), Mesh.from_shape(box(0, 0, 0, 3, 10, 6))])
+    f = m.mirror()
+    assert f.is_valid and f.volume == pytest.approx(m.volume) and open_edges(f) == 0
+    bb = f.bounding_box()
+    assert (bb.min.X, bb.max.X, bb.max.Z) == pytest.approx((-10, 0, 6))
+    assert f.centroid == pytest.approx((-m.centroid[0], *m.centroid[1:]))
+    assert f.mirror(1).bounding_box().min.Y == pytest.approx(-10)  # across y = 0 too
 
 
 def test_gap_is_the_closest_distance_between_two_meshes():

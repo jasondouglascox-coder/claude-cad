@@ -98,19 +98,39 @@ def make(p: Params) -> Mesh:
 
 
 def tower(p: Params) -> tuple[float, float, float]:
-    """Prime tower (x, y, width) in the bed's front-right corner, clear of the sprig (it leans left at the foot)."""
+    """Prime tower (x, y, width) in the bed's front-right corner, under the right-hand sprig's bells (its foot is
+    at its left)."""
     return (p.printer.bed - 4.0 - 35.0, 4.0, 35.0)
 
 
-def write(p: Params, out: Path) -> None:
-    """out/plates/lily_of_the_valley.3mf: one object, its green and white bodies as parts; the STL; plates.csv."""
+def sprigs(p: Params) -> list[tuple[str, bool, tuple[float, float]]]:
+    """(name, mirrored, where its origin goes on the bed): the sprig centred, or with p.pair the sprig right of the
+    bed's centre line and its mirror image left of it, their stems side by side in the middle, pair_gap apart."""
+    bx, by = centre_xy(p)
+    if not p.pair:
+        return [("lily_of_the_valley", False, (bx, by))]
+    left_edge = body(p).bounding_box().min.X  # the stem's foot
+    return [("lily_of_the_valley", False, (bx + p.pair_gap / 2 - left_edge, by)),
+            ("lily_of_the_valley_mirror", True, (bx - p.pair_gap / 2 + left_edge, by))]
+
+
+def plate(p: Params) -> list[tuple[str, list[tuple[str, Mesh, int]]]]:
+    """Each sprig on the bed: (name, [(label, its green or white body, slot)])."""
+    return [(name, [(b.label, (b.mirror() if mirrored else b).translate((*at, 0)), slot) for b, slot in coloured(p)])
+            for name, mirrored, at in sprigs(p)]
+
+
+def write(p: Params, out: Path) -> Path:
+    """out/plates/lily_of_the_valley.3mf: an object per sprig, its green and white bodies as parts; the STL;
+    plates.csv. Returns the slicer settings it wrote (where the prime tower is)."""
     out = Path(out)
     (out / "plates").mkdir(parents=True, exist_ok=True)
     settings = bambu3mf.write_settings(out / "bambu_project_settings.config", list(p.filaments), tower=tower(p))
-    at = (*centre_xy(p), 0)
-    parts = [(b.label, b.translate(at), slot) for b, slot in coloured(p)]
+    objects = plate(p)
     s = slicers.active()
-    s.write_project(out / "plates" / f"lily_of_the_valley{s.project_suffix}", [("lily_of_the_valley", parts)],
-                    settings)
-    make(p).write_stl(out / "plates" / "lily_of_the_valley.stl")
-    (out / "plates.csv").write_text("plate,quantity,contents\nlily_of_the_valley,1,sprig x1 (1 colour change)\n")
+    s.write_project(out / "plates" / f"lily_of_the_valley{s.project_suffix}", objects, settings)
+    Mesh.union([m for _, parts in objects for _, m, _ in parts]).write_stl(out / "plates" / "lily_of_the_valley.stl")
+    n = len(objects)
+    (out / "plates.csv").write_text(f"plate,quantity,contents\nlily_of_the_valley,1,sprig x{n}"
+                                    f"{' (one mirrored)' if n > 1 else ''} ({p.color_changes} colour changes)\n")
+    return settings

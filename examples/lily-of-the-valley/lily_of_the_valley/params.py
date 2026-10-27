@@ -56,6 +56,10 @@ class Params:
     knock: float = 1.0  # N (about 100 g)
     pla_strength: float = 45.0  # MPa
 
+    # the plate: the sprig and its mirror image to its left, stems side by side in the middle this far apart
+    pair: bool = True
+    pair_gap: float = 6.0
+
     # AMS: green and white PLA, no supports
     filaments: tuple = (("PLA", "#4E8A2E"), ("PLA", "#F2F2EE"),  # green, white
                         ("PLA", "#6E1A5E"), ("PLA", "#F4A6B8"))  # unused: whatever's in slots 3 and 4

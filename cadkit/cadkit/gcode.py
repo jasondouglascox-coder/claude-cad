@@ -17,13 +17,17 @@ def extrusions(text: str) -> list[tuple[float, float, float, float, float, str]]
     return [m[:6] for m in _moves(text)]
 
 
-def centre_of_mass(text: str, skip: tuple[str, ...] = NOT_THE_PART) -> tuple[float, float, float]:
+def centre_of_mass(text: str, skip: tuple[str, ...] = NOT_THE_PART,
+                   within: tuple[float, float, float, float] | None = None) -> tuple[float, float, float]:
     """Where the printed part balances: each extruding move's midpoint weighed by its E (what it lays down), moves
-    in the `skip` features left out."""
+    in the `skip` features left out. within: only moves whose midpoint is in this plan box (x0, y0, x1, y1), for one
+    object of several on a plate."""
+    bx0, by0, bx1, by1 = within or (-math.inf, -math.inf, math.inf, math.inf)
     w = sx = sy = sz = 0.0
     for x0, y0, x1, y1, z, feature, e in _moves(text):
-        if feature not in skip:
-            w, sx, sy, sz = w + e, sx + e * (x0 + x1) / 2, sy + e * (y0 + y1) / 2, sz + e * z
+        mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+        if feature not in skip and bx0 <= mx <= bx1 and by0 <= my <= by1:
+            w, sx, sy, sz = w + e, sx + e * mx, sy + e * my, sz + e * z
     return sx / w, sy / w, sz / w
 
 

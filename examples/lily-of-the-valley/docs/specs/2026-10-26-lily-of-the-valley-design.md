@@ -90,3 +90,9 @@ plate comes with an STL.
     supports; hangs 0.1 degrees off plumb by the G-code. Nail 68.3 mm below the top, 38 mm in from the left.
   - cadkit: `off_layer_z(..., min_area=)` leaves out specks where a union's surfaces cross (one of 0.0013 mm2
     where two green rounds meet).
+- 2026-10-27: Two to a plate: the sprig and its mirror image (the user asked), a second object, `pair` in params.
+  The mirror stands left of the bed's centre line, the sprig right, their stems side by side in the middle 6 mm
+  apart (`pair_gap`), the bells reaching out to either side; the prime tower stays front-right, under the right
+  sprig's bells. Sliced: 2 h 22 m, 44.0 g (green 10.4 g, white 33.6 g), still 20 colour changes (both sprigs share
+  the layers). Each hangs plumb: the slow test checks the right-hand sprig's own G-code. cadkit: `Mesh.mirror`,
+  `gcode.centre_of_mass(within=)`.

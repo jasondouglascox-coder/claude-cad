@@ -36,6 +36,7 @@
 - `examples/lily-of-the-valley/`: a 188 mm arching sprig (package `lily_of_the_valley`): five white bells with
   scalloped, curled rims, white to the wall, on a green stem of 4 mm half-ovals: coloured by part (20 swaps), no
   supports: bells are tubes of sections round on top over a hidden 46-degree fill, the rest domes (`shapes.py`).
+  Two to a plate, the second mirrored.
 
 ## Commands
 

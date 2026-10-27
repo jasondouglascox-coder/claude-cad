@@ -7,7 +7,7 @@ import zipfile
 import numpy as np
 import pytest
 
-from build123d import Box, Pos
+from build123d import Align, Box, Pos
 
 from cadkit import bambu, gcode, slicers
 from cadkit.checks import downward_faces, off_layer_z, open_edges, overhangs, printable_problems
@@ -139,22 +139,44 @@ def test_keyhole_hangs_it_plumb_under_a_bell(body):
     assert cavity.gap(air, 3 * P.key_wall) >= P.key_wall - 0.02
 
 
-def test_plate_is_one_object_green_and_white_no_supports(tmp_path):
+def test_plate_is_the_sprig_and_its_mirror_image_green_and_white_no_supports(tmp_path):
     flower.write(P, tmp_path)
     s = slicers.active()
     path = tmp_path / "plates" / f"lily_of_the_valley{s.project_suffix}"
-    [(name, _, parts)] = s.read_filaments(path)
-    assert name == "lily_of_the_valley"
-    assert parts == {"sprig_green": P.slot_green, "sprig_white": P.slot_white}
+    objects = s.read_filaments(path)
+    assert [name for name, _, _ in objects] == [name for name, _, _ in flower.sprigs(P)] and len(objects) == 2
+    for _, _, parts in objects:
+        assert parts == {"sprig_green": P.slot_green, "sprig_white": P.slot_white}
     cfg = json.loads(zipfile.ZipFile(path).read("Metadata/project_settings.config"))
     assert cfg.get("enable_support", "0") == "0"
 
 
-def test_prime_tower_clears_the_sprig():
-    x, y, w = flower.tower(P)
-    bb = flower.make(P).bounding_box()
-    assert x + w < bb.min.X or x > bb.max.X or y + w < bb.min.Y or y > bb.max.Y
-    assert 0 <= x and x + w <= P.printer.bed and 0 <= y
+def placed_sprigs(body) -> list[Mesh]:
+    return [(body.mirror() if mirrored else body).translate((*at, 0)) for _, mirrored, at in flower.sprigs(P)]
+
+
+def test_the_second_sprig_is_the_first_mirrored_across_the_bed(body):
+    """Reflected across the bed's centre line, the mirror image lands exactly on the sprig, colour by colour: stems
+    side by side in the middle, pair_gap apart, the bells reaching out to either side."""
+    (_, a), (_, b) = flower.plate(P)
+    bx, _ = flower.centre_xy(P)
+    for (la, ma, sa), (lb, mb, sb) in zip(a, b):
+        assert (la, sa) == (lb, sb) and mb.volume == pytest.approx(ma.volume, rel=1e-6)  # float32 at bed coordinates
+        back = mb.mirror().translate((2 * bx, 0, 0))
+        assert back.bounding_box().min == pytest.approx(ma.bounding_box().min, abs=1e-6)
+        assert back.centroid == pytest.approx(ma.centroid, abs=1e-6)
+    right, left = placed_sprigs(body)
+    assert right.bounding_box().min.X > bx > left.bounding_box().max.X
+    assert right.gap(left, 3 * P.pair_gap) == pytest.approx(P.pair_gap, abs=0.01)
+
+
+def test_both_sprigs_fit_the_bed_clear_of_the_prime_tower(tmp_path, body):
+    settings = flower.write(P, tmp_path)
+    x0, y0, x1, y1 = slicers.active().tower_keepout(settings)
+    keepout = Mesh.from_shape(Pos(x0, y0, 0) * Box(x1 - x0, y1 - y0, 40, align=(Align.MIN,) * 3))
+    for m in placed_sprigs(body):
+        assert printable_problems(m, P.printer) == []
+        assert (m & keepout).volume == 0
 
 
 @pytest.mark.slow
@@ -167,7 +189,8 @@ def test_slicer_prints_both_up_to_green_h_then_white(tmp_path):
     assert [f for f, _ in bands] == [(P.slot_green, P.slot_white), (P.slot_white,)]
     assert bands[0][1] == P.color_changes  # one change a layer while both print
     assert set(report["grams"]) == {P.slot_green, P.slot_white}
-    # and what it lays down balances under the nail
-    x, y, _ = gcode.centre_of_mass(bambu.plate_gcode(tmp_path / "s.3mf"))
+    # and what each lays down balances under its nail: the sprig on the right of the bed's centre line
     bx, by = flower.centre_xy(P)
-    assert tilt(x - bx, y - by) < 1.0
+    [(_, (ax, ay))] = [(m, at) for _, m, at in flower.sprigs(P) if not m]
+    x, y, _ = gcode.centre_of_mass(bambu.plate_gcode(tmp_path / "s.3mf"), within=(bx, 0, 2 * bx, 2 * by))
+    assert tilt(x - ax, y - ay) < 1.0

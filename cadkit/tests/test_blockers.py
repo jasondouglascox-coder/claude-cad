@@ -88,6 +88,8 @@ def test_gcode_centre_of_mass_weighs_each_move_by_its_plastic():
     y = (0 * 1.0 + 2.5 * 0.5 + half[1] * 0.8 + 10 * 0.3) / 2.6
     z = (0.2 * 2.3 + 0.4 * 0.3) / 2.6
     assert gcode.centre_of_mass(GCODE, skip=()) == pytest.approx((x, y, z), abs=2e-3)
+    # only what prints inside a plan box (x0, y0, x1, y1): one object of several
+    assert gcode.centre_of_mass(GCODE, skip=(), within=(30, 0, 50, 20)) == pytest.approx((35.0, 10.0, 0.4))
 
 
 def support_under_slab(tmp_path, blockers) -> int:

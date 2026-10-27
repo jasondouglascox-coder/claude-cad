@@ -2,7 +2,7 @@
 
 plates: out/plates/lily_of_the_valley.3mf (a Bambu project: white bells, green sprig, 20 swaps, no supports)
         + lily_of_the_valley.stl (a mesh: no STEP), out/plates.csv
-render: out/render/*.png shaded previews in the planned colours (copy to docs/images/ after a visible change)
+render: out/render/*.png shaded previews in the planned colours (plate.png: both sprigs as they print) (copy to docs/images/ after a visible change)
 """
 import argparse
 import sys
@@ -43,6 +43,9 @@ def main(argv: list[str] | None = None) -> int:
                tol=0.05, crop=True)
         render([(hung(b), c) for b, c in items], out / "render" / "below.png", view=(0.3, -1.0, -0.6), px=1400,
                tol=0.05, crop=True)
+        cr.LIGHT = LIGHT
+        render([(m, m.color) for _, parts in flower.plate(P) for _, m, _ in parts], out / "render" / "plate.png",
+               view=TOP, px=1400, tol=0.05, crop=True)
     print(f"wrote {out}/")
     return 0
 
