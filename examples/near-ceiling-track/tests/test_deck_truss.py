@@ -129,7 +129,22 @@ def test_cross_frame_has_x_brace():
 @pytest.mark.slow
 @pytest.mark.parametrize("bays", [[BAY], [D.min_bay_len, D.max_bay_len]])
 def test_deck_truss_assembly_has_no_clashes(bays):
-    assert assembly.find_clashes(assembly.placed_parts(D, bays)) == []
+    assert assembly.clashes(D, bays) == []
+
+
+@pytest.mark.slow
+def test_only_the_cross_frames_press_on():
+    """At the real fits the only overlaps are the cross-frames gripping the panels (fit_cf < 0), the mid-bay one
+    over the keystones too ("this actually locks the keystone in", the user, 2026-10-27); each frame grips both."""
+    assert D.fit_cf < 0
+    got = assembly.press_fits(D, [BAY])
+    assert got
+    for na, nb, _ in got:
+        assert "cross_frame" in na + nb and ("arch" in na + nb or "keystone" in na + nb), (na, nb)
+    frames = {n for pair in got for n in pair[:2] if "cross_frame" in n}
+    assert len(frames) == 2 * len(L.post_us(D, BAY)) + 1
+    mid = {n for pair in got for n in pair[:2] if "cross_frame_mid" in pair[0] + pair[1]}
+    assert sum("keystone" in n for n in mid) == 2  # both panels' keystones
 
 
 def test_cli_style_overrides():

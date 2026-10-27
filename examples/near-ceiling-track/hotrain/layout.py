@@ -88,6 +88,21 @@ def cf_depth(p: Params, bay_len: float, u: float) -> float:
     return -max(rib_low(p, bay_len, u - nw), rib_low(p, bay_len, u + nw))
 
 
+def mid_frame(p: Params) -> bool:
+    """Deck truss: a cross-frame also straddles the mid-bay splice (the arch's crown block stays bare)."""
+    return p.run_style == "deck_truss"
+
+
+def frame_us(p: Params, bay_len: float) -> list[float]:
+    """Half-local u of every cross-frame a half carries a notch for: the posts, and mid-bay (deck truss)."""
+    return post_us(p, bay_len) + [half_len(bay_len)] * mid_frame(p)
+
+
+def mid_cf_depth(p: Params, bay_len: float) -> float:
+    """Depth of the mid-bay cross-frame: it seats in a notch split between the two halves, like the posts' frames."""
+    return cf_depth(p, bay_len, half_len(bay_len))
+
+
 def bay_pitch(p: Params, bay_len: float) -> float:
     """Tie pitch adjusted so the bay holds a whole number of ties."""
     return bay_len / ties_per_bay(p, bay_len)

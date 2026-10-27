@@ -83,7 +83,8 @@ def _kits(p: Params, bays: list[float], ends: tuple) -> list[tuple[str, tuple, l
                  for k, u in enumerate(L.post_us(p, b))]
         last_corner = i == len(bays) - 1 and ends[1] == L.CORNER  # the corner's anchor replaces this bracket
         b_extra = [] if last_corner else [("bracket", bracket.make(p))]
-        for role, k, extra in (("A", 2 * i + 1, []), ("B", 2 * i + 2, b_extra)):
+        mid = [(f"cross_frame_{tag}_mid", cross_frame.make(p, L.mid_cf_depth(p, b)))] * L.mid_frame(p)
+        for role, k, extra in (("A", 2 * i + 1, mid), ("B", 2 * i + 2, b_extra)):
             d_items, d_keys = deck(k)
             key = (role, tag, tuple(d_keys))
             kits.append((f"bay_{tag}_{role}", key, half + extra + d_items))

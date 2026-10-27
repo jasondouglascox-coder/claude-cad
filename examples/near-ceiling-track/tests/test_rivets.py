@@ -137,6 +137,14 @@ def test_no_rivet_under_a_cross_frame():
         assert all(abs(u - post) >= clear for post in L.post_us(D, BAY)), u
 
 
+def test_no_rivet_under_the_mid_bay_cross_frame():
+    """A seventh cross-frame straddles the splice at mid-bay (the user's first bay, 2026-10-27): no heads there."""
+    clear = (D.cf_t + D.fit_slide) / 2 + D.rivet_d / 2
+    assert L.mid_frame(D)
+    for u, _ in arch_half.rivet_points(D, BAY):
+        assert abs(u - L.half_len(BAY)) >= clear, u
+
+
 def test_plates_name_the_start_half():
     """The two halves look alike on the bench: the plate (Bambu Studio's object list, plates.csv) says which is which."""
     from hotrain import plates

@@ -70,6 +70,8 @@ def part_list(p: Params, bays: list[float], ends: tuple = L.RUN_ENDS) -> list[tu
         for k, u in enumerate(L.post_us(p, b)):
             d = L.cf_depth(p, b, u)
             rows.append((f"cross_frame_{tag}_{k}", cross_frame.make(p, d), 2 * n, f"post {k + 1} from each pier"))
+        if L.mid_frame(p):
+            rows.append((f"cross_frame_{tag}_mid", cross_frame.make(p, L.mid_cf_depth(p, b)), n, "mid-bay, over the splice"))
     rows.append(("keystone", keystone.make(p), 2 * len(bays), "one per panel per bay"))
     corners = sum(e == L.CORNER for e in ends)
     rows.append(("bracket", bracket.make(p), len(bays) + 1 - corners, "one per pier (corner anchors replace end brackets)"))
@@ -331,7 +333,7 @@ def main(argv: list[str] | None = None) -> int:
         for note in room.misfit_notes():
             print(note)
     if a.command == "check":
-        clashes = assembly.find_clashes(assembly.placed_parts(p, bays))
+        clashes = assembly.clashes(p, bays)
         for na, nb, v in clashes:
             print(f"CLASH {na} x {nb}: {v} mm^3")
         print("no clashes" if not clashes else f"{len(clashes)} clash(es)")

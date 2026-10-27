@@ -50,10 +50,11 @@ def test_handrail_on_room_side(parts):
     (P, [16 * INCH, 14 * INCH, P.max_bay_len]),
     (P, [P.min_bay_len]),
     (replace(P, fit_slide=0.3, fit_snap=0.1, rail_base_w=2.4), [16 * INCH]),  # after a fit-test retune
+    (replace(P, run_style="deck_truss"), [16 * INCH]),  # riveted panels, the mid-bay frame
 ])
 @pytest.mark.slow
 def test_no_interference(p, bays):
-    assert assembly.find_clashes(assembly.placed_parts(p, bays)) == []
+    assert assembly.clashes(p, bays) == []
 
 
 def test_placed_parts_rejects_bad_bays():

@@ -29,7 +29,7 @@ def _shared(p: Params, bay_len: float) -> tuple[list, list]:
     adds = [rect(u - p.tab_len / 2, u + p.tab_len / 2, -1, p.tie_h) for u in L.tab_us(p, bay_len)]
     cuts = []
     nw = (p.cf_t + p.fit_slide) / 2
-    for u in L.post_us(p, bay_len):  # cross-frame locating notch under the rib / bottom chord
+    for u in L.frame_us(p, bay_len):  # cross-frame locating notch under the rib / bottom chord (half of it at mid-bay)
         top = -L.cf_depth(p, bay_len, u) + p.rib_notch
         cuts.append(rect(u - nw, u + nw, L.rib_low(p, bay_len, u - nw) - 2, top))
     bw = (p.bracket_t + p.fit_slide) / 2
@@ -144,7 +144,7 @@ def rivet_points(p: Params, bay_len: float) -> list[tuple[float, float]]:
     on = lambda u, z: all(bare.is_inside((u + du, z + dz + p.pier_depth, mid)) for du, dz in ring)
     keep, gap = [], p.rivet_d + 0.3
     pier = L.springing_u(p) + p.pier_cap_out + p.rivet_d  # concrete: the pier and its cap stay bare
-    posts = L.post_us(p, bay_len)  # cross-frames grip both panels here
+    posts = L.frame_us(p, bay_len)  # cross-frames grip both panels here
     under = lambda u: any(abs(u - x) < (p.cf_t + p.fit_slide) / 2 + p.rivet_d / 2 + p.rivet_margin for x in posts)
     for (a, za), (b, zb) in _rows(p, bay_len):
         n = max(1, int(math.hypot(b - a, zb - za) // p.rivet_pitch))

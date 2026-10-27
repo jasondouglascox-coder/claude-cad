@@ -129,4 +129,4 @@ def test_stragglers_share_plates():
     extras = [pl for pl in pls if pl.name.startswith("extras")]
     assert sum(pl.qty for pl in extras) == 1
     printed = Counter(n.split("#")[0] for pl in pls for n, _ in pl.items for _ in range(pl.qty))
-    assert sum(q for n, q in printed.items() if n.startswith("cross_frame")) == 3 * 2 * len(L.post_us(D, 418.2))
+    assert sum(q for n, q in printed.items() if n.startswith("cross_frame")) == 3 * (2 * len(L.post_us(D, 418.2)) + 1)

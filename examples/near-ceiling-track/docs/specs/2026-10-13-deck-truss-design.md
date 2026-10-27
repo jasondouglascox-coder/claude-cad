@@ -205,3 +205,16 @@ plates and packing, and the bus cradle.
   notches), and `fit_cf = -0.10`, its middle one.
 - **Clip 2 picked (2026-10-26):** the user chose the 0.10 mm press fit from the second coupon. `fit_cf = -0.10`
   stays.
+
+## Amendments (2026-10-27): a seventh cross-frame at mid-bay
+
+- **A cross-frame straddles the mid-bay splice** too, so each bay has seven: three per half at the posts and one
+  centered on the joint. The user tried one on the first printed bay: "this actually locks the keystone in". Its
+  slots press over both panels' keystones as well as the panels. It's the same part as the post frames (every frame
+  in these bays is 57.15 mm deep), seated in a `rib_notch`-deep notch split between the two halves so it stays
+  centered. Rivets keep clear of it like at the posts (`layout.frame_us`). The arch style keeps its crown block bare.
+- **Clash checks vs. press fits:** with `fit_cf < 0` the frames overlap the panels on purpose. `assembly.clashes`
+  checks them line-to-line, and `assembly.press_fits` lists the planned overlaps (a test holds them to frames on
+  panels and keystones).
+- A bay printed before this has rivets and no notch at the splice. Shave the few heads under the frame, and it rides
+  1 mm low without the notch.

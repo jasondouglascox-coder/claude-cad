@@ -48,3 +48,29 @@ def test_slots_grip_the_panels():
     assert P.fit_cf < 0  # narrower than the panel
     assert P.fit_cf == fit_test.CF_FITS[1]
     assert cross_frame.width(P) == pytest.approx(P.rail_ctc + cross_frame.slot_w(P) + 2 * P.cf_wall)
+
+
+def test_mid_bay_frame_seats_in_a_split_notch():
+    """The mid-bay frame straddles the splice and seats in a rib_notch-deep notch, half in each half, so it stays
+    centered like the post frames (the user, 2026-10-27)."""
+    from dataclasses import replace
+    from hotrain import layout as L
+    from hotrain.parts import arch_half
+    D = replace(P, run_style="deck_truss")
+    b = 418.2
+    h, d = L.half_len(b), L.mid_cf_depth(D, b)
+    assert -d + D.rib_notch == pytest.approx(-D.dt_depth + D.rib_notch)
+    assert printable_problems(cross_frame.make(D, d)) == []
+    assert not L.mid_frame(P)  # the arch style keeps its crown block bare
+    nw = (D.cf_t + D.fit_slide) / 2
+    for start in (False, True):
+        half = arch_half.make(D, b, start=start)
+        x = 0.0 if start else h  # the mirrored start half has its splice at X = 0
+
+        def solid(du):  # material a hair above the bottom chord's underside, du from the splice into this half
+            u = x - du if not start else x + du
+            probe = Pos(u - 0.1, D.pier_depth - D.dt_depth + 0.4, D.panel_t / 2) * Box(0.2, 0.2, 0.2)
+            return (half & probe).volume > 1e-6
+
+        assert not solid(0.3) and not solid(nw - 0.2)  # the notch
+        assert solid(nw + 0.3)  # its wall
