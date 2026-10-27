@@ -191,6 +191,30 @@ def corner_plates(p: Params = P) -> list[Plate]:
     return out
 
 
+@dataclass
+class CornerKit:
+    name: str
+    qty: int  # how many corners print this kit
+    plates: list  # Plate, each printed once per kit
+    where: list = field(default_factory=list)  # the room's corners it builds
+
+
+def corner_sections(p: Params = P) -> list[CornerKit]:
+    """The corners as kits beside the run sections: one per corner kind (its PETG plates and white PLA cleat plates),
+    printed once per corner of that kind, and the rod-bending jig once."""
+    from dataclasses import replace
+    from hotrain import room
+    corners = [s for s in room.sections(p) if s.kind != "run"]
+    pls = corner_plates(p)
+    out = []
+    for kind in ("inside", "bridge"):
+        where = [s.name for s in corners if s.kind == kind]
+        mine = [replace(pl, qty=1) for pl in pls if pl.name.startswith(f"{kind}_corner")]
+        out.append(CornerKit(f"corner_{kind}", len(where), mine, where))
+    out.append(CornerKit("rod_jig", 1, [pl for pl in pls if pl.name == "rod_jig"]))
+    return out
+
+
 def wire_test_plates(p: Params = P) -> list[Plate]:
     """The wire-rail curve test: one piece to seat the wire, then the 5 pieces of a 90° corner to run a train.
     They print at the web's fine layers (build.cmd_wire_test writes those slicer settings)."""

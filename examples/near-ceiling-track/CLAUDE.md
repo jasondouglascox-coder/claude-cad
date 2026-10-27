@@ -16,7 +16,7 @@ Run everything from this folder:
 uv sync
 uv run pytest -n 6 -m "not slow"     # while iterating, ~4 min
 uv run pytest -n 6                   # before every commit, ~25 min; run it in the background
-uv run python -m hotrain.build sections --run-style deck_truss   # out/sections: the room a bay at a time
+uv run python -m hotrain.build sections --run-style deck_truss   # out/sections: the room a bay at a time, plus the corner kits
 uv run python -m hotrain.build show room --run-style deck_truss   # OCP viewer: start it and open the page first
 uv run python -m hotrain.build room --run-style deck_truss        # out/step/office.step for Onshape
 uv run python -m hotrain.build web --run-style deck_truss         # out/web: the shareable 3D room viewer

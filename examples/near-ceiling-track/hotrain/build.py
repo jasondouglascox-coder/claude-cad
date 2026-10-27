@@ -268,8 +268,9 @@ def cmd_render(p: Params, out: Path) -> list[Path]:
 
 
 def cmd_sections(p: Params, out: Path) -> Path:
-    """The room a bay at a time: out/sections/<section>/<section>.3mf (every plate of one bay's kit as tabs) and
-    sections.csv (each kit, how many bays print it, and which bays)."""
+    """The room a bay at a time: out/sections/<section>/<section>.3mf (every plate of one bay's kit as tabs), the corner
+    kits and rod jig, a spare bracket, and sections.csv (each kit, how many times to print it, and where it goes)."""
+    from hotrain.plates import Plate
     d = out / "sections"
     rows = []
     for sec in plates.sections(p):
@@ -277,6 +278,14 @@ def cmd_sections(p: Params, out: Path) -> Path:
         pls = plates.section_plates(p, sec)
         write_plates(pls, sd, sd / "plates.csv", p=p, combined=sec.name)
         rows.append([sec.name, sec.qty, len(pls), "; ".join(f"{run} bay {i}" for run, i in sec.where)])
+    for kit in plates.corner_sections(p):
+        kd = d / kit.name
+        write_plates(kit.plates, kd, kd / "plates.csv", p=p, combined=kit.name)
+        rows.append([kit.name, kit.qty, len(kit.plates), "; ".join(kit.where) or "tool: bends the corner rods"])
+    sd = d / "spare_bracket"  # holds a run's corner-end pier on the wall until its corner goes up
+    write_plates([Plate("spare_bracket", 1, plates.pack(p, [("bracket", bracket.make(p))])[0])], sd, sd / "plates.csv",
+                 p=p, combined="spare_bracket")
+    rows.append(["spare_bracket", 1, 1, "optional: hangs a first bay before its corner"])
     with open(d / "sections.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["section", "print", "plates", "bays"])

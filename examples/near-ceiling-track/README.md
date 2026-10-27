@@ -35,7 +35,7 @@ uv sync
 
 | Command | Output |
 |---|---|
-| `uv run python -m hotrain.build sections --run-style deck_truss` | `out/sections/`: **the room a bay at a time**. One folder per section kit (first / middle / last bay of a run, per bay length), each with one project file holding every plate, and `sections.csv` saying how many times to print each and which bays it is |
+| `uv run python -m hotrain.build sections --run-style deck_truss` | `out/sections/`: **the room a bay at a time**. One folder per section kit (first / middle / last bay of a run, per bay length), the corner kits (`corner_inside` ×3, `corner_bridge` ×1), the `rod_jig`, and a `spare_bracket` that holds a first bay's corner end until its corner goes up. Each folder has one project file holding every plate; `sections.csv` says how many times to print each and where it goes. Facing the wall, a run's first bay is at its right-hand corner |
 | `uv run python -m hotrain.build plates --run-style deck_truss` | `out/plates/*.3mf` + `.step`: every build plate for the runs and corners; `out/plates.csv` says how many of each |
 | `uv run python -m hotrain.build all --run-style deck_truss` | Every part (`out/step/*.step`), the run assembly, the fit test and `out/manifest.csv` |
 | `uv run python -m hotrain.build corners` | `out/corners/*.step`, both corner assemblies, and `out/corners_layout.csv` (where to mark anchors, brackets and ceiling cleats; rod cut lengths) |

@@ -218,3 +218,15 @@ plates and packing, and the bus cradle.
   panels and keystones).
 - A bay printed before this has rivets and no notch at the splice. Shave the few heads under the frame, and it rides
   1 mm low without the notch.
+
+## Amendments (2026-10-27): corners in the section kits
+
+- `build sections` also writes the corners as kits: `corner_inside` (printed 3×: back-left, front-left,
+  front-right) and `corner_bridge` (1×), each with its PETG plates and white PLA cleat plates, plus the `rod_jig`.
+  The run sections never held corners, and the only corner file was the MakerWorld one, built before the tighter
+  pier slot.
+- **A run starts and ends at corners:** the corner's rod anchor holds the run's end pier, so a first bay has no
+  bracket at its corner end. To hang a first bay before its corner, print `spare_bracket` (the same bracket) for
+  that end, and swap it out when the corner goes up.
+- Facing the wall, a run's first bay sits at its right-hand corner and its bays go leftward (run x runs right to
+  left as seen from the room).
