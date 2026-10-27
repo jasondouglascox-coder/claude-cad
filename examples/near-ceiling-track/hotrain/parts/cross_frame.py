@@ -7,8 +7,13 @@ from hotrain.joints import poly, rect
 from hotrain.params import P, Params
 
 
+def slot_w(p: Params) -> float:
+    """Slot over a panel: snug enough that the frame stays up on its own (glue is the backup)."""
+    return p.panel_t + p.fit_cf
+
+
 def width(p: Params) -> float:
-    return p.rail_ctc + p.panel_t + p.fit_slide + 2 * p.cf_wall
+    return p.rail_ctc + slot_w(p) + 2 * p.cf_wall
 
 
 def y_min(p: Params) -> float:
@@ -22,7 +27,7 @@ def height(p: Params, depth: float) -> float:
 
 def profile(p: Params, depth: float) -> Sketch:
     """Profile in (y, z); depth = distance from tie underside down to the rib underside at this post."""
-    w, sw = width(p), p.panel_t + p.fit_slide
+    w, sw = width(p), slot_w(p)
     body = rect(-w / 2, w / 2, -height(p, depth), 0)
     ym, fl = y_min(p), p.bus_floor
     body += [rect(ym, -w / 2 + 0.01, fl - p.finger_h, fl),  # finger: the bus wires lie on it
@@ -46,7 +51,7 @@ def profile(p: Params, depth: float) -> Sketch:
 
 def x_cells(p: Params, depth: float) -> int:
     """Number of stacked X's in the sway-brace window (cells roughly 2:1 tall)."""
-    wy = p.rail_ctc / 2 - (p.panel_t + p.fit_slide) / 2 - p.cf_border
+    wy = p.rail_ctc / 2 - slot_w(p) / 2 - p.cf_border
     h = -p.cf_border + depth - p.rib_notch
     return max(1, round(h / (4 * wy)))
 

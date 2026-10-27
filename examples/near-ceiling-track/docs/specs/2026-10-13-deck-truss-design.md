@@ -190,3 +190,18 @@ plates and packing, and the bus cradle.
 - **Rivets 0.6 mm (2026-10-26):** from the fit-test strips, the 0.8 and 1.0 mm heads didn't come out smooth and
   0.6 did. `rivet_d = 0.6`.
 
+
+## Amendments (2026-10-26): cross-frames grip the panels
+
+- **The first printed bay's cross-frames were "way loose"** on the panels: their slots used the general slide fit
+  (0.20 mm over the 3.2 mm panel). They should stay up on their own, with glue as the backup. The slots now have their
+  own fit, `fit_cf = 0.05`, and the walls beside them stay `cf_wall` thick. Nothing on the panels changed, so a bay
+  printed earlier only needs new cross-frames.
+- **Clip coupon** (`build cf-clip-test`, out/cf_clip_test): the top of a cross-frame at `CF_FITS` 0.0 / 0.05 / 0.10
+  (1 / 2 / 3 notches on the bottom edge). Push each up onto a printed bay's panels at a post and pick the one that
+  stays put. `fit_cf` is the middle one until the coupon says otherwise.
+- **Press fit (2026-10-26, clip coupon 1):** of 0.0 / 0.05 / 0.10, the 0.0 clip stayed in place but "didn't fit quite
+  as tight as I hoped". The second coupon is 0.15 / 0.10 / 0.05 mm *narrower* than the panel (`CF_FITS`, 1-3
+  notches), and `fit_cf = -0.10`, its middle one.
+- **Clip 2 picked (2026-10-26):** the user chose the 0.10 mm press fit from the second coupon. `fit_cf = -0.10`
+  stays.

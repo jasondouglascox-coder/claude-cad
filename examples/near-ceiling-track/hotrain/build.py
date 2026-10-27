@@ -15,6 +15,7 @@
     uv run python -m hotrain.build wire-test    # out/wire_test: stainless wire rail curve test plates (0.08 mm layers)
     uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project per print profile, to upload
     uv run python -m hotrain.build latch-test   # out/latch_test: three latch hook lengths + two pier stubs
+    uv run python -m hotrain.build cf-clip-test # out/cf_clip_test: three cross-frame slot fits to push onto a bay
     uv run python -m hotrain.build sections --run-style deck_truss   # out/sections: the room a bay at a time
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
 """
@@ -289,6 +290,14 @@ def cmd_latch_test(p: Params, out: Path) -> Path:
     return d
 
 
+def cmd_cf_clip_test(p: Params, out: Path) -> Path:
+    """The cross-frame clip coupon on its own plate: out/cf_clip_test/."""
+    from hotrain.plates import Plate
+    d = out / "cf_clip_test"
+    write_plates([Plate("cf_clip_test", 1, [("cf_clip_test", fit_test.cf_clip_coupon(p))])], d, d / "plates.csv", p=p)
+    return d
+
+
 def cmd_fit_test(p: Params, out: Path, mesh: bool, preview: bool) -> None:
     export(fit_test.make(p), out, "fit_test", mesh, preview)
 
@@ -306,7 +315,7 @@ def params_from_args(a: argparse.Namespace) -> Params:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="hotrain.build", description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["all", "parts", "assembly", "fit-test", "plates", "corners", "room", "show", "glb", "web",
-                                        "check", "render", "wire-test", "makerworld", "latch-test", "sections"])
+                                        "check", "render", "wire-test", "makerworld", "latch-test", "cf-clip-test", "sections"])
     ap.add_argument("target", nargs="?", default="room", help="for show: room | run | inside | bridge | fit-test")
     ap.add_argument("--out", default="out")
     ap.add_argument("--mesh", action="store_true")
@@ -345,6 +354,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if a.command == "sections":
         print(f"wrote {cmd_sections(p, out)}/ (sections.csv: each bay kit and how many times to print it)")
+        return 0
+    if a.command == "cf-clip-test":
+        print(f"wrote {cmd_cf_clip_test(p, out)}/ (one plate: cf_clip_test)")
         return 0
     if a.command == "latch-test":
         print(f"wrote {cmd_latch_test(p, out)}/ (one plate: latch_test)")

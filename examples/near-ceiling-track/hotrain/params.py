@@ -228,6 +228,7 @@ class Params:
     fit_snap: float = 0.05
     fit_key: float = 0.0  # keystone in its socket: fit-test variant 1 (2026-10-26; 0.05 and 0.10 were loose)
     fit_tab: float = 0.10  # truss tab into the tie ladder's slot: fit-test variant 1 (0.10 and 0.20 both fit)
+    fit_cf: float = -0.10  # cross-frame slots over the panels, a press fit: clip coupon 2 (2026-10-26)
     fit_pier: float = 0.10  # pier in the bracket's (and corner anchors') slot: tighter than fit_slide (latch coupon)
 
     # printer: yours, from cadkit.settings (CADKIT_BED... or cadkit.toml); with nothing set, the A1's 256 x 256 mm.

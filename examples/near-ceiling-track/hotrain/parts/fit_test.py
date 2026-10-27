@@ -9,7 +9,7 @@ from hotrain.joints import butterfly, rect
 from hotrain.parts import keystone
 from hotrain.layout import Tie
 from hotrain.params import P, Params
-from hotrain.parts import bracket, tie_ladder
+from hotrain.parts import bracket, cross_frame, tie_ladder
 
 GROOVE_FITS = (0.10, 0.20, 0.30)
 SLOT_FITS = (0.10, 0.20, 0.30)
@@ -17,6 +17,8 @@ KEY_FITS = (0.0, 0.05, 0.10)
 ROD_SEAT_FITS = (0.1, 0.2, 0.3)  # clearance of the corner deck's rod grooves on the 1/4" rods: tighter -> looser
 RIVET_SIZES = (0.6, 0.8, 1.0)  # deck-truss rivet head diameters: smaller -> larger (rivet_d is the middle one)
 RIVET_STRIP = (40.0, 10.0)  # strip length, width
+CF_FITS = (-0.15, -0.10, -0.05)  # cross-frame slots over the panels: a press fit (0.20 fell off, 0.0 held but not tight)
+CF_CLIP_SLOT = 10.0  # the clip coupon's slot depth
 LATCH_DEPTH = 45.0
 LATCH_ENGAGES = (1.0, 1.2, 1.4)  # latch coupon: hook length per variant (1-3 notches), no spring slot
 LATCH_NOTCH = 1.0  # the coupon's short latch sample keeps a shallow pier notch
@@ -89,6 +91,19 @@ def latch_pier(p: Params) -> Part:
         rect(-bw, bw, -p.latch_top - p.latch_win_h, -p.latch_top),
     ]
     return extrude(Pos(w / 2, LATCH_DEPTH) * prof, p.panel_t)
+
+
+def cf_clip(p: Params, fit: float, n: int) -> Part:
+    """The top of a cross-frame, cf_t thick, with both panel slots at clearance `fit`, n notches on the bottom
+    edge: push it up onto a printed bay's panels at a post."""
+    q = replace(p, fit_cf=fit)
+    w, sw, h = cross_frame.width(q), cross_frame.slot_w(q), CF_CLIP_SLOT + 4
+    slots = [rect(w / 2 + y - sw / 2, w / 2 + y + sw / 2, h - CF_CLIP_SLOT, h + 1) for y in q.rail_ys]
+    return extrude(rect(0, w, 0, h) - slots - marks(n, 1.0, 0), q.cf_t)
+
+
+def cf_clip_coupon(p: Params = P) -> Compound:
+    return Compound(children=[Pos(0, 20.0 * i, 0) * cf_clip(p, f, i + 1) for i, f in enumerate(CF_FITS)])
 
 
 def rod_seat_sample(p: Params, fit: float, n: int) -> Part:
