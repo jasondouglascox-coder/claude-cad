@@ -14,11 +14,11 @@ The options were A (the photo's sprig, no leaf), B (the same with a broad leaf b
 degrees toward you, 1 h 42, 41 g) and C (a stem arching across, seven bells in a row, a slim leaf; 1 h 19, 28 g).
 
 - **Stem:** a Bezier rising up the left and arching over to the right, radius 2.5 tapering to 1.4 mm.
-- **Six bells** hanging below it, side-on: each lies in the wall's plane, its apex at the pedicel and its mouth
+- **Five bells** hanging below it, side-on: each lies in the wall's plane, its apex at the pedicel and its mouth
   down. Along the axis: a rounded shoulder, straight-ish sides widening a little, a slight waist, a flared rim.
   The rim is scalloped into six lobes: the two at the sides curl back in the wall's plane (horns); the two facing
   you reach past the rim, so the bell's lower edge is scalloped from the front. A shallow cone hollows the mouth.
-  Bells are 12 mm radius at size 1, 24 mm long, 0.85 as deep as wide; sizes 0.8 to 1.0, smallest at the tip.
+  Bells are 12 mm radius at size 1, 24 mm long, 0.85 as deep as wide; sizes 0.8 to 1.0, smallest at the tip, each clear of the others.
 - **Pedicels** from the stem out and up, over and down into each bell's apex; a small pointed **bract** at each
   pedicel's foot.
 
@@ -39,7 +39,7 @@ each bell's shoulder, hidden.
 The keyhole hides under the third bell, the one over the centre of mass: the nail rests 6.6 mm down its axis from
 the apex, moved sideways to straight above the printed centre of mass, so the sprig hangs within a degree of plumb.
 A 6 mm slot, a 9.5 mm head, a 44-degree roof with 1.2 mm of wall all round, the mouth's hollow included. Nail:
-68.5 mm below the sprig's top, 39 mm in from its left edge; a 6-8 mm head about 2 mm off the wall.
+68.3 mm below the sprig's top, 37 mm in from its left edge; a 6-8 mm head about 2 mm off the wall.
 
 ## Build
 Meshes from the start (peony lesson: B-rep booleans give up on freeform bodies), one `cadkit.mesh` union, the
@@ -73,3 +73,8 @@ plate comes with an STL.
   - Eight horn tips start as small separate islands on the bed (about 5 mm2 each) up to 3 mm, then join their bells.
   - Bells 4 and 5 overlap into a double bell at the tip, and pedicels run under the next bell's lobes: as rendered.
   - Not checked: stringing between the bells above the seam (each layer travels between them).
+- 2026-10-27: One small cup at the tip. The user found the tip's two overlapping bells (sizes 0.85 and 0.8, 1309 mm3
+  shared) looked funky: they read as one odd double cup. Now five bells, the last a single size-0.8 cup hanging
+  straight down near the arch's end (0.94 along the stem, 10 mm out), and a test that no two bells overlap.
+  Re-sliced: 1 h 06 m, 21.6 g (green 11.8 g, white 9.8 g), one colour change, no supports; hangs 0.2 degrees off
+  plumb by the G-code. Nail 68.3 mm below the top, 37 mm in from the left.

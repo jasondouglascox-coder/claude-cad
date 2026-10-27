@@ -66,6 +66,14 @@ def test_from_the_front_the_bells_are_white_and_the_rest_green(body):
     assert off_bell.sum() > 0.25 * on_bell.sum()  # there is a green sprig to see
 
 
+def test_every_bell_is_a_single_cup_clear_of_the_others():
+    """Bells that overlap read as one odd double cup (the tip's two did): each hangs on its own."""
+    bells = [sprig.placed_bell(P, k) for k in range(len(P.bells))]
+    for i in range(len(bells)):
+        for j in range(i + 1, len(bells)):
+            assert (bells[i] & bells[j]).volume == 0, (i, j)
+
+
 def test_every_bell_hangs_from_a_pedicel_off_the_stem():
     stem = sprig.stem(P)
     for k in range(len(P.bells)):

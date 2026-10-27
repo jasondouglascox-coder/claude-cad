@@ -21,7 +21,7 @@ class Params:
     # the bells, foot first: (where on the stem 0..1, apex this far below it, and out to the right, size, hang deg
     # from straight down, + swings the mouth right)
     bells: tuple = ((0.16, 14.0, 16.0, 0.95, 8.0), (0.40, 13.0, 18.0, 1.0, 4.0), (0.55, 12.0, 20.0, 1.0, -2.0),
-                    (0.71, 12.0, 17.0, 0.95, 2.0), (0.86, 11.0, 12.0, 0.85, -6.0), (0.97, 12.0, 4.0, 0.8, 4.0))
+                    (0.71, 12.0, 17.0, 0.95, 2.0), (0.94, 12.0, 10.0, 0.8, 0.0))  # one small cup at the tip
     bell_r: float = 12.0  # body radius of a size-1 bell
     bell_len: float = 2.0  # apex to mouth, in bell radii
     bell_flat: float = 0.85  # out of the wall: the bell's depth / its width
