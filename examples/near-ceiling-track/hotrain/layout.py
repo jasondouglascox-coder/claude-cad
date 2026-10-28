@@ -39,7 +39,8 @@ class Segment:
     x_start: float
     x_end: float
     female_start: bool  # jigsaw socket at x_start (another ladder plugs in)
-    male_end: bool  # jigsaw tab at x_end
+    male_end: bool  # jigsaw tab at x_end (into the next ladder, or a corner's end deck)
+    male_start: bool = False  # jigsaw tab pointing back out of x_start, into a corner's end deck
 
 
 def validate_bays(p: Params, bays: list[float]) -> None:
@@ -203,7 +204,8 @@ def segments(p: Params, bays: list[float], ends: tuple = RUN_ENDS) -> list[Segme
         cuts += [x0 + uj, x0 + b - uj]
     cuts.append(x_hi)
     n = len(cuts) - 1
-    return [Segment(cuts[i], cuts[i + 1], i > 0, i < n - 1) for i in range(n)]
+    return [Segment(cuts[i], cuts[i + 1], i > 0, i < n - 1 or ends[1] == CORNER, i == 0 and ends[0] == CORNER)
+            for i in range(n)]
 
 
 def tab_xs(p: Params, bays: list[float]) -> list[float]:

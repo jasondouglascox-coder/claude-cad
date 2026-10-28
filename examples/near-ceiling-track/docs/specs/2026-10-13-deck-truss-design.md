@@ -226,7 +226,18 @@ plates and packing, and the bus cradle.
   The run sections never held corners, and the only corner file was the MakerWorld one, built before the tighter
   pier slot.
 - **A run starts and ends at corners:** the corner's rod anchor holds the run's end pier, so a first bay has no
-  bracket at its corner end. To hang a first bay before its corner, print `spare_bracket` (the same bracket) for
-  that end, and swap it out when the corner goes up.
+  bracket at its corner end. The rod anchors print on their own (`rod_anchor`, ×8, two a corner), not on the corner
+  plates: the user hangs each run as its bays come off the printer ("I don't have the room to store all this on the
+  floor"), so a run's corner-end anchor goes up before its corner. The rods slide into it later.
 - Facing the wall, a run's first bay sits at its right-hand corner and its bays go leftward (run x runs right to
   left as seen from the room).
+
+## Amendments (2026-10-28): the run deck locks into the corner deck
+
+- At a corner end, the run's ladder now has a jigsaw tab on each runner, like the tabs between its ladders. Each
+  corner's first and last spans print as `corner_deck_end`: the straight span with runner stubs reaching back to the
+  portal (the anchor) and the matching sockets. The user: "the deck is what's adding stability to the whole unit";
+  before this the two decks only butted at the anchor, lined up by the rods. The corner deck goes in first, and the
+  run's ladder drops onto it as it drops onto its trusses.
+- A first-bay ladder printed before this has no tab at its corner end. Reprint that one ladder (`ladder_00` of
+  `section_*_first`), or glue it.

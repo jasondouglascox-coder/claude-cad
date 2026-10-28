@@ -59,9 +59,16 @@ def rod(p: Params, c: C.Corner, u: float) -> Part:
 def placed_parts(p: Params = P, c: C.Corner = C.inside_corner()) -> list[tuple[str, Part]]:
     out = []
     decks = {cv: bow_deck.painted(p, cv) for cv in (False, True)}  # one part each, gray tie plates painted on
-    for sp in C.spans(p, c):
+    end = bow_deck.painted(p, False, end=True)  # where a run meets the corner: sockets at the portal
+    spans = C.spans(p, c)
+    for sp in spans:
         loc = span_location(sp)
-        out.append((f"deck{sp.index}", loc * decks[sp.curved]))
+        if sp == spans[0]:
+            out.append((f"deck{sp.index}", loc * end))
+        elif sp == spans[-1]:  # turned round: its sockets at the exit portal
+            out.append((f"deck{sp.index}", loc * Pos(span_geom(p, False).s, 0, 0) * Rot(0, 0, 180) * end))
+        else:
+            out.append((f"deck{sp.index}", loc * decks[sp.curved]))
         for kind, yl, xs, ln in frame_lines(p, sp.curved):
             fr = bow_frame.make(p, ln)
             fr.label = f"corner_frame_{kind}"

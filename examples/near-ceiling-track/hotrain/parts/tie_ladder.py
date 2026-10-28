@@ -15,7 +15,7 @@ from hotrain.params import P, Params
 
 
 def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[float],
-           female_start: bool, male_end: bool, rod_spans: list = ()) -> dict[str, Part]:
+           female_start: bool, male_end: bool, rod_spans: list = (), male_start: bool = False) -> dict[str, Part]:
     """Ladder in the run frame (x along track, y across, z = 0 at tie underside) as two print colors:
     "wood" (ties, runners, jigsaw tabs; one piece, up to the tie tops) and "steel" (tie plates,
     shoulders, spike lips; all above): one color change."""
@@ -42,6 +42,8 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
         base.append(rect(x_start, x_end, y - p.runner_w / 2, y + p.runner_w / 2))
         if male_end:
             base.append(jigsaw(p, x_end, y))
+        if male_start:  # a run's corner end: the tab points back out, into the corner's end deck
+            base.append(Rot(0, 0, 180) * jigsaw(p, -x_start, -y))
     cuts = []
     if gaps:  # notch each runner from the rail groove's outer edge outward, between the full ties
         pb = min(abs(a.x - b.x) for a, b in zip(ties, ties[1:]))
@@ -97,16 +99,16 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
 
 
 def build(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[float],
-          female_start: bool, male_end: bool, rod_spans: list = ()) -> Part:
+          female_start: bool, male_end: bool, rod_spans: list = (), male_start: bool = False) -> Part:
     """Ladder in the run frame, both colors fused."""
-    b = bodies(p, ties, x_start, x_end, tab_xs, female_start, male_end, rod_spans)
+    b = bodies(p, ties, x_start, x_end, tab_xs, female_start, male_end, rod_spans, male_start)
     return b["wood"] + b["steel"]
 
 
 def make(p: Params, bays: list[float], seg: L.Segment, ends: tuple = L.RUN_ENDS) -> Part:
     """Print orientation: ties flat on the bed, X from the ladder's start, Y from the wall-side tie end."""
     run = build(p, L.ties(p, bays, ends), seg.x_start, seg.x_end, L.tab_xs(p, bays), seg.female_start, seg.male_end,
-                L.rod_tail_spans(p, bays, ends))
+                L.rod_tail_spans(p, bays, ends), seg.male_start)
     return Pos(-seg.x_start, p.tie_l / 2, 0) * run
 
 
@@ -126,7 +128,7 @@ def make_colored(p: Params, bays: list[float], seg: L.Segment, ends: tuple = L.R
     """Print orientation like make(), as brown wood + gray steel bodies for a multi-color printer."""
     from hotrain.room import IRON, TIE_BROWN
     b = bodies(p, L.ties(p, bays, ends), seg.x_start, seg.x_end, L.tab_xs(p, bays), seg.female_start, seg.male_end,
-               L.rod_tail_spans(p, bays, ends))
+               L.rod_tail_spans(p, bays, ends), seg.male_start)
     out = []
     for name, col in (("wood", TIE_BROWN), ("steel", IRON)):
         part = Pos(-seg.x_start, p.tie_l / 2, 0) * b[name]

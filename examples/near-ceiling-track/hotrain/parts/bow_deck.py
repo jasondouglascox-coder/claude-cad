@@ -6,7 +6,7 @@ import math
 
 from build123d import Axis, Circle, Compound, Part, Plane, Polygon, Pos, Rectangle, Rot, Sketch, extrude, revolve
 
-from hotrain.joints import poly, rect
+from hotrain.joints import jigsaw, poly, rect
 from hotrain.params import P, Params
 from hotrain.parts import bow_frame
 from hotrain.span_geom import SpanGeom, end_fractions, frame_x_range, offset_at, span_geom, track_at, track_len
@@ -64,9 +64,13 @@ def tie_fracs(p: Params, g: SpanGeom) -> list[float]:
     return [f0 + (f1 - f0) * (k + 0.5) / n for k in range(n)]
 
 
-def bodies(p: Params, curved: bool) -> dict[str, Part]:
+def bodies(p: Params, curved: bool, end: bool = False) -> dict[str, Part]:
     """Deck in the span frame as two print colors: "wood" (ties + rod runners, one connected piece, all at or
-    below the tie tops) and "steel" (tie plates, shoulders, spike lips, all above): one color change."""
+    below the tie tops) and "steel" (tie plates, shoulders, spike lips, all above): one color change.
+    end: a corner's first (or, turned round, last) straight span, where a run meets it: its runners reach back to
+    the portal (the anchor) with the jigsaw sockets the run deck's tabs drop into."""
+    if end and curved:
+        raise ValueError("a corner's end spans are straight")
     g = span_geom(p, curved)
     clip, band = _clip(g), _band(g, p)
     across = 2 * p.bow_frame_y
@@ -80,6 +84,11 @@ def bodies(p: Params, curved: bool) -> dict[str, Part]:
         wood += _rail_runner(p, g, u)
     for u in (p.rod_y, -p.rod_y):
         wood -= _rod_groove(p, g, u)
+    if end:
+        stubs = [rect(0, g.d + 0.5, u - p.runner_w / 2, u + p.runner_w / 2) for u in p.rail_ys]
+        sockets = [jigsaw(p, 0, u, p.fit_snap) for u in p.rail_ys]
+        wood += extrude(Sketch() + stubs, p.tie_h)
+        wood -= extrude(Sketch() + sockets, p.tie_h)
     wood = Part(wood.solids())
     # tie plates, shoulders, outer spike lips along the true rails
     gw, sw = p.groove_w / 2, p.shoulder_w
@@ -105,37 +114,41 @@ def bodies(p: Params, curved: bool) -> dict[str, Part]:
     return {"wood": wood, "steel": steel}
 
 
-def build(p: Params, curved: bool) -> Part:
+def build(p: Params, curved: bool, end: bool = False) -> Part:
     """Deck in the span frame (both colors fused)."""
-    b = bodies(p, curved)
+    b = bodies(p, curved, end)
     return b["wood"] + b["steel"]
 
 
 
 
 
-def make(p: Params = P, curved: bool = True) -> Part:
+def make(p: Params = P, curved: bool = True, end: bool = False) -> Part:
     """Print orientation: tie undersides on the bed (rod grooves face the bed), tie plates up."""
-    d = build(p, curved)
+    d = build(p, curved, end)
     bb = d.bounding_box()
     return Pos(-bb.min.X, -bb.min.Y, -bb.min.Z) * d
 
 
-def painted(p: Params, curved: bool) -> Part:
+def painted(p: Params, curved: bool, end: bool = False) -> Part:
     """The deck as ONE solid in the span frame (CAD/assemblies), tie plates painted gray."""
     from cadkit import paint
     from hotrain.room import IRON, TIE_BROWN
-    b = bodies(p, curved)
+    b = bodies(p, curved, end)
     d = paint.painted(b["wood"], TIE_BROWN, b["steel"], IRON)
-    d.label = f"corner_deck_{'curve' if curved else 'straight'}"
+    d.label = f"corner_deck_{_kind(curved, end)}"
     return d
 
 
-def make_colored(p: Params = P, curved: bool = True) -> Compound:
+def _kind(curved: bool, end: bool) -> str:
+    return "end" if end else "curve" if curved else "straight"
+
+
+def make_colored(p: Params = P, curved: bool = True, end: bool = False) -> Compound:
     """Print orientation like make(), as wood + steel bodies for a multi-color printer."""
     from hotrain.room import IRON, TIE_BROWN
-    kind = "curve" if curved else "straight"
-    b = bodies(p, curved)
+    kind = _kind(curved, end)
+    b = bodies(p, curved, end)
     bb = (b["wood"] + b["steel"]).bounding_box()
     out = []
     for name, col in (("wood", TIE_BROWN), ("steel", IRON)):

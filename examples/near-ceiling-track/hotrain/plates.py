@@ -51,7 +51,7 @@ def pack(p: Params, items: list[tuple[str, Shape]], fill_gaps: bool = False) -> 
 
 def _ladder_key(p: Params, bays: list[float], seg: L.Segment, ends: tuple) -> tuple:
     r = lambda v: round(v - seg.x_start, 2)
-    return ("ladder", round(seg.x_end - seg.x_start, 2), seg.female_start, seg.male_end,
+    return ("ladder", round(seg.x_end - seg.x_start, 2), seg.female_start, seg.male_end, seg.male_start,
             tuple((r(t.x), t.long, t.lip, t.gap) for t in L.ties(p, bays, ends) if seg.x_start < t.x < seg.x_end),
             tuple(r(x) for x in L.tab_xs(p, bays) if seg.x_start < x < seg.x_end),
             tuple((r(a), r(b)) for a, b in L.rod_tail_spans(p, bays, ends) if b > seg.x_start and a < seg.x_end))
@@ -151,9 +151,11 @@ def corner_kit(p: Params, corner) -> list[tuple[str, Shape]]:
     from hotrain.parts import bow_deck, bow_frame, deep_bracket, floor_beam, rod_anchor
     from hotrain import corner_layout as CL
     items = []
-    for sp in CL.spans(p, corner):
-        kind = "curve" if sp.curved else "straight"
-        items.append((f"corner_deck_{kind}", bow_deck.make_colored(p, sp.curved)))  # wood + steel bodies
+    spans = CL.spans(p, corner)
+    for sp in spans:
+        end = sp in (spans[0], spans[-1])  # meets a run: runner stubs with the run deck's sockets
+        kind = "end" if end else "curve" if sp.curved else "straight"
+        items.append((f"corner_deck_{kind}", bow_deck.make_colored(p, sp.curved, end)))  # wood + steel bodies
         for k, _, _, ln in CA.frame_lines(p, sp.curved):
             items.append((f"corner_frame_{k}", bow_frame.make(p, ln)))
     from hotrain.parts import ceiling_anchor
@@ -169,15 +171,16 @@ def corner_kit(p: Params, corner) -> list[tuple[str, Shape]]:
     return items
 
 
-def corner_plates(p: Params = P) -> list[Plate]:
+def corner_plates(p: Params = P, anchors: bool = True) -> list[Plate]:
     """Plates for the three inside corners (printed 3x), the bridge corner, and the rod-bending jig. The white PLA
     ceiling cleats get their own plate: PLA and PETG print at different temperatures, and white beside gray in the
-    same layers would swap filament every layer."""
+    same layers would swap filament every layer. anchors=False leaves out the rod anchors (printed on their own,
+    to hang each run's corner end before its corner)."""
     from hotrain import corner_layout as CL
     from hotrain.parts import rod_jig
     out = []
     for corner, qty in ((CL.inside_corner(), 3), (CL.bridge_corner(), 1)):
-        kit = corner_kit(p, corner)
+        kit = [it for it in corner_kit(p, corner) if anchors or it[0] != "rod_anchor"]
         petg = [it for it in kit if not it[0].startswith("ceiling_anchor")]
         pla = [it for it in kit if it[0].startswith("ceiling_anchor")]
         packed = pack(p, petg)
@@ -201,16 +204,22 @@ class CornerKit:
 
 def corner_sections(p: Params = P) -> list[CornerKit]:
     """The corners as kits beside the run sections: one per corner kind (its PETG plates and white PLA cleat plates),
-    printed once per corner of that kind, and the rod-bending jig once."""
+    printed once per corner of that kind, and the rod-bending jig once. The rod anchors print on their own, one a
+    plate: each holds a run's corner-end pier like a bracket, so a run hangs before its corner is printed."""
     from dataclasses import replace
     from hotrain import room
+    from hotrain import corner_layout as CL
+    from hotrain.parts import rod_anchor
     corners = [s for s in room.sections(p) if s.kind != "run"]
-    pls = corner_plates(p)
+    pls = corner_plates(p, anchors=False)
     out = []
     for kind in ("inside", "bridge"):
         where = [s.name for s in corners if s.kind == kind]
         mine = [replace(pl, qty=1) for pl in pls if pl.name.startswith(f"{kind}_corner")]
         out.append(CornerKit(f"corner_{kind}", len(where), mine, where))
+    n = sum(sum(n == "rod_anchor" for n, _ in corner_kit(p, room.corner(s))) for s in corners)
+    out.append(CornerKit("rod_anchor", n, [Plate("rod_anchor", 1, pack(p, [("rod_anchor", rod_anchor.make(p))])[0])],
+                         [s.name for s in corners]))
     out.append(CornerKit("rod_jig", 1, [pl for pl in pls if pl.name == "rod_jig"]))
     return out
 
