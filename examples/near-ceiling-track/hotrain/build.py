@@ -16,6 +16,7 @@
     uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project per print profile, to upload
     uv run python -m hotrain.build latch-test   # out/latch_test: three latch hook lengths + two pier stubs
     uv run python -m hotrain.build cf-clip-test # out/cf_clip_test: three cross-frame slot fits to push onto a bay
+    uv run python -m hotrain.build ceiling-gauge # out/ceiling_gauge: the T that marks bracket screws from the ceiling
     uv run python -m hotrain.build sections --run-style deck_truss   # out/sections: the room a bay at a time
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
 """
@@ -304,6 +305,15 @@ def cmd_cf_clip_test(p: Params, out: Path) -> Path:
     return d
 
 
+def cmd_ceiling_gauge(p: Params, out: Path) -> Path:
+    """The ceiling gauge's two pieces on one plate: out/ceiling_gauge/."""
+    from hotrain.parts import ceiling_gauge
+    d = out / "ceiling_gauge"
+    items = [("gauge_t", ceiling_gauge.t_piece(p)), ("gauge_arm", ceiling_gauge.arm_piece(p))]
+    write_plates([plates.Plate("ceiling_gauge", 1, plates.pack(p, items)[0])], d, d / "plates.csv", p=p)
+    return d
+
+
 def cmd_fit_test(p: Params, out: Path, mesh: bool, preview: bool) -> None:
     export(fit_test.make(p), out, "fit_test", mesh, preview)
 
@@ -321,7 +331,7 @@ def params_from_args(a: argparse.Namespace) -> Params:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="hotrain.build", description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["all", "parts", "assembly", "fit-test", "plates", "corners", "room", "show", "glb", "web",
-                                        "check", "render", "wire-test", "makerworld", "latch-test", "cf-clip-test", "sections"])
+                                        "check", "render", "wire-test", "makerworld", "latch-test", "cf-clip-test", "ceiling-gauge", "sections"])
     ap.add_argument("target", nargs="?", default="room", help="for show: room | run | inside | bridge | fit-test")
     ap.add_argument("--out", default="out")
     ap.add_argument("--mesh", action="store_true")
@@ -360,6 +370,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if a.command == "sections":
         print(f"wrote {cmd_sections(p, out)}/ (sections.csv: each bay kit and how many times to print it)")
+        return 0
+    if a.command == "ceiling-gauge":
+        print(f"wrote {cmd_ceiling_gauge(p, out)}/ (one plate: the T and the arm; glue the dovetail)")
         return 0
     if a.command == "cf-clip-test":
         print(f"wrote {cmd_cf_clip_test(p, out)}/ (one plate: cf_clip_test)")

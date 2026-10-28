@@ -23,7 +23,8 @@ class Params:
     car_sill_h: float = 12.0  # car body underside above the rail top (~3.5 scale ft), for the tip check
     car_body_h: float = 41.0  # car body height above its sill
     flange_depth_max: float = 1.6  # deep vintage (pizza-cutter) flange plus print tolerance
-    rail_top_below_ceiling: float = 12 * INCH
+    screw_below_ceiling: float = 10 * INCH  # bracket top screws, marked with the ceiling gauge ("makes easy math");
+    # the screws sit at the top of their slots, so a bracket can still go up (rail_top_below_ceiling follows)
 
     # bridge ties
     tie_l: float = 35.0
@@ -124,6 +125,19 @@ class Params:
     screw_d: float = 4.6  # #8 screws, into studs or self-drilling drywall anchors
     screw_travel: float = 0.25 * INCH  # ± vertical adjustment
     screw_zs: tuple = (15.0, 65.0)  # below tie underside
+
+    # ceiling gauge: a thin T against the ceiling with a pencil hole at each screw line
+    gauge_bar_l: float = 4 * INCH  # the T's bar, along the ceiling
+    gauge_bar_w: float = 8.0
+    gauge_arm_w: float = 10.0
+    gauge_brace_w: float = 5.0  # two 45-degree braces square the bar to the arm
+    gauge_t: float = 2.4  # thin: it only has to lie flat on the wall
+    gauge_hole_d: float = 2.2  # a pencil tip reaches the wall through it
+    gauge_tail: float = 8.0  # arm past the lower hole
+    gauge_split: float = 80.0  # the T piece ends here (the whole gauge is longer than the bed)
+    gauge_jig_neck: float = 4.0  # dovetail joining the arm to the T, glued
+    gauge_jig_head: float = 6.5
+    gauge_jig_len: float = 5.0
     latch_top: float = 8.5  # below tie underside
     latch_win_h: float = 3.0
     latch_engage: float = 1.4  # hook into the pier's window: latch coupon 2, variant 3 (0.8 held too loosely)
@@ -245,6 +259,11 @@ class Params:
     @property
     def rail_ctc(self) -> float:
         return self.gauge + self.rail_head_w
+
+    @property
+    def rail_top_below_ceiling(self) -> float:
+        """Each top screw rests at the top of its slot, (slot center - travel) below the bracket top."""
+        return self.screw_below_ceiling - (self.screw_zs[0] - self.screw_travel) - self.rail_top
 
     @property
     def rail_ys(self) -> tuple:

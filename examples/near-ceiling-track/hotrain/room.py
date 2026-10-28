@@ -43,7 +43,7 @@ class Room:
     left_len: float = 126.375  # measured; the model uses right_len - alcove_depth
     door_h: float = 84.0  # 7 ft doors
     above_door: float = 24.0
-    rail_below_ceiling: float = 12.0
+    rail_below_ceiling: float = P.rail_top_below_ceiling / INCH  # set by where the brackets' screws go
     french_from_back: tuple = (2.0, 65.0)  # double French door on the right wall, measured from the back wall
     door_from_short: float = 5.0  # door on the back wall, from its right (short-wall) end
     door_w: float = 35.0

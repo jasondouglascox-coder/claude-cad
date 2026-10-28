@@ -241,3 +241,17 @@ plates and packing, and the bus cradle.
   run's ladder drops onto it as it drops onto its trusses.
 - A first-bay ladder printed before this has no tab at its corner end. Reprint that one ladder (`ladder_00` of
   `section_*_first`), or glue it.
+
+## Amendments (2026-10-28): screws 10" below the ceiling, and the ceiling gauge
+
+- **The top bracket screws go 10" below the ceiling** (`screw_below_ceiling`): "makes easy math". Each screw sits at
+  the top of its slot, so a bracket hangs at its lowest and can still be raised 1/2". The rail height now follows from
+  that (`rail_top_below_ceiling` is computed): the bracket top is 10" − (15 − 6.35) mm, and the rail top is 240 mm
+  (9.45") below the ceiling. That's 2.55" higher than the old 12", and the room, the bridge corner's ceiling anchors
+  and its hanger lines all move with it.
+- **Ceiling gauge** (`build ceiling-gauge`, out/ceiling_gauge, about 10 g): a 2.4 mm thin T. A 4" bar goes against
+  the ceiling, with 45° braces to square it to a 10 mm arm. The arm has 2.2 mm pencil holes at both screw lines
+  (10" and 10" + 50 mm). The whole gauge is longer than the bed, so the T and the arm print apart and join with a
+  glued dovetail. The same marks serve every bracket and rod anchor (they share the flange).
+- Still to do: the corners' deep brackets have their own screws, 12 and 58 mm below their top, so the gauge doesn't
+  mark them yet.
