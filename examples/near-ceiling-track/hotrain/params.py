@@ -119,10 +119,12 @@ class Params:
     bracket_bar: float = 4.0
     deck_block_margin: float = 6.0
     pier_notch: float = 1.5 * INCH  # half-lap: panels notched half the pier depth from the bottom, bracket slots come down the other half
-    flange_w: float = 26.0
+    flange_w: float = 42.0  # wide enough for a crossbar with 1/2" of side-to-side play
+    flange_edge: float = 3.0  # flange beyond each end of the screw crossbars
     bracket_open_min: float = 30.0  # shorter arm than this is printed as a solid web
     flange_t: float = 6.0
     screw_d: float = 4.6  # #8 screws, into studs or self-drilling drywall anchors
+    screw_head_d: float = 9.0  # the keyhole: a #8 pan head (~8.2 mm) passes
     screw_travel: float = 0.25 * INCH  # ± vertical adjustment
     screw_zs: tuple = (15.0, 65.0)  # below tie underside
 
@@ -138,6 +140,8 @@ class Params:
     gauge_jig_neck: float = 4.0  # dovetail joining the arm to the T, glued
     gauge_jig_head: float = 6.5
     gauge_jig_len: float = 5.0
+    gauge_pad_w: float = 24.0  # the spacing bar's ends: room for the keyhole, and for the pencil slots
+    gauge_pencil_l: float = 18.0  # pencil slots across the spacing bar: draw the next screw's line through one
     latch_top: float = 8.5  # below tie underside
     latch_win_h: float = 3.0
     latch_engage: float = 1.4  # hook into the pier's window: latch coupon 2, variant 3 (0.8 held too loosely)

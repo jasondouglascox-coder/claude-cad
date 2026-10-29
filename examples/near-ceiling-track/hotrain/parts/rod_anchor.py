@@ -14,7 +14,7 @@ def reach(p: Params) -> float:
 def make(p: Params = P) -> Part:
     prof = bracket.profile(p, yd1=reach(p))
     prof -= [Pos(y, p.rod_zc) * Circle((p.rod_d + p.fit_thread) / 2) for y in (p.rod_y, -p.rod_y)]
-    return bracket.flanged(p, Pos(p.track_offset, p.bracket_depth) * prof, p.bracket_depth, p.screw_zs)
+    return bracket.flanged(p, Pos(p.track_offset, p.bracket_depth) * prof, p.bracket_depth, bracket.screw_lines(p))
 
 
 def place(p: Params, xp: float) -> Location:

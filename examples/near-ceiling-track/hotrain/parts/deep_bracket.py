@@ -10,7 +10,7 @@ from hotrain.parts import bracket, floor_beam
 
 DEPTH = 70.0
 BRACE_W = 7.0
-SCREWS = (12.0, DEPTH - 12.0)  # down from the top
+SCREWS = (12.0, DEPTH - 22.0)  # screw centers down from the top; each keyhole needs room below it
 
 
 def top(p: Params) -> float:

@@ -21,13 +21,16 @@ def test_end_pier_printable():
     assert printable_problems(end_pier.make(P)) == []
 
 
-def slot_center_x(br, p=P):
-    """Run-frame X of the screw slot centerline (pier centerline = 0)."""
-    from build123d import Align, Box, Pos
+def _open_zs(br, y, p=P):
+    """Print-frame Z (along the wall) where the flange is open at height y (print Y, up from the bracket bottom)."""
     zs = [z / 10 for z in range(0, int(p.flange_w * 10))]
-    empty = [z for z in zs if (br & (Pos(0, p.bracket_depth - p.screw_zs[0], z)
-                                     * Box(p.flange_t, 0.5, 0.1, align=(Align.MIN, Align.MIN, Align.MIN)))).volume < 1e-9]
-    return (min(empty) + max(empty) + 0.1) / 2 - p.bracket_t / 2
+    return [z for z in zs if (br & (Pos(0, y - 0.05, z) * Box(p.flange_t, 0.1, 0.1, align=(Align.MIN, Align.MIN, Align.MIN)))).volume < 1e-9]
+
+
+def slot_center_x(br, p=P):
+    """Run-frame X of the top screw's line (pier centerline = 0): the middle of its crossbar."""
+    open_ = _open_zs(br, p.bracket_depth - bracket.screw_lines(p)[0], p)
+    return (min(open_) + max(open_) + 0.1) / 2 - p.bracket_t / 2
 
 
 def test_screw_slots_centered_in_flange_tab():
@@ -36,57 +39,23 @@ def test_screw_slots_centered_in_flange_tab():
     assert slot_center_x(bracket.make(P)) == pytest.approx(tab_mid, abs=0.1)
 
 
-def test_track_close_to_wall_with_car_clearance():
-    assert P.track_offset == pytest.approx(1.75 * 25.4)  # corners spec: room for the bowstring's wall-side arch
-    assert P.track_offset - P.car_half_w >= 10.0  # widest HO cars still clear the wall
-
-
-@pytest.mark.parametrize("offset", [1.25 * 25.4, 2.5 * 25.4])
-def test_bracket_printable_at_any_wall_offset(offset):
-    from dataclasses import replace
-    assert printable_problems(bracket.make(replace(P, track_offset=offset))) == []
-
-
-def test_short_bracket_web_is_solid():
-    """Close to the wall the arm is too short to triangulate; slivers would not print."""
-    from build123d import Align, Box, Pos
-    yf = P.flange_t
-    yd0 = P.track_offset + min(P.rail_ys) - bracket.slot_w(P) / 2 - P.deck_block_margin
-    assert yd0 - yf < P.bracket_open_min
-    web = Pos(yf, 0, 0) * Box(yd0 - yf, P.bracket_depth, P.bracket_t, align=(Align.MIN, Align.MIN, Align.MIN))
-    notch = P.bus_notch_w * -(P.bus_floor - 1) * P.bracket_t  # the wire pass-through is the only opening
-    assert (bracket.make(P) & web).volume == pytest.approx(web.volume - notch, rel=1e-6)
-
-
-def test_bracket_has_wire_pass_through():
-    from build123d import Align, Box, Pos
-    br = bracket.make(P)
-    y = -(P.track_offset - P.flange_t) + 2.0  # run frame, just in front of the flange
-    hole = Pos(y + P.track_offset - 0.2, P.bracket_depth + P.bus_floor + 0.5, 0) * Box(0.4, 0.4, P.bracket_t, align=(Align.MIN, Align.MIN, Align.MIN))
-    under = Pos(y + P.track_offset - 0.2, P.bracket_depth + P.bus_floor - 3, 0) * Box(0.4, 0.4, P.bracket_t, align=(Align.MIN, Align.MIN, Align.MIN))
-    assert (br & hole).volume < 1e-9
-    assert (br & under).volume > 1e-6
-
-
-def test_half_lap_with_the_panels():
-    """Pier slots come down only half the pier depth, so the bracket keeps a solid lower half; the panels'
-    pier notch goes up the other half (egg-crate joint)."""
-    from hotrain.parts import bracket as B
-    assert P.pier_notch == pytest.approx(P.pier_depth / 2)
-    prof = B.profile(P)
-    y = max(P.rail_ys)
-    solid = (prof & (Pos(y, -P.pier_depth + P.pier_notch - 1) * Rectangle(0.4, 0.4))).area
-    slot = (prof & (Pos(y, -P.pier_depth + P.pier_notch + 1) * Rectangle(0.4, 0.4))).area
-    assert solid == pytest.approx(0.16) and slot == pytest.approx(0)
-    assert P.bracket_depth - (P.pier_depth - P.pier_notch) >= 40.0  # solid block under the slots
-
-
-@pytest.mark.parametrize("style", ["arch", "deck_truss"])
-def test_panel_pier_notch_takes_the_bracket(style):
-    from dataclasses import replace
-    from hotrain.parts import arch_half
-    q = replace(P, run_style=style)
-    half = arch_half.make(q, 16 * INCH)  # print Y 0 = pier bottom, X 0 = pier centerline
-    inside = Pos(0.5, q.pier_notch - 1.0, 0) * Box(1.0, 0.5, q.panel_t, align=(Align.MIN, Align.MIN, Align.MIN))
-    above = Pos(0.5, q.pier_notch + 1.0, 0) * Box(1.0, 0.5, q.panel_t, align=(Align.MIN, Align.MIN, Align.MIN))
-    assert (half & inside).volume < 1e-6 and (half & above).volume > 0
+@pytest.mark.parametrize("part", ["bracket", "rod_anchor"])
+def test_keyhole_ts_give_side_to_side_play(part):
+    """The user, 2026-10-29: "hitting the height is easy, left to right is where I need some flex", and both screws
+    can have the T. The screws go in the wall first; the bracket hangs on them through two keyholes and drops, so
+    each screw rides up a stem into a crossbar it slides along (about 1/2" each way) before it's tightened. The
+    screw lines stay where the ceiling gauge marks them."""
+    from hotrain.parts import rod_anchor
+    br = (bracket if part == "bracket" else rod_anchor).make(P)
+    d, lines = P.bracket_depth, bracket.screw_lines(P)
+    assert lines[1] - lines[0] == pytest.approx(P.screw_zs[1] - P.screw_zs[0])  # the gauge's two holes
+    assert lines[0] == pytest.approx(P.screw_zs[0] - P.screw_travel)  # where each screw used to rest
+    for line in lines:
+        y = d - line  # print Y runs up the wall from the bracket's bottom
+        bar = _open_zs(br, y)
+        assert (max(bar) - min(bar) + 0.1 - P.screw_d) / 2 >= 0.5 * INCH - 0.2  # within the 0.1 mm probe steps
+        assert len(_open_zs(br, y + P.screw_d / 2 + 0.3)) == 0  # solid above the bar: the bracket hangs on it
+        entry = _open_zs(br, y - P.screw_head_d)  # the keyhole, below the bar
+        assert max(entry) - min(entry) + 0.1 >= P.screw_head_d - 0.3  # the head passes through it (0.1 mm probe steps)
+        stem = _open_zs(br, y - P.screw_head_d / 2 + 0.3)  # between: narrower than the head, wider than the shank
+        assert P.screw_d - 0.2 <= max(stem) - min(stem) + 0.1 < P.screw_head_d

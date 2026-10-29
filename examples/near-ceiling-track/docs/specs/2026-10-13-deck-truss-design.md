@@ -255,3 +255,26 @@ plates and packing, and the bus cradle.
   glued dovetail. The same marks serve every bracket and rod anchor (they share the flange).
 - Still to do: the corners' deep brackets have their own screws, 12 and 58 mm below their top, so the gauge doesn't
   mark them yet.
+
+## Amendments (2026-10-29): T keyholes for side-to-side play
+
+- The user: "hitting the height is easy, left to right is where I need some flex", and "both top and bottom can
+  have the T". Each flange screw is now a T keyhole: a 9 mm hole (a #8 pan head passes through it), a stem up to a
+  crossbar, and the crossbar giving ±1/2" side to side. The screws go in the wall first, at the gauge marks. The
+  bracket hangs on them through the holes and drops, the screws ride up into the crossbars, and the bracket slides
+  sideways to its exact spot before the screws are tightened. Gravity seats it on the screws.
+- The crossbars sit where the screws used to rest (the top of the old vertical slots), so the ceiling gauge, the
+  10" marks and the rail height are unchanged. There's no vertical adjustment now; the height comes from the marks.
+- **The flange is 42 mm wide** (was 26). The bracket's arm takes one edge, and the crossbars need room for 1/2" each
+  way. The screw line (middle of the crossbars) is now 21 mm from the pier centerline (was 13), toward the flange's
+  free edge. On a 418 mm run that puts the marks 31 1/32", 47 1/2", 63 15/16", 80 13/32" and 96 7/8" from the
+  starting corner's side wall.
+- Brackets, rod anchors and the corners' deep brackets share the flange. The deep brackets' bottom screw moves up
+  to 22 mm from their bottom (was 12), so its keyhole has room below it.
+- **The L gauge** (in `build ceiling-gauge`; the user: "set the first nail, hook the giant L onto it, push the other
+  side to the ceiling, poke hole"). A bar runs out from the ceiling gauge's arm at the top hole's height, to two
+  hooks (keyholes) one bay along: 418.2 mm (1 notch, the three 418 walls) and 442.9 mm (2 notches, the back wall).
+  Hook it on the previous bracket's top screw (10" down) and push the T up to the ceiling. It can only sit level
+  there, so both arm holes mark the next bracket's screws. The arm alone against the ceiling marks the first
+  bracket. A 45° brace keeps the L square. Three glued pieces (the T, the corner, the bar's end), two plates,
+  about 22 g.

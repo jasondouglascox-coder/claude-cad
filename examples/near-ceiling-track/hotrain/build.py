@@ -306,11 +306,14 @@ def cmd_cf_clip_test(p: Params, out: Path) -> Path:
 
 
 def cmd_ceiling_gauge(p: Params, out: Path) -> Path:
-    """The ceiling gauge's two pieces on one plate: out/ceiling_gauge/."""
+    """The L gauge's three pieces: out/ceiling_gauge/."""
     from hotrain.parts import ceiling_gauge
     d = out / "ceiling_gauge"
-    items = [("gauge_t", ceiling_gauge.t_piece(p)), ("gauge_arm", ceiling_gauge.arm_piece(p))]
-    write_plates([plates.Plate("ceiling_gauge", 1, plates.pack(p, items)[0])], d, d / "plates.csv", p=p)
+    items = [("gauge_t", ceiling_gauge.t_piece(p)), ("gauge_corner", ceiling_gauge.corner_piece(p)),
+             ("gauge_bar_end", ceiling_gauge.bar_end_piece(p))]
+    packed = plates.pack(p, items)
+    pls = [plates.Plate("ceiling_gauge" + (f"_{n + 1}" if len(packed) > 1 else ""), 1, pl) for n, pl in enumerate(packed)]
+    write_plates(pls, d, d / "plates.csv", p=p, combined="ceiling_gauge")
     return d
 
 
@@ -372,7 +375,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {cmd_sections(p, out)}/ (sections.csv: each bay kit and how many times to print it)")
         return 0
     if a.command == "ceiling-gauge":
-        print(f"wrote {cmd_ceiling_gauge(p, out)}/ (one plate: the T and the arm; glue the dovetail)")
+        print(f"wrote {cmd_ceiling_gauge(p, out)}/ (the L gauge in three pieces; glue each dovetail)")
         return 0
     if a.command == "cf-clip-test":
         print(f"wrote {cmd_cf_clip_test(p, out)}/ (one plate: cf_clip_test)")
