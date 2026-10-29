@@ -37,6 +37,9 @@
   scalloped, curled rims, white to the wall, on a green stem of 4 mm half-ovals: coloured by part (20 swaps), no
   supports: bells are tubes of sections round on top over a hidden 46-degree fill, the rest domes (`shapes.py`).
   Two to a plate, the second mirrored.
+- `examples/lamp-chimney/`: a white replacement for a lamp's broken glass chimney (package `lamp_chimney`): Ø40
+  foot into the gallery's spring tabs, one-line (0.42 mm) wall, rounded 45-degree shoulder to a Ø26 neck,
+  131 mm; Arachne walls and brims inside and out set in the project.
 
 ## Commands
 
@@ -53,6 +56,7 @@ cd examples/rose-wall && uv run pytest -n 4 -m "not slow"             # ~12 min,
 cd examples/peony-wall && uv run pytest -n 4 -m "not slow"            # ~40 s; slow (-n 6, ~3 min): every petal, Bambu
 cd examples/lily-wall && uv run pytest -n 6                           # ~30 s, through Bambu
 cd examples/lily-of-the-valley && uv run pytest -n 6                  # ~15 s, through Bambu
+cd examples/lamp-chimney && uv run pytest -n 4                       # ~15 s, through Bambu
 ```
 
 ## Rules

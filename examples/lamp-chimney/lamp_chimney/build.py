@@ -1,0 +1,43 @@
+"""uv run python -m lamp_chimney.build [--out out]: STEP for CAD, a Bambu Studio plate that opens white with brims
+inside and outside the foot and one-line walls, and shaded previews in out/render (iso.png, section.png: cut in half)
+to copy to docs/images/ after a visible change."""
+import argparse
+import sys
+from pathlib import Path
+
+from build123d import Align, Box, Color, Pos, export_step
+
+from cadkit import bambu3mf
+from cadkit.export import write_plates
+from cadkit.plates import Plate, pack
+from cadkit.render import render
+from lamp_chimney.params import P
+from lamp_chimney.parts import center, chimney
+
+# Arachne makes the thin wall one bead and the foot three; the brim holds the narrow foot down on both sides
+SLICER = {"wall_generator": "arachne", "wall_loops": "3", "brim_type": "outer_and_inner", "brim_width": str(P.brim)}
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="lamp_chimney.build")
+    ap.add_argument("--out", default="out")
+    out = Path(ap.parse_args(argv).out)
+    c = chimney(P)
+    step = out / "step" / "lamp_chimney.step"
+    step.parent.mkdir(parents=True, exist_ok=True)
+    export_step(c, step)
+    settings = bambu3mf.write_settings(out / "bambu_project_settings.config", [("PLA", "#FFFFFF")] * 4,
+                                       overrides=SLICER)
+    beds = pack([("lamp_chimney", c)], P.printer)
+    write_plates([Plate(f"lamp_chimney_{n + 1}", 1, items) for n, items in enumerate(beds)], out / "plates",
+                 out / "plates.csv", lambda name: P.filament_white, settings=settings)
+    white = Color(0.93, 0.93, 0.91)
+    half = c & Pos(0, center(P)[1], 0) * Box(4 * P.foot_d, 4 * P.foot_d, 2 * P.height, align=(Align.MIN,) * 3)
+    render([(c, white)], out / "render" / "iso.png", view=(0.5, -1, 0.35), px=700)
+    render([(half, white)], out / "render" / "section.png", view=(0, -1, 0.1), px=700)
+    print(f"wrote {out}/ (plates.csv lists what to print)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
