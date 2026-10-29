@@ -1,6 +1,8 @@
 """Test first: the chimney prints upright with no supports and has the sizes asked for, derived from params."""
 import json
 import math
+import re
+import subprocess
 import zipfile
 
 import pytest
@@ -100,21 +102,34 @@ def test_build_writes_a_white_plate_with_brims_and_thin_walls(tmp_path):
     conf = json.loads(zipfile.ZipFile(project).read("Metadata/project_settings.config"))
     assert conf["filament_colour"][P.filament_white - 1].upper() == "#FFFFFF"
     assert conf["brim_type"] == "outer_and_inner" and float(conf["brim_width"]) == P.brim
-    assert conf["wall_generator"] == "arachne"
+    assert conf["spiral_mode"] == "1"  # one bead climbing all the way up: no seam
+    assert int(conf["bottom_shell_layers"]) == P.foot_layers  # the foot prints as solid layers under the spiral
 
 
 @pytest.mark.slow
 @pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
-def test_slicer_prints_one_line_with_brims_inside_and_out(tmp_path):
+def test_slicer_spirals_one_line_over_a_solid_foot_with_brims_inside_and_out(tmp_path):
     build.main(["--out", str(tmp_path)])
     s = slicers.active()
-    report = s.slice_report(tmp_path / "plates" / f"lamp_chimney_1{s.project_suffix}", tmp_path / "s.3mf")
+    project = tmp_path / "plates" / f"lamp_chimney_1{s.project_suffix}"
+    report = s.slice_report(project, tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(P.filament_white,)]
-    moves = gcode.extrusions(bambu.plate_gcode(tmp_path / "s.3mf"))
-    cx, cy, _ = gcode.centre_of_mass(bambu.plate_gcode(tmp_path / "s.3mf"))
+    log = subprocess.run([str(bambu.find()), "--debug", "2", "--slice", "1", "--export-3mf", str(tmp_path / "w.3mf"),
+                          str(project.resolve())], capture_output=True, text=True, cwd=tmp_path)
+    assert "floating regions" not in log.stdout + log.stderr  # Studio's warning on the one-line wall outside vase mode
+    text = bambu.plate_gcode(tmp_path / "s.3mf")
+    moves = gcode.extrusions(text)
+    cx, cy, _ = gcode.centre_of_mass(text)
+    climbing = [float(z) for z in re.findall(r"^G1 Z([\d.]+) .*E[\d.]+", text, re.M)]
+    assert climbing and min(climbing) >= P.foot_h - 1e-6  # Z rises while it extrudes, from the foot's top up
+    assert len(climbing) > 10 * (P.height - P.foot_h) / LAYER
 
     def r(m):
         return math.hypot((m[0] + m[2]) / 2 - cx, (m[1] + m[3]) / 2 - cy)
+
+    foot = [r(m) for m in moves if m[4] < P.foot_h - LAYER / 2 and m[5] != "Brim"]
+    assert min(foot) > P.foot_d / 2 - P.foot_t - 0.1  # a solid ring, no floor across the middle
+    assert max(foot) < P.foot_d / 2
 
     neck_z = min({m[4] for m in moves}, key=lambda z: abs(z - (P.shoulder_top + P.height) / 2))
     neck = [m for m in moves if m[4] == neck_z]

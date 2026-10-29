@@ -1,5 +1,5 @@
-"""uv run python -m lamp_chimney.build [--out out]: STEP for CAD, a Bambu Studio plate that opens white with brims
-inside and outside the foot and one-line walls, and shaded previews in out/render (iso.png, section.png: cut in half)
+"""uv run python -m lamp_chimney.build [--out out]: STEP for CAD, a Bambu Studio plate that opens white, in spiral
+(vase) mode with brims inside and outside the foot, and shaded previews in out/render (iso.png, section.png: cut in half)
 to copy to docs/images/ after a visible change."""
 import argparse
 import sys
@@ -14,8 +14,11 @@ from cadkit.render import render
 from lamp_chimney.params import P
 from lamp_chimney.parts import center, chimney, on_bed
 
-# Arachne makes the thin wall one bead and the foot three; the brim holds the narrow foot down on both sides
-SLICER = {"wall_generator": "arachne", "wall_loops": "3", "brim_type": "outer_and_inner", "brim_width": str(P.brim)}
+# vase mode: the foot as solid layers, then one bead climbing the outside to the top, so no seam (and none of the
+# floating-region warning Studio gives a one-line wall printed layer by layer); the brim holds the narrow foot down
+# on both sides
+SLICER = {"spiral_mode": "1", "bottom_shell_layers": str(P.foot_layers), "brim_type": "outer_and_inner",
+          "brim_width": str(P.brim)}
 
 
 def main(argv: list[str] | None = None) -> int:

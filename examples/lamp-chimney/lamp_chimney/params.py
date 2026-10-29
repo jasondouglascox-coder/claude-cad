@@ -40,6 +40,11 @@ class Params:
         return self.shoulder_z + (self.foot_d - self.neck_d) / 2 / math.tan(math.radians(self.shoulder_deg))
 
     @property
+    def foot_layers(self) -> int:
+        """The foot prints as this many solid layers (the slicer's bottom shell) before the spiral starts."""
+        return round((self.foot_h - self.printer.first) / self.printer.layer) + 1
+
+    @property
     def neck_h(self) -> float:
         return self.height - self.shoulder_top
 

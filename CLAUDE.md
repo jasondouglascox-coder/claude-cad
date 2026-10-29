@@ -39,7 +39,7 @@
   Two to a plate, the second mirrored.
 - `examples/lamp-chimney/`: a white replacement for a lamp's broken glass chimney (package `lamp_chimney`): Ø40
   foot into the gallery's spring tabs, one-line (0.42 mm) wall, rounded 45-degree shoulder to a Ø26 neck,
-  131 mm; Arachne walls and brims inside and out set in the project.
+  131 mm; printed in spiral (vase) mode over a solid foot, brims inside and out, set in the project.
 
 ## Commands
 

@@ -17,3 +17,10 @@ Sizes other than the foot are read off the product photo against the 40 mm foot 
 ≈ 3.3 foot widths tall). All sizes live in `lamp_chimney/params.py`.
 
 ## Amendments
+
+- **2026-10-29: spiral (vase) mode, no seam.** The user asked for no seam, and Bambu Studio warned of "floating
+  regions" on the one-line wall printed layer by layer (a false alarm: every layer was one closed loop; a 30-degree
+  shoulder warned too, two lines didn't). The project now sets `spiral_mode` with the foot's 50 layers as bottom
+  shell: the foot prints as solid 1.2 mm rings, then one bead climbs the outside continuously to the top. Arachne and
+  `wall_loops` are no longer set. Slices with no warning, 59 min. Fallback if the spiral fails: turn spiral off and
+  set `wall = 0.84`.
