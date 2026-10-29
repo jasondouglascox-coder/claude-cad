@@ -10,7 +10,7 @@ scalloped gallery on top of the lamp, where three spring tabs grip its foot, and
 - Neck Ø26 to the top; 131 mm tall overall, open at both ends.
 - Wall one line thick (0.42 mm) everywhere above the foot, as thin as the 0.4 nozzle prints, so it glows evenly.
   If one line fails to print, `wall = 0.84` (two lines) is the fallback.
-- Prints upright, no supports. White PLA, AMS slot 1. Slicer settings in the project: Arachne walls (one bead in the
+- Prints upright in the middle of the bed (in a corner the slicer clips the outer brim), no supports. White PLA, AMS slot 1. Slicer settings in the project: Arachne walls (one bead in the
   thin wall, three in the foot) and an 8 mm brim outside and inside the foot (`outer_and_inner`).
 
 Sizes other than the foot are read off the product photo against the 40 mm foot (neck ≈ 0.65 of the foot, glass

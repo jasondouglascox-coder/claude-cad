@@ -9,10 +9,10 @@ from build123d import Align, Box, Color, Pos, export_step
 
 from cadkit import bambu3mf
 from cadkit.export import write_plates
-from cadkit.plates import Plate, pack
+from cadkit.plates import Plate
 from cadkit.render import render
 from lamp_chimney.params import P
-from lamp_chimney.parts import center, chimney
+from lamp_chimney.parts import center, chimney, on_bed
 
 # Arachne makes the thin wall one bead and the foot three; the brim holds the narrow foot down on both sides
 SLICER = {"wall_generator": "arachne", "wall_loops": "3", "brim_type": "outer_and_inner", "brim_width": str(P.brim)}
@@ -28,8 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     export_step(c, step)
     settings = bambu3mf.write_settings(out / "bambu_project_settings.config", [("PLA", "#FFFFFF")] * 4,
                                        overrides=SLICER)
-    beds = pack([("lamp_chimney", c)], P.printer)
-    write_plates([Plate(f"lamp_chimney_{n + 1}", 1, items) for n, items in enumerate(beds)], out / "plates",
+    write_plates([Plate("lamp_chimney_1", 1, [("lamp_chimney", on_bed(P))])], out / "plates",
                  out / "plates.csv", lambda name: P.filament_white, settings=settings)
     white = Color(0.93, 0.93, 0.91)
     half = c & Pos(0, center(P)[1], 0) * Box(4 * P.foot_d, 4 * P.foot_d, 2 * P.height, align=(Align.MIN,) * 3)

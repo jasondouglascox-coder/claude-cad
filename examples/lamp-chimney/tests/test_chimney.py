@@ -10,7 +10,7 @@ from cadkit import bambu, gcode, slicers
 from cadkit.checks import downward_faces, off_layer_z, open_edges, printable_problems
 from lamp_chimney import build
 from lamp_chimney.params import P
-from lamp_chimney.parts import center, chimney
+from lamp_chimney.parts import center, chimney, on_bed
 
 LAYER = P.printer.layer
 
@@ -83,6 +83,13 @@ def test_shoulder_is_rounded_and_never_steeper_than_asked(part):
     assert rs[0] == pytest.approx(P.foot_d / 2, abs=0.01) and rs[-1] == pytest.approx(P.neck_d / 2, abs=0.01)
 
 
+def test_brim_fits_on_the_bed_all_round():
+    """Placed in the middle of the bed: the outer brim has room on every side (in a corner the slicer clips it)."""
+    bb, bed_x, bed_y = on_bed(P).bounding_box(), P.printer.bed, P.printer.bed_y or P.printer.bed
+    assert min(bb.min.X, bb.min.Y) >= P.brim + P.printer.margin
+    assert max(bb.max.X - bed_x, bb.max.Y - bed_y) <= -(P.brim + P.printer.margin)
+
+
 def test_build_writes_a_white_plate_with_brims_and_thin_walls(tmp_path):
     assert build.main(["--out", str(tmp_path)]) == 0
     assert (tmp_path / "render" / "iso.png").exists() and (tmp_path / "step" / "lamp_chimney.step").exists()
@@ -113,6 +120,10 @@ def test_slicer_prints_one_line_with_brims_inside_and_out(tmp_path):
     neck = [m for m in moves if m[4] == neck_z]
     assert {m[5] for m in neck} == {"Outer wall"}  # one bead, no inner wall
     assert max(r(m) for m in neck) - min(r(m) for m in neck) < P.wall  # one loop round
-    brim = [r(m) for m in moves if m[5] == "Brim"]
-    assert min(brim) < P.foot_d / 2 - P.foot_t - P.brim / 2  # inside the foot
-    assert max(brim) > P.foot_d / 2 + P.brim / 2  # and outside it
+    brim = [m for m in moves if m[5] == "Brim"]
+    assert min(r(m) for m in brim) < P.foot_d / 2 - P.foot_t - P.brim / 2  # inside the foot
+    for side in range(4):  # and the full width outside it, all the way round
+        a0 = side * math.pi / 2 - math.pi
+        far = max(r(m) for m in brim
+                  if a0 <= math.atan2((m[1] + m[3]) / 2 - cy, (m[0] + m[2]) / 2 - cx) < a0 + math.pi / 2)
+        assert far > P.foot_d / 2 + P.brim - 1

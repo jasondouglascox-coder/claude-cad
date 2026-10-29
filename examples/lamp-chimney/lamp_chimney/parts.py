@@ -27,3 +27,10 @@ def chimney(p: Params = P) -> Part:
     out = Pos(*center(p), 0) * Part(body.solids())
     out.label = "lamp_chimney"
     return out
+
+
+def on_bed(p: Params = P) -> Part:
+    """In the middle of the bed: a corner would clip the outer brim (the slicer stops it at the bed's edge)."""
+    out = Pos((p.printer.bed - p.foot_d) / 2, ((p.printer.bed_y or p.printer.bed) - p.foot_d) / 2, 0) * chimney(p)
+    out.label = "lamp_chimney"
+    return out
