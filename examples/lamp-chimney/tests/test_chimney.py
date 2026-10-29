@@ -15,6 +15,10 @@ from lamp_chimney.params import P
 from lamp_chimney.parts import center, chimney, on_bed
 
 LAYER = P.printer.layer
+# what Bambu Studio's GUI requires alongside spiral mode, or it asks to change them when the project opens
+STUDIO_SPIRAL = {"wall_loops": "1", "enable_support": "0", "enable_wrapping_detection": "0", "top_shell_layers": "0",
+                 "sparse_infill_density": "0%", "timelapse_type": "0", "z_direction_outwall_speed_continuous": "0",
+                 "alternate_extra_wall": "0", "periodic_modifier": "0"}
 
 
 @pytest.fixture(scope="module")
@@ -104,6 +108,7 @@ def test_build_writes_a_white_plate_with_brims_and_thin_walls(tmp_path):
     assert conf["brim_type"] == "outer_and_inner" and float(conf["brim_width"]) == P.brim
     assert conf["spiral_mode"] == "1"  # one bead climbing all the way up: no seam
     assert int(conf["bottom_shell_layers"]) == P.foot_layers  # the foot prints as solid layers under the spiral
+    assert {k: conf[k] for k in STUDIO_SPIRAL} == STUDIO_SPIRAL
 
 
 @pytest.mark.slow

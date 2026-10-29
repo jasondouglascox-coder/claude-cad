@@ -16,9 +16,10 @@ from lamp_chimney.parts import center, chimney, on_bed
 
 # vase mode: the foot as solid layers, then one bead climbing the outside to the top, so no seam (and none of the
 # floating-region warning Studio gives a one-line wall printed layer by layer); the brim holds the narrow foot down
-# on both sides
-SLICER = {"spiral_mode": "1", "bottom_shell_layers": str(P.foot_layers), "brim_type": "outer_and_inner",
-          "brim_width": str(P.brim)}
+# on both sides. Studio's GUI wants one wall loop, no top shell and no sparse infill with spiral mode, or it asks to
+# change them on opening; the foot is all bottom shell, so it stays solid
+SLICER = {"spiral_mode": "1", "bottom_shell_layers": str(P.foot_layers), "wall_loops": "1", "top_shell_layers": "0",
+          "sparse_infill_density": "0%", "brim_type": "outer_and_inner", "brim_width": str(P.brim)}
 
 
 def main(argv: list[str] | None = None) -> int:
