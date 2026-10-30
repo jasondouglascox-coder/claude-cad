@@ -32,6 +32,7 @@ one, a wall sunflower (`examples/sunflower-wall`), shows organic shapes and mult
 │   ├── fit-coupon/                smallest complete project: start here; the template for `cadkit.new`
 │   ├── candle-adapter/            one black part, glued into a chandelier cup
 │   ├── refill-spool/              an 89 g screw-together spool for Bambu refills, threads and strap tracks
+│   ├── grover-keychain/           a 4-color logo keychain traced from a raster, QR code on the back
 │   ├── near-ceiling-track/        everything at scale: an HO railroad shelf around a room, ~220 tests
 │   ├── sunflower-wall/            a 10" wall sunflower printed in one go, four AMS colors
 │   └── rose-wall/                 an 8" open rose printed in one go, curled petals on PETG-interface supports

@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-cadkit = { path = "../../claude-cad/cadkit", editable = true }
+cadkit = { path = "../../cadkit", editable = true }
 
 [dependency-groups]
 dev = [

@@ -3,6 +3,8 @@
 Four-color keychain of the brand logo (`art/logo.svg`), 50 mm wide, with a QR code and the URL on the back.
 Design spec: `docs/specs/2026-10-14-keychain-v2.md`. v1 (hand-sketched cat) is kept in `archive/v1/`.
 
+<img src="docs/images/front.png" width="360" alt="Front: the cat over the ribbon in the orange ring"> <img src="docs/images/back.png" width="360" alt="Back: QR code and URL, printed on the plate">
+
 ```bash
 uv sync
 uv run python -m grover.build            # out/step, out/plates/grover_keychain.3mf, out/preview

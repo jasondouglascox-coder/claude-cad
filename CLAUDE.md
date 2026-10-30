@@ -49,6 +49,9 @@
 - `examples/circle-jig/`: a trammel for marking circles of 2"–20" radius in four exact quarters (package
   `circle_jig`): a pinwheel whose bar and three short arms each have a straight edge on a line through the pivot
   screw; the bar prints as a hub piece and an extension that dovetails into it, each across its own plate.
+- `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
+  with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves; QR + URL on the back, ~14 swaps. Its plate's
+  3MF is committed (`out/plates/`); the rest of `out/` stays ignored.
 
 ## Commands
 
@@ -64,6 +67,7 @@ cd examples/refill-spool && uv run pytest -n 2                       # ~20 s, bo
 cd examples/rose-wall && uv run pytest -n 4 -m "not slow"             # ~12 min, both sizes (fusing petals); slow: Bambu
 cd examples/peony-wall && uv run pytest -n 4 -m "not slow"            # ~40 s; slow (-n 6, ~3 min): every petal, Bambu
 cd examples/lily-wall && uv run pytest -n 6                           # ~30 s, through Bambu
+cd examples/grover-keychain && uv run pytest -n 2 -m "not slow"       # a few min; slow: the plate through Bambu
 cd examples/lily-of-the-valley && uv run pytest -n 6                  # ~15 s, through Bambu
 cd examples/lamp-chimney && uv run pytest -n 4                       # ~15 s, through Bambu
 cd examples/circle-jig && uv run pytest -n 6                         # ~40 s, both plates through Bambu

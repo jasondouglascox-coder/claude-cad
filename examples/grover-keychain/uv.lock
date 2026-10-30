@@ -67,7 +67,7 @@ wheels = [
 [[package]]
 name = "cadkit"
 version = "0.1.0"
-source = { editable = "../../claude-cad/cadkit" }
+source = { editable = "../../cadkit" }
 dependencies = [
     { name = "build123d" },
     { name = "numpy" },
@@ -323,7 +323,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "build123d", specifier = "==0.13.0" },
-    { name = "cadkit", editable = "../../claude-cad/cadkit" },
+    { name = "cadkit", editable = "../../cadkit" },
     { name = "numpy", specifier = ">=2" },
     { name = "opencv-python-headless", specifier = ">=4.10" },
     { name = "scikit-image", specifier = ">=0.24" },
