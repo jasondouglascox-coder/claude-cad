@@ -40,6 +40,9 @@
 - `examples/lamp-chimney/`: a white replacement for a lamp's broken glass chimney (package `lamp_chimney`): Ø40
   foot into the gallery's spring tabs, one-line (0.42 mm) wall, rounded 45-degree shoulder to a Ø26 neck,
   131 mm; printed in spiral (vase) mode over a solid foot, brims inside and out, set in the project.
+- `examples/halloween-gnome/`: a 2" witch-hat gnome (package `halloween_gnome`) with a 1/2" hole to sit on a mini
+  Christmas tree: body, hat and pink nose printed apart (2 swaps each by height) and pressed together with no
+  clearance; every body a stack of horizontal mesh sections, no supports.
 - `examples/circle-jig/`: a trammel for marking circles of 2"–20" radius in four exact quarters (package
   `circle_jig`): a pinwheel whose bar and three short arms each have a straight edge on a line through the pivot
   screw; the bar prints as a hub piece and an extension that dovetails into it, each across its own plate.
@@ -61,6 +64,7 @@ cd examples/lily-wall && uv run pytest -n 6                           # ~30 s, t
 cd examples/lily-of-the-valley && uv run pytest -n 6                  # ~15 s, through Bambu
 cd examples/lamp-chimney && uv run pytest -n 4                       # ~15 s, through Bambu
 cd examples/circle-jig && uv run pytest -n 6                         # ~40 s, both plates through Bambu
+cd examples/halloween-gnome && uv run pytest -n 6                    # ~10 s, all three plates through Bambu
 ```
 
 ## Rules
