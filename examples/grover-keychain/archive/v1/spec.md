@@ -1,0 +1,41 @@
+# Grover & Pals keychain — design spec
+
+## Source
+`art/logo.svg` (brand print logo: 3544 px raster + vector URL text). The raster is traced;
+the vector URL text is not used on the keychain (the QR on the back carries the URL).
+
+## Agreed
+- Full logo silhouette, ~44 x 43 x 4.2 mm (art scaled to 50 mm ribbon, tails then pulled in 3 mm each).
+- 4 filaments: Grover orange, yellow, white, dark brown. Art colors map:
+  gold ring -> orange, lemon ribbon + folds -> yellow, cream/beige/tan -> white,
+  pink nose/tongue -> brown, cat oranges -> orange.
+- Three print layers above the 2.2 mm core: (1) 2.8 backdrop + ribbon flaps, (2) 3.6 ring + ribbon front +
+  Grover's face, (3) 4.2 paws. Outlines go on the higher-priority side of every boundary
+  (paw > face > ribbon > ring > flaps > backdrop), so the ring stays a full circle over the flaps.
+- Relief accents: ring orange sunk 0.4 (3.2) below its brown outlines/paw prints (3.6); eyes + glints 3.8
+  (just above the face); nose at paw height (4.2); ribbon letters raised 0.4 above the yellow (4.0),
+  traced finer and smoothed.
+- Back = the base layer: full orange ring disc + QR, yellow only where the ribbon sticks out past the ring.
+- Each color body is stacked slabs (one per layer band) with single-point pinches closed -> manifold 3MF.
+- Grover + ribbon sit 10% of the ring diameter lower than in the logo (fills the ring's bottom).
+- Grover's outline, paws, eyes, nose and interior lines come from art/cat_sketch.dxf; the ribbon front,
+  tails and folds from art/ribbon_sketch.dxf (left tail mirrored). Paw inner sides squared off.
+- Geometry is vector, not raster: ring/disk are fitted circles; ribbon, tails and Grover are traced
+  then Douglas-Peucker simplified (sharp corners); ear tips rebuilt where their straight edges meet.
+- Every relief step gets a constant 0.5 mm brown outline on its raised side (mitred offset).
+  Letters and paw prints keep 0.45 mm clear of every outline. Eyes are fitted circles with circular
+  glints. Whiskers / fur strokes dropped; mouth lines kept and thickened to print.
+- Keyring: 3.5 mm hole (fits a lobster-clasp hook) through the ring at 12 o'clock, replacing the top
+  paw print; brown ring around it flush with the orange (no lip); 0.5 mm chamfer both faces;
+  2.0 mm of plastic to the outer edge. No protruding tab.
+- Back: QR to https://groverandpals.com (v2-M, 0.85 mm modules, 2 layers = 0.4 mm to limit color swaps), brown modules inlaid in a white
+  panel, printed face-down so the QR is the smooth first layers.
+
+## Pipeline
+trace.py (classify + zone rasters) -> design.py (vector zones, outlines, details; disjoint pieces)
+-> vector.py (contours, QR, prisms) -> model.py (one fused body per filament) -> build.py (STEP, STL x4, 3MF, previews).
+
+## Acceptance (tests/test_keychain.py)
+Valid bodies, flat on bed, whole-layer Z levels, colors never overlap, one connected piece,
+no overhangs, hole size/wall/through-all, no color patch thinner than 0.3 mm from the top,
+QR decodes from the rendered back, QR panel inside the badge, 3MF round-trips 4 objects.
