@@ -1,4 +1,7 @@
 .venv/
 __pycache__/
-out/
 .pytest_cache/
+.DS_Store
+# out/ is generated; the plate is committed so a clone brings the print file (the STEP is 133 MB)
+out/*
+!out/plates/
