@@ -1,6 +1,6 @@
 # Circle jig
 
-<img src="docs/images/iso.png" width="49%" alt="the jig"> <img src="docs/images/top.png" width="49%" alt="from above: the bar and three short arms">
+<img src="docs/images/iso.png" width="49%" alt="the jig"> <img src="docs/images/on_bed.png" width="40%" alt="one piece on the 256 mm bed, turned 41.5 degrees">
 
 A trammel for marking a circle on a board and splitting it into four exact quarters. It turns on a screw at the
 centre; a pencil in one of the holes draws the circle. The bar and the three short arms each have one straight
@@ -10,7 +10,8 @@ edge), a quarter turn apart.
 - Pencil holes for circles 4" to 17" across, every inch, numbered by diameter. A sharp pencil (or a 0.5 mm
   mechanical one) drops down the cone onto the hole's centre.
 - Pivot: a #8 wood screw (4.5 mm hole), not tightened, so the jig turns on it.
-- Orange PLA, AMS slot 1, printed flat across the bed's diagonal with no supports: about 37 g.
+- One piece, 302 mm (11.9") end to end: printed flat across the 256 mm bed's diagonal, turned 41.5° so it
+  clears every edge by 8 mm. Orange PLA, AMS slot 1, no supports: about 37 g.
 
 **Using it**
 

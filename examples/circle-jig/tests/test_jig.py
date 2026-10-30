@@ -33,6 +33,12 @@ def test_prints_flat_watertight_on_layers():
     assert downward_faces(b) == []
 
 
+def test_room_on_every_side_of_the_bed():
+    """Not jammed into a corner: at least the printer's margin clear of every edge of the bed."""
+    bb, bed_x, bed_y = on_bed(P).bounding_box(), P.printer.bed, P.printer.bed_y or P.printer.bed
+    assert min(bb.min.X, bb.min.Y, bed_x - bb.max.X, bed_y - bb.max.Y) >= P.printer.margin / 2
+
+
 def test_pivot_hole_centred_on_the_origin(part):
     a, b = sorted(pieces(part, -P.w / 2, P.w / 2, -0.05, 0.05), key=lambda bb: bb.min.X)
     assert (a.max.X, b.min.X) == pytest.approx((-P.pivot_d / 2, P.pivot_d / 2), abs=0.02)

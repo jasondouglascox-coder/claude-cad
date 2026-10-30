@@ -49,11 +49,24 @@ def jig(p: Params = P) -> Part:
     return out
 
 
+def bed_angle(p: Params = P) -> float:
+    """Turn (degrees) that fits the jig on the bed with the most room: near the diagonal, nudged so both spans match."""
+    w, a, L = p.w, p.arm, p.bar_len
+    corners = [(L, 0), (L, w), (-w, a), (0, a), (-a, 0), (-a, -w), (w, -a), (0, -a)]
+
+    def span(deg):
+        c, s = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+        xs, ys = [x * c - y * s for x, y in corners], [x * s + y * c for x, y in corners]
+        return max(max(xs) - min(xs), max(ys) - min(ys))
+
+    return min((d / 10 for d in range(300, 601)), key=span)
+
+
 def on_bed(p: Params = P) -> Part:
-    """Across the bed's diagonal: the bar is longer than the bed is wide."""
-    turned = Rot(0, 0, 45) * jig(p)
+    """Across the bed's diagonal (the bar is longer than the bed is wide), centred on the whole bed."""
+    turned = Rot(0, 0, bed_angle(p)) * jig(p)
     bb = turned.bounding_box()
-    usable_x, usable_y = p.printer.usable_x, p.printer.usable_y
-    out = Pos((usable_x - bb.max.X - bb.min.X) / 2, (usable_y - bb.max.Y - bb.min.Y) / 2, 0) * turned
+    bed_x, bed_y = p.printer.bed, p.printer.bed_y or p.printer.bed
+    out = Pos((bed_x - bb.max.X - bb.min.X) / 2, (bed_y - bb.max.Y - bb.min.Y) / 2, 0) * turned
     out.label = "circle_jig"
     return out

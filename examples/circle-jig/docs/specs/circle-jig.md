@@ -20,4 +20,5 @@ quarter lines, "or slightly offset so I can use it as a straight edge".
 
 ## Amendments
 
-None yet.
+- 2026-10-29: placed at the turn that leaves the most room (41.5°, from `bed_angle`) and centred on the whole bed:
+  at 45° in the usable square it cleared one edge by 0.2 mm. Now 8 mm on every side, still one piece.
