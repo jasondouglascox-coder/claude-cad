@@ -16,8 +16,9 @@ class Params:
     bar_end: float = 10.0  # bar runs on this far past the last pencil hole
     pivot_d: float = 4.5  # the screw it turns on (#8 wood screw, 4.2 mm shank)
     hole_off: float = 10.0  # pencil holes sit this far in from the bar's straight edge
-    throat_d: float = 2.0  # pencil tip pokes through this at the bottom, so the point sits on the hole's centre
-    throat_h: float = 2.0
+    poke_d: float = 3.3  # what has to poke through a pencil hole: a nail's shank, or a pencil's sharpened tip
+    throat_d: float = 4.0  # the hole at the bottom: poke_d passes, with room for holes printing small
+    throat_h: float = 1.2
     sink_deg: float = 30.0  # from vertical: the cone above the throat that guides a sharpened pencil down
     bevel: float = 3.0  # straight edges bevelled on top (like a ruler) so the line shows right at the edge
     label_size: float = 5.0  # raised inch numbers beside the holes

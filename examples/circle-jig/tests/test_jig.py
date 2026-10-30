@@ -143,3 +143,12 @@ def test_slicer_prints_each_plate_in_one_filament(tmp_path, plate):
     assert s.same_objects(project, s.roundtrip(project, tmp_path / "rt.3mf"))
     report = s.slice_report(project, tmp_path / "s.3mf")
     assert {f for layer in report["layers"] for f in layer[0]} == {P.filament}
+
+
+def test_a_nail_or_pencil_pokes_through_every_hole(part):
+    """The user, 2026-10-30: the hole "isn't big enough to actually poke a nail or pencil through". The throat at the
+    bottom clears poke_d with room for holes printing a bit small."""
+    assert P.throat_d >= P.poke_d + 0.5
+    x = P.hole_x(P.radii[0])
+    a, b = sorted(pieces(part, x - 8, x + 8, P.hole_off - 0.05, P.hole_off + 0.05), key=lambda bb: bb.min.X)
+    assert b.min.X - a.max.X >= P.poke_d + 0.5

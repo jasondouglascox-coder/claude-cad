@@ -76,10 +76,10 @@ A whole-room file takes a few minutes to translate.
   - `uv run python -m hotrain.build latch-test` writes a small latch coupon: three latches with the hook at
     1.0/1.2/1.4 mm (1-3 notches; the brackets use 1.4) and two pier stubs. Pick the one that clicks, holds, and
     can still be unlatched by bending the bracket back gently.
-  - `uv run python -m hotrain.build ceiling-gauge` writes the L gauge: a thin T against the ceiling, an arm with a
-    pencil hole at each bracket screw line (10" and 10" + 50 mm down), and a bar out to two hooks one bay along
+  - `uv run python -m hotrain.build ceiling-gauge` writes the L gauge (6 mm thick, 45 g): a T against the ceiling, an
+    arm with a pencil hole (a pencil or nail pokes through) at each bracket screw line (10" and 10" + 50 mm down), and a bar out to two hooks one bay along
     (418 mm: 1 notch, 443 mm: 2 notches). Hook it on the last bracket's top screw, push the T to the ceiling, and
-    mark the next bracket's two screws. Glue its three pieces at the dovetails.
+    mark the next bracket's two screws. Its three pieces press together at tight dovetails; glue them.
   - `uv run python -m hotrain.build cf-clip-test` writes three cross-frame clips with slots 0.15/0.10/0.05 mm
     narrower than the panel, a press fit (1-3 notches; the cross-frames use 0.10). Push each up onto a printed bay's
     panels at a post: pick the one that grips firmly but still goes on, then set `fit_cf`.

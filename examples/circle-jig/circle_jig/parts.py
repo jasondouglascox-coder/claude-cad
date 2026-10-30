@@ -8,9 +8,10 @@ The bar is longer than the bed, so it prints as a hub piece (the arms and the ba
 straight extension, butted at split_x; a dovetail tab on the extension's end drops into the hub from above."""
 import math
 
-from build123d import Align, Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, Sketch, Text, extrude
+from build123d import Align, Box, Cylinder, Part, Plane, Polygon, Pos, Rot, Sketch, Text, extrude
 
 from cadkit.plates import Plate
+from cadkit import shapes
 from cadkit.shapes import dovetail, rect
 
 from circle_jig.params import P, Params
@@ -30,10 +31,7 @@ def bevel(p: Params, length: float) -> Part:
 
 def pencil_hole(p: Params) -> Part:
     """Throat at the bottom for the point, a cone above it guiding the pencil down to it."""
-    throat = Cylinder(p.throat_d / 2, p.throat_h + 0.01, align=(Align.CENTER, Align.CENTER, Align.MIN))
-    cone = Pos(0, 0, p.throat_h) * Cone(p.throat_d / 2, p.sink_r + 0.01 * math.tan(math.radians(p.sink_deg)),
-                                        p.t - p.throat_h + 0.01, align=(Align.CENTER, Align.CENTER, Align.MIN))
-    return Pos(0, 0, -0.005) * (throat + cone)
+    return shapes.pencil_hole(p.throat_d, p.throat_h, p.t, p.sink_deg)
 
 
 def jig(p: Params = P) -> Part:

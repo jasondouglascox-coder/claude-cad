@@ -129,18 +129,21 @@ class Params:
     screw_travel: float = 0.25 * INCH  # ± vertical adjustment
     screw_zs: tuple = (15.0, 65.0)  # below tie underside
 
-    # ceiling gauge: a thin T against the ceiling with a pencil hole at each screw line
+    # ceiling gauge: a T against the ceiling with a pencil hole at each screw line
     gauge_bar_l: float = 4 * INCH  # the T's bar, along the ceiling
-    gauge_bar_w: float = 8.0
-    gauge_arm_w: float = 10.0
-    gauge_brace_w: float = 5.0  # two 45-degree braces square the bar to the arm
-    gauge_t: float = 2.4  # thin: it only has to lie flat on the wall
-    gauge_hole_d: float = 2.2  # a pencil tip reaches the wall through it
+    gauge_bar_w: float = 12.0
+    gauge_arm_w: float = 14.0  # about half the circle jig's 26 mm: stiff without its plastic
+    gauge_brace_w: float = 8.0  # two 45-degree braces square the bar to the arm
+    gauge_t: float = 6.0  # the circle jig's thickness (2.4 was flimsy), and the flange's: hooks on bracket screws
+    gauge_poke_d: float = 3.3  # what has to poke through a pencil hole: a nail's shank, or a pencil's sharpened tip
+    gauge_throat_d: float = 4.0  # the pencil hole at the wall: gauge_poke_d passes, with room for holes printing small
+    gauge_throat_h: float = 1.2  # then a cone (30 degrees off vertical) guides the point down to it
     gauge_tail: float = 8.0  # arm past the lower hole
     gauge_split: float = 80.0  # the T piece ends here (the whole gauge is longer than the bed)
-    gauge_jig_neck: float = 4.0  # dovetail joining the arm to the T, glued
-    gauge_jig_head: float = 6.5
-    gauge_jig_len: float = 5.0
+    gauge_jig_neck: float = 6.0  # dovetails joining the three pieces, glued
+    gauge_jig_head: float = 9.5
+    gauge_jig_len: float = 7.0
+    gauge_fit: float = 0.0  # no clearance: tight, like the circle jig's tab (0.05 was loose)
     gauge_pad_w: float = 24.0  # the spacing bar's ends: room for the keyhole, and for the pencil slots
     gauge_pencil_l: float = 18.0  # pencil slots across the spacing bar: draw the next screw's line through one
     latch_top: float = 8.5  # below tie underside

@@ -1,4 +1,4 @@
-"""Ceiling gauge: a thin T held against the ceiling, with a pencil hole at each bracket screw line, so every
+"""Ceiling gauge: a T held against the ceiling, with a pencil hole at each bracket screw line, so every
 bracket and rod anchor is marked at the same height round the room. Gauge frame: x down from the ceiling (the T's
 top edge at x = 0), y across, z out of the wall. Longer than the bed, so it prints as the T (bar, braces, a stub)
 and the arm (both holes), joined by a glued dovetail at x = gauge_split.
@@ -10,7 +10,7 @@ bracket's screws. On its own, the arm against the ceiling marks the first bracke
 corner (arm, near half of the bar, a brace) and the bar's end (the hooks)."""
 from build123d import Circle, Part, Pos, Rot, Sketch, extrude
 
-from cadkit.shapes import dovetail
+from cadkit.shapes import dovetail, pencil_hole
 from hotrain.joints import poly, rect
 from hotrain.params import P, Params
 
@@ -29,6 +29,11 @@ def _tab(p: Params, clearance: float = 0.0, x: float | None = None) -> Sketch:
     return dovetail(x, 0, p.gauge_jig_neck, p.gauge_jig_head, p.gauge_jig_len, clearance)
 
 
+def _pencil_holes(p: Params) -> list[Part]:
+    """A throat at the wall a nail or pencil point pokes through, under a cone that guides it down."""
+    return [Pos(x, 0) * pencil_hole(p.gauge_throat_d, p.gauge_throat_h, p.gauge_t) for x in hole_xs(p)]
+
+
 def _brace(p: Params, s: int) -> Sketch:
     """45 degrees from the bar's end (under the bar) to the arm's edge."""
     h, a, w = p.gauge_bar_l / 2, p.gauge_arm_w / 2, p.gauge_brace_w / 2
@@ -45,9 +50,8 @@ def t_in_gauge(p: Params = P) -> Part:
 
 def arm_in_gauge(p: Params = P) -> Part:
     a = p.gauge_arm_w / 2
-    sk = rect(p.gauge_split, _length(p), -a, a) - _tab(p, p.fit_snap)
-    sk -= [Pos(x, 0) * Circle(p.gauge_hole_d / 2) for x in hole_xs(p)]
-    return extrude(sk, p.gauge_t)
+    sk = rect(p.gauge_split, _length(p), -a, a) - _tab(p, p.gauge_fit)
+    return extrude(sk, p.gauge_t) - _pencil_holes(p)
 
 
 def assembled(p: Params = P) -> Part:
@@ -113,16 +117,15 @@ def corner_in_gauge(p: Params = P) -> Part:
     s = bar_split(p)
     tab = Pos(hole_xs(p)[0], -s) * Rot(0, 0, -90) * dovetail(0, 0, p.gauge_jig_neck, p.gauge_jig_head, p.gauge_jig_len)
     sk = Sketch() + [rect(p.gauge_split, _length(p), -a, a), _l_brace(p), _l_bar(p) & rect(0, _length(p), -s, a), tab]
-    sk -= _tab(p, p.fit_snap)
-    sk -= [Pos(x, 0) * Circle(p.gauge_hole_d / 2) for x in hole_xs(p)]
-    return extrude(sk, p.gauge_t)
+    sk -= _tab(p, p.gauge_fit)
+    return extrude(sk, p.gauge_t) - _pencil_holes(p)
 
 
 def bar_end_in_gauge(p: Params = P) -> Part:
     """The far half of the bar, with both hooks."""
     s = bar_split(p)
     sock = Pos(hole_xs(p)[0], -s) * Rot(0, 0, -90) * dovetail(0, 0, p.gauge_jig_neck, p.gauge_jig_head,
-                                                               p.gauge_jig_len, p.fit_snap)
+                                                               p.gauge_jig_len, p.gauge_fit)
     return extrude((_l_bar(p) & rect(0, _length(p), -1000, -s)) - sock, p.gauge_t)
 
 

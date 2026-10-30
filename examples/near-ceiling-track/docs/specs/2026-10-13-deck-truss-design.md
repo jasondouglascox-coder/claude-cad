@@ -287,3 +287,15 @@ plates and packing, and the bus cradle.
   the L gauge's hooks. The stems, crossbars, screw lines and marks are unchanged.
 - The three brackets already printed with the old vertical slots get reprinted with keyholes (the user: "not that
   big a deal, its only 3").
+
+## Amendments (2026-10-30): a stiffer ceiling gauge
+
+- The user: the 2.4 mm gauge is the right length but "too flimsy to use in awkward positions"; the circle jig is
+  "very solid" but a lot of plastic, so "same thickness but not as tall". The gauge is now 6 mm thick (the circle
+  jig's, and the bracket flange's, so the hooks hang on screws set for a bracket) with strips about half the circle
+  jig's 26 mm: the arm and bar 14 mm, the T's bar 12, the braces 8. 45 g (was 22; the circle jig is 60).
+- The pencil holes were too small "to actually poke a nail or pencil through": each is now a 4 mm throat at the
+  wall (`gauge_throat_d`, clearing a 3.3 mm nail shank or pencil tip with room for holes printing small) under a
+  cone that guides the point down to it (`cadkit.shapes.pencil_hole`, shared with the circle jig).
+- The dovetails are bigger (6 mm neck, 9.5 head, 7 long) and have no clearance (`gauge_fit` 0, was `fit_snap`
+  0.05): "make sure the dove tail has no tolerance so it fits tight".

@@ -33,3 +33,8 @@ quarter lines, "or slightly offset so I can use it as a straight edge".
   to about 20.5"; holes 2" to 20". The loose key became half a bow-tie: a dovetail tab on the extension's end
   (8 mm neck, 14 mm head, 6 mm long, `fit_tab` 0) dropped into a socket in the hub. The seam stays midway between
   the 8 and 9 holes. Still glued against a straightedge.
+- 2026-10-30: **bigger pencil holes** (the user: not "big enough to actually poke a nail or pencil through"). The
+  throat at the bottom is 4 mm (was 2), clearing `poke_d` (3.3 mm: a nail's shank or a sharpened pencil) with room
+  for holes printing small, and 1.2 mm tall (was 2), so more of the point comes through. The cone above it still
+  guides the point to the centre. The hole is now `cadkit.shapes.pencil_hole`, shared with the railroad's ceiling
+  gauge.

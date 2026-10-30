@@ -8,8 +8,8 @@ It turns on a screw at the centre; a pencil in one of the holes draws the circle
 each have one straight edge that lies exactly on a line through the screw (bevelled on top like a ruler, so you see
 the line right at the edge), a quarter turn apart.
 
-- Pencil holes every inch from 2" to 20", numbered by **inches from the screw** (the radius). A sharp pencil (or a
-  0.5 mm mechanical one) drops down the cone onto the hole's centre.
+- Pencil holes every inch from 2" to 20", numbered by **inches from the screw** (the radius). A pencil (or a
+  nail) drops down the cone and pokes through the 4 mm hole at the bottom, onto the hole's centre.
 - Pivot: a #8 wood screw (4.5 mm hole), not tightened, so the jig turns on it.
 - Two pieces, 518 mm from the screw to the bar's end: the **hub** (arms and the bar to the 8" hole: on its own it
   draws up to 8") and the **extension** (9" to 20"), butted between the 8 and 9 holes. A dovetail tab on the

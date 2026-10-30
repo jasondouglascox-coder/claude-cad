@@ -1,7 +1,7 @@
 """2D profile helpers. Flat-printed parts are profiles extruded to a thickness, so most geometry starts here."""
 import math
 
-from build123d import Align, Helix, Kind, Part, Plane, Polygon, Pos, Rectangle, Sketch, offset, sweep
+from build123d import Align, Cone, Cylinder, Helix, Kind, Part, Plane, Polygon, Pos, Rectangle, Sketch, offset, sweep
 
 
 def poly(*pts: tuple) -> Sketch:
@@ -32,6 +32,16 @@ def dovetail(x: float, y: float, neck: float, head: float, length: float, cleara
     """Jigsaw tab with its neck on x, widening toward +x. Joins long flat parts end to end."""
     n, h = neck / 2, head / 2
     return grow(poly((x - 0.01, y - n), (x + length, y - h), (x + length, y + h), (x - 0.01, y + n)), clearance)
+
+
+def pencil_hole(throat_d: float, throat_h: float, t: float, sink_deg: float = 30.0) -> Part:
+    """Hole through a flat part t thick, to cut at each mark: a throat throat_d across at the bottom (the bed side,
+    against the work) where a pencil point or a nail comes through on the mark, and a cone above it, sink_deg off
+    vertical, guiding the point down to it. Centred on the origin, a hair past both faces."""
+    top = throat_d / 2 + (t - throat_h + 0.01) * math.tan(math.radians(sink_deg))
+    throat = Cylinder(throat_d / 2, throat_h + 0.01, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    cone = Pos(0, 0, throat_h) * Cone(throat_d / 2, top, t - throat_h + 0.01, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    return Pos(0, 0, -0.005) * (throat + cone)
 
 
 def thread(radius: float, depth: float, pitch: float, length: float, crest: float = 0.5, inward: bool = False,
