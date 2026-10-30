@@ -1,4 +1,4 @@
-"""Test first: the jig prints flat in two pieces and a key, its straight edges run through the pivot, and every pencil
+"""Test first: the jig prints flat in two pieces joined by a dovetail tab, its straight edges run through the pivot, and every pencil
 hole sits the inches from the screw its number says, all derived from params."""
 import math
 
@@ -10,7 +10,7 @@ from cadkit.checks import downward_faces, off_layer_z, open_edges, printable_pro
 from cadkit.clash import find_clashes
 from circle_jig import build
 from circle_jig.params import INCH, P
-from circle_jig.parts import extension, hub, jig, key, key_in_place, plates
+from circle_jig.parts import extension, hub, jig, plates
 
 LOW = 0.1  # probe height: the bottom, where the pencil runs
 
@@ -21,8 +21,8 @@ def part():
 
 
 @pytest.fixture(scope="module")
-def pieces3():
-    return hub(P), extension(P), key_in_place(P)
+def pieces2():
+    return hub(P), extension(P)
 
 
 def pieces(part, x0, x1, y0, y1, z=LOW):
@@ -43,29 +43,42 @@ def test_every_plate_prints_flat_watertight_on_layers_with_room_round_it(plate):
         assert min(bb.min.X, bb.min.Y, bed_x - bb.max.X, bed_y - bb.max.Y) >= P.printer.margin / 2, name
 
 
-def test_pieces_and_key_make_the_whole_jig(part, pieces3):
-    """Assembled, they're the one-piece jig less the key's fit gap, and touch nowhere but face to face."""
-    assert find_clashes([("hub", pieces3[0]), ("extension", pieces3[1]), ("key", pieces3[2])]) == []
-    total = sum(x.volume for x in pieces3)
-    assert total == pytest.approx(part.volume, rel=1e-4, abs=4 * P.fit_key * P.key_len * P.t)  # text: volume noise
+def test_two_plates_of_one_piece_each():
+    assert [len(pl.items) for pl in plates(P)] == [1, 1]
 
 
-def test_seam_falls_between_holes(pieces3):
-    h, e, _ = pieces3
+def test_pieces_make_the_whole_jig(part, pieces2):
+    """Assembled, they're the one-piece jig less the tab's fit gap, and touch nowhere but face to face."""
+    assert find_clashes([("hub", pieces2[0]), ("extension", pieces2[1])]) == []
+    total = sum(x.volume for x in pieces2)
+    assert total == pytest.approx(part.volume, rel=1e-4, abs=4 * P.fit_tab * P.tab_len * P.t)  # text: volume noise
+
+
+def test_seam_and_tab_fall_between_holes(pieces2):
+    """The butt seam at split_x; the extension's tab reaches back into the hub, clear of the last hub hole."""
+    h, e = pieces2
+    assert e.bounding_box().min.X == pytest.approx(P.split_x - P.tab_len, abs=1e-3)
     assert h.bounding_box().max.X == pytest.approx(P.split_x, abs=1e-3)
-    assert e.bounding_box().min.X == pytest.approx(P.split_x, abs=1e-3)
-    assert P.hole_x(P.split_after * INCH) + P.sink_r < P.split_x - P.key_len / 2
-    assert P.hole_x((P.split_after + 1) * INCH) - P.sink_r > P.split_x + P.key_len / 2
+    assert P.hole_x(P.split_after * INCH) + P.sink_r < P.split_x - P.tab_len - P.fit_tab
+    assert P.hole_x((P.split_after + 1) * INCH) - P.sink_r > P.split_x
 
 
-def test_key_fits_its_socket_with_the_fit(pieces3):
-    """Across the waist on the seam: the socket's width is the key's waist plus the fit each side."""
-    h, e, k = pieces3
-    flare = (P.key_head - P.key_waist) / P.key_len  # extra width per mm off the waist
-    (kb,) = pieces(k, P.split_x - 0.001, P.split_x + 0.001, 0, P.w, z=P.t / 2)
-    assert kb.max.Y - kb.min.Y == pytest.approx(P.key_waist, abs=0.01)
+def test_tab_fits_its_socket_with_the_fit(pieces2):
+    """Across the neck on the seam: the socket is the tab's neck plus the fit each side."""
+    h, e = pieces2
+    flare = (P.tab_head - P.tab_neck) / P.tab_len  # extra width per mm away from the neck
+    (tb,) = pieces(e, P.split_x - 0.002, P.split_x, 0, P.w, z=P.t / 2)
+    assert tb.max.Y - tb.min.Y == pytest.approx(P.tab_neck, abs=0.01 + flare * 0.002)
     a, b = sorted(pieces(h, P.split_x - 0.002, P.split_x, -1, P.w + 1, z=P.t / 2), key=lambda bb: bb.min.Y)
-    assert b.min.Y - a.max.Y == pytest.approx(P.key_waist + 2 * P.fit_key, abs=0.01 + flare * 0.002)
+    assert b.min.Y - a.max.Y == pytest.approx(P.tab_neck + 2 * P.fit_tab, abs=0.01 + flare * 0.002)
+
+
+def test_tab_locks_the_pieces_together(pieces2):
+    """The tab's head is wider than its neck, so the extension can't pull straight off the hub."""
+    h, e = pieces2
+    x = P.split_x - P.tab_len + 0.5
+    (tb,) = pieces(e, x - 0.001, x + 0.001, 0, P.w, z=P.t / 2)
+    assert tb.max.Y - tb.min.Y > P.tab_neck + 2 * P.fit_tab + 1
 
 
 def test_pivot_hole_centred_on_the_origin(part):

@@ -8,7 +8,7 @@ INCH = 25.4
 
 @dataclass(frozen=True)
 class Params:
-    radii_in: tuple = tuple(range(2, 18))  # a pencil hole every inch out from the screw: 2" to 17" (34" circle)
+    radii_in: tuple = tuple(range(2, 21))  # a pencil hole every inch out from the screw: 2" to 20" (40" circle)
     split_after: int = 8  # the bar comes apart past this hole: the hub piece alone draws up to it
     t: float = 6.0  # thickness: stiff over the bar's length
     w: float = 26.0  # width of the bar and of each short arm
@@ -21,10 +21,10 @@ class Params:
     sink_deg: float = 30.0  # from vertical: the cone above the throat that guides a sharpened pencil down
     bevel: float = 3.0  # straight edges bevelled on top (like a ruler) so the line shows right at the edge
     label_size: float = 5.0  # raised inch numbers beside the holes
-    key_len: float = 12.0  # bow-tie key across the seam, flush, through the bar (the railroad's key)
-    key_head: float = 14.0
-    key_waist: float = 8.0
-    fit_key: float = 0.0  # key in its socket: the railroad's fit test (0.05 and 0.10 were loose on this printer)
+    tab_len: float = 6.0  # dovetail tab on the extension's end, dropped into the hub from above (half a bow-tie)
+    tab_head: float = 14.0
+    tab_neck: float = 8.0
+    fit_tab: float = 0.0  # tab in its socket: the railroad's keystone fit test (0.05 and 0.10 were loose)
     label_h: float = 0.6
     filament: int = 1  # AMS slot: orange, easy to see on wood
     printer: Printer = Printer()
@@ -40,9 +40,9 @@ class Params:
         if self.split_after not in self.radii_in[:-1]:
             raise ValueError(f"split_after {self.split_after}: pick a hole from {self.radii_in[:-1]}")
         room = self.hole_x((self.split_after + 1) * INCH) - self.split_x
-        if self.key_len / 2 + self.fit_key + self.sink_r + 1 > room:
-            raise ValueError(f"key {self.key_len} mm long runs into the holes beside the seam: at most "
-                             f"{2 * (room - self.sink_r - 1 - self.fit_key):.1f}")
+        if self.tab_len + self.fit_tab + self.sink_r + 1 > room:
+            raise ValueError(f"tab {self.tab_len} mm long runs into the hole before the seam: at most "
+                             f"{room - self.sink_r - 1 - self.fit_tab:.1f}")
 
     @property
     def radii(self) -> list[float]:

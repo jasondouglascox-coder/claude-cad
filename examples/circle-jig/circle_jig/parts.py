@@ -5,13 +5,13 @@ has one straight edge exactly on a radius. Draw along the bar for a radius; turn
 arm's edge lies on that line and the bar is on the next quarter.
 
 The bar is longer than the bed, so it prints as a hub piece (the arms and the bar out past split_after) and a
-straight extension, butted at split_x and locked by a bow-tie key dropped in flush across the seam."""
+straight extension, butted at split_x; a dovetail tab on the extension's end drops into the hub from above."""
 import math
 
 from build123d import Align, Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, Sketch, Text, extrude
 
 from cadkit.plates import Plate
-from cadkit.shapes import bowtie, rect
+from cadkit.shapes import dovetail, rect
 
 from circle_jig.params import P, Params
 
@@ -54,36 +54,29 @@ def jig(p: Params = P) -> Part:
     return out
 
 
-def _piece(p: Params, x0: float, x1: float, label: str) -> Part:
-    """The jig between x0 and x1, less the key's socket."""
+def tab(p: Params, clearance: float = 0.0) -> Part:
+    """Dovetail with its neck on the seam, widening back into the hub (-x); clearance grows it for the socket."""
+    profile = Pos(p.split_x, p.w / 2) * Rot(0, 0, 180) * dovetail(0, 0, p.tab_neck, p.tab_head, p.tab_len, clearance)
+    return Pos(0, 0, -1) * extrude(profile, p.t + 2)
+
+
+def _cut(p: Params, x0: float, x1: float) -> Part:
+    """The jig between x0 and x1."""
     big = 2 * p.bar_len
-    keep = Pos(x0, -big / 2, -1) * Box(x1 - x0, big, p.t + 2, align=(Align.MIN,) * 3)
-    socket = Pos(p.split_x, p.w / 2, -1) * extrude(bowtie(p.key_len, p.key_head, p.key_waist, p.fit_key), p.t + 2)
-    out = Part(((jig(p) & keep) - socket).solids())
-    out.label = label
-    return out
+    return jig(p) & Pos(x0, -big / 2, -1) * Box(x1 - x0, big, p.t + 2, align=(Align.MIN,) * 3)
 
 
 def hub(p: Params = P) -> Part:
-    """The arms and the bar out to the seam: on its own it draws up to split_after inches."""
-    return _piece(p, -2 * p.arm, p.split_x, "circle_jig_hub")
-
-
-def extension(p: Params = P) -> Part:
-    return _piece(p, p.split_x, p.bar_len + 1, "circle_jig_extension")
-
-
-def key(p: Params = P) -> Part:
-    """The bow-tie key in print orientation: flat, in the first quadrant."""
-    out = Pos(p.key_len / 2, p.key_head / 2, 0) * extrude(bowtie(p.key_len, p.key_head, p.key_waist), p.t)
-    out = Part(out.solids())
-    out.label = "circle_jig_key"
+    """The arms and the bar out to the seam, with the socket for the extension's tab: on its own it draws up to
+    split_after inches."""
+    out = Part((_cut(p, -2 * p.arm, p.split_x) - tab(p, p.fit_tab)).solids())
+    out.label = "circle_jig_hub"
     return out
 
 
-def key_in_place(p: Params = P) -> Part:
-    out = Pos(p.split_x - p.key_len / 2, p.w / 2 - p.key_head / 2, 0) * key(p)
-    out.label = "circle_jig_key"
+def extension(p: Params = P) -> Part:
+    out = Part((_cut(p, p.split_x, p.bar_len + 1) + (jig(p) & tab(p))).solids())
+    out.label = "circle_jig_extension"
     return out
 
 
@@ -101,26 +94,20 @@ def bed_angle(p: Params = P) -> float:
     return min((d / 10 for d in range(300, 601)), key=span)
 
 
-def _centred(p: Params, part: Part, dy: float = 0.0) -> Part:
+def _centred(p: Params, part: Part) -> Part:
     bb = part.bounding_box()
     bed_x, bed_y = p.printer.bed, p.printer.bed_y or p.printer.bed
-    out = Pos((bed_x - bb.max.X - bb.min.X) / 2, (bed_y - bb.max.Y - bb.min.Y) / 2 + dy, 0) * part
+    out = Pos((bed_x - bb.max.X - bb.min.X) / 2, (bed_y - bb.max.Y - bb.min.Y) / 2, 0) * part
     out.label = part.label
     return out
 
 
 def plates(p: Params = P) -> list[Plate]:
-    """Hub across the bed's diagonal (with the arms it's longer than the bed is wide); the extension along X with the
-    key, and a spare, beside it."""
+    """Each piece across its bed's diagonal: with the arms the hub is longer than the bed is wide, and so is the
+    extension."""
     turned = Rot(0, 0, bed_angle(p)) * hub(p)
     turned.label = "circle_jig_hub"
-    ext = _centred(p, Pos(-p.split_x, 0, 0) * extension(p))
+    ext = Rot(0, 0, 45) * extension(p)
     ext.label = "circle_jig_extension"
-    gap = 10.0
-    keys = []
-    for i, label in enumerate(("circle_jig_key", "circle_jig_key_spare")):
-        k = Pos(ext.bounding_box().min.X + i * (p.key_len + gap), ext.bounding_box().max.Y + gap, 0) * key(p)
-        k.label = label
-        keys.append(k)
     return [Plate("circle_jig_hub", 1, [("circle_jig_hub", _centred(p, turned))]),
-            Plate("circle_jig_extension", 1, [("circle_jig_extension", ext)] + [(k.label, k) for k in keys])]
+            Plate("circle_jig_extension", 1, [("circle_jig_extension", _centred(p, ext))])]

@@ -28,3 +28,8 @@ quarter lines, "or slightly offset so I can use it as a straight edge".
   midway between the 8 and 9 holes, clear of both, locked by the railroad's bow-tie key (12 × 14 × 8 mm waist) flush
   through the bar at zero clearance (`fit_key`, from the railroad's fit test), and are glued with CA against a
   straightedge so the edge can't kink at the seam. A spare key prints with the extension.
+- 2026-10-29: **20" radius (40" circle), two parts, no separate key** (the user: as big as two plates allow, and
+  the bow-tie on the end of one piece). The extension now prints across its bed's diagonal too, which allows a bar
+  to about 20.5"; holes 2" to 20". The loose key became half a bow-tie: a dovetail tab on the extension's end
+  (8 mm neck, 14 mm head, 6 mm long, `fit_tab` 0) dropped into a socket in the hub. The seam stays midway between
+  the 8 and 9 holes. Still glued against a straightedge.

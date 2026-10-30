@@ -40,9 +40,9 @@
 - `examples/lamp-chimney/`: a white replacement for a lamp's broken glass chimney (package `lamp_chimney`): Ø40
   foot into the gallery's spring tabs, one-line (0.42 mm) wall, rounded 45-degree shoulder to a Ø26 neck,
   131 mm; printed in spiral (vase) mode over a solid foot, brims inside and out, set in the project.
-- `examples/circle-jig/`: a trammel for marking circles of 2"–17" radius in four exact quarters (package
+- `examples/circle-jig/`: a trammel for marking circles of 2"–20" radius in four exact quarters (package
   `circle_jig`): a pinwheel whose bar and three short arms each have a straight edge on a line through the pivot
-  screw; the bar prints as a hub piece and an extension joined by a bow-tie key.
+  screw; the bar prints as a hub piece and an extension that dovetails into it, each across its own plate.
 
 ## Commands
 
