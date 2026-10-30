@@ -1,0 +1,23 @@
+[project]
+name = "mini-sunflower"
+version = "0.1.0"
+description = "3-inch wall sunflowers: yellow petals, a raised brown head of spiral diamonds round a sunk black eye"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "build123d==0.13.0",
+    "cadkit[render,mesh]",
+]
+
+[tool.uv.sources]
+cadkit = { path = "../../cadkit", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-xdist>=3.8.0",
+]
+
+[tool.pytest.ini_options]
+markers = ["slow: drives Bambu Studio's CLI; skipped when it isn't installed"]
+pythonpath = ["."]
+testpaths = ["tests"]

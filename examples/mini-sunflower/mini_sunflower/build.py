@@ -1,0 +1,52 @@
+"""uv run python -m mini_sunflower.build [all|plates|render] [--out out]
+
+plates: out/plates/mini_sunflowers.3mf (a Bambu project: four flowers round the prime tower, yellow, black, brown,
+        2 swaps, no supports) + mini_sunflowers.stl (a mesh: no STEP), out/plates.csv
+render: out/render/*.png shaded previews in the planned colours (copy to docs/images/ after a visible change)
+"""
+import argparse
+import sys
+from pathlib import Path
+
+import numpy as np
+
+import cadkit.render as cr
+from cadkit.mesh import Mesh
+from cadkit.render import TOP, render
+from mini_sunflower import flower
+from mini_sunflower.params import P
+
+LIGHT = (-0.25, 0.35, 1.0)  # lit from the front, a little above-left: how it hangs
+
+
+def hung(m: Mesh) -> Mesh:
+    """On the wall: the print's z (out of the wall) toward you (-Y), its y up (+Z)."""
+    v = m.verts
+    return Mesh(np.stack([v[:, 0], -v[:, 2], v[:, 1]], 1), m.tris, m.label, m.color)
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="mini_sunflower.build")
+    ap.add_argument("what", nargs="?", default="all", choices=["all", "plates", "render"])
+    ap.add_argument("--out", default="out")
+    a = ap.parse_args(argv)
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    if a.what in ("all", "plates"):
+        flower.write(P, out)
+    if a.what in ("all", "render"):
+        items = [(b, b.color) for b, _ in flower.coloured(P)]
+        cr.LIGHT = LIGHT
+        render(items, out / "render" / "front.png", view=TOP, px=1000, tol=0.02, crop=True)
+        cr.LIGHT = (LIGHT[0], -LIGHT[2], LIGHT[1])  # the same light, turned with the flower onto the wall
+        render([(hung(b), c) for b, c in items], out / "render" / "side.png", view=(0.75, -1.0, 0.35), px=1000,
+               tol=0.02, crop=True)
+        cr.LIGHT = LIGHT
+        render([(m, m.color) for _, parts in flower.plate(P) for _, m, _ in parts], out / "render" / "plate.png",
+               view=TOP, px=1000, tol=0.05, crop=True)
+    print(f"wrote {out}/")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

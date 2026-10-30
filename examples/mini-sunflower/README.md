@@ -1,0 +1,19 @@
+# Mini sunflower
+
+<img src="docs/images/front.png" width="32%" alt="the sunflower from the front"> <img src="docs/images/side.png" width="32%" alt="from the side, as it hangs: the brown ring standing up round the sunk black eye"> <img src="docs/images/plate.png" width="32%" alt="four to a plate round the prime tower">
+
+A 3" (76 mm) wall sunflower, smaller than the 4" roses: 24 pointed yellow petals in two rings, a brown ring standing
+4 mm up from them, textured with diamonds where the sunflower's two seed spirals cross, round a black eye sunk in the
+middle. It prints in one go, back on the bed, with no supports, and hangs on a nail through a keyhole under the head.
+
+Colours by height, 2 swaps a plate: yellow up to 4 mm, a two-layer black disk, then the brown. AMS as loaded for the
+big sunflower: 1 orange (unused), 2 yellow, 3 black, 4 brown, all PLA. Four to a plate round the prime tower:
+about 2 h 10 min and 34 g (26 yellow, 1.5 black, 6.5 brown).
+
+```bash
+uv sync
+uv run pytest -n 6                      # print checks, the head, the keyhole, the plate, a Bambu slice
+uv run python -m mini_sunflower.build   # out/plates/mini_sunflowers.3mf (File → Open Project), out/render
+```
+
+Decisions are in `docs/specs/mini-sunflower.md`; the reference photo is in `docs/references/` (local only).

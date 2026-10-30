@@ -43,6 +43,9 @@
 - `examples/halloween-gnome/`: a 2" witch-hat gnome (package `halloween_gnome`) with a 1/2" hole to sit on a mini
   Christmas tree: body, hat and pink nose printed apart (2 swaps each by height) and pressed together with no
   clearance; every body a stack of horizontal mesh sections, no supports.
+- `examples/mini-sunflower/`: a 3" wall sunflower, four to a plate (package `mini_sunflower`): 24 pointed yellow
+  petals, a raised brown ring of spiral diamonds round a sunk black eye, colours by height (2 swaps), no supports,
+  a keyhole under the head; meshes from point grids.
 - `examples/circle-jig/`: a trammel for marking circles of 2"–20" radius in four exact quarters (package
   `circle_jig`): a pinwheel whose bar and three short arms each have a straight edge on a line through the pivot
   screw; the bar prints as a hub piece and an extension that dovetails into it, each across its own plate.
@@ -65,6 +68,7 @@ cd examples/lily-of-the-valley && uv run pytest -n 6                  # ~15 s, t
 cd examples/lamp-chimney && uv run pytest -n 4                       # ~15 s, through Bambu
 cd examples/circle-jig && uv run pytest -n 6                         # ~40 s, both plates through Bambu
 cd examples/halloween-gnome && uv run pytest -n 6                    # ~10 s, all three plates through Bambu
+cd examples/mini-sunflower && uv run pytest -n 6                     # ~25 s, the plate through Bambu
 ```
 
 ## Rules
