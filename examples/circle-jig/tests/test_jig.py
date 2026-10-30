@@ -1,5 +1,5 @@
-"""Test first: the jig prints flat, its straight edges run through the pivot, and every pencil hole draws the circle
-its label says, all derived from params."""
+"""Test first: the jig prints flat in two pieces and a key, its straight edges run through the pivot, and every pencil
+hole sits the inches from the screw its number says, all derived from params."""
 import math
 
 import pytest
@@ -7,9 +7,10 @@ from build123d import Align, Box, Pos
 
 from cadkit import slicers
 from cadkit.checks import downward_faces, off_layer_z, open_edges, printable_problems
+from cadkit.clash import find_clashes
 from circle_jig import build
 from circle_jig.params import INCH, P
-from circle_jig.parts import jig, on_bed
+from circle_jig.parts import extension, hub, jig, key, key_in_place, plates
 
 LOW = 0.1  # probe height: the bottom, where the pencil runs
 
@@ -19,24 +20,52 @@ def part():
     return jig(P)
 
 
+@pytest.fixture(scope="module")
+def pieces3():
+    return hub(P), extension(P), key_in_place(P)
+
+
 def pieces(part, x0, x1, y0, y1, z=LOW):
     """Solid pieces (bounding boxes) of the part inside a thin probe box at height z."""
     probe = Pos(x0, y0, z - 0.05) * Box(x1 - x0, y1 - y0, 0.1, align=(Align.MIN,) * 3)
     return [s.bounding_box() for s in (part & probe).solids()]
 
 
-def test_prints_flat_watertight_on_layers():
-    b = on_bed(P)
-    assert printable_problems(b, P.printer) == []
-    assert open_edges(b) == 0
-    assert off_layer_z(b, P.printer) == []
-    assert downward_faces(b) == []
+@pytest.mark.parametrize("plate", range(len(plates(P))))
+def test_every_plate_prints_flat_watertight_on_layers_with_room_round_it(plate):
+    bed_x, bed_y = P.printer.bed, P.printer.bed_y or P.printer.bed
+    for name, b in plates(P)[plate].items:
+        assert printable_problems(b, P.printer) == [], name
+        assert open_edges(b) == 0, name
+        assert off_layer_z(b, P.printer) == [], name
+        assert downward_faces(b) == [], name
+        bb = b.bounding_box()
+        assert min(bb.min.X, bb.min.Y, bed_x - bb.max.X, bed_y - bb.max.Y) >= P.printer.margin / 2, name
 
 
-def test_room_on_every_side_of_the_bed():
-    """Not jammed into a corner: at least the printer's margin clear of every edge of the bed."""
-    bb, bed_x, bed_y = on_bed(P).bounding_box(), P.printer.bed, P.printer.bed_y or P.printer.bed
-    assert min(bb.min.X, bb.min.Y, bed_x - bb.max.X, bed_y - bb.max.Y) >= P.printer.margin / 2
+def test_pieces_and_key_make_the_whole_jig(part, pieces3):
+    """Assembled, they're the one-piece jig less the key's fit gap, and touch nowhere but face to face."""
+    assert find_clashes([("hub", pieces3[0]), ("extension", pieces3[1]), ("key", pieces3[2])]) == []
+    total = sum(x.volume for x in pieces3)
+    assert total == pytest.approx(part.volume, rel=1e-4, abs=4 * P.fit_key * P.key_len * P.t)  # text: volume noise
+
+
+def test_seam_falls_between_holes(pieces3):
+    h, e, _ = pieces3
+    assert h.bounding_box().max.X == pytest.approx(P.split_x, abs=1e-3)
+    assert e.bounding_box().min.X == pytest.approx(P.split_x, abs=1e-3)
+    assert P.hole_x(P.split_after * INCH) + P.sink_r < P.split_x - P.key_len / 2
+    assert P.hole_x((P.split_after + 1) * INCH) - P.sink_r > P.split_x + P.key_len / 2
+
+
+def test_key_fits_its_socket_with_the_fit(pieces3):
+    """Across the waist on the seam: the socket's width is the key's waist plus the fit each side."""
+    h, e, k = pieces3
+    flare = (P.key_head - P.key_waist) / P.key_len  # extra width per mm off the waist
+    (kb,) = pieces(k, P.split_x - 0.001, P.split_x + 0.001, 0, P.w, z=P.t / 2)
+    assert kb.max.Y - kb.min.Y == pytest.approx(P.key_waist, abs=0.01)
+    a, b = sorted(pieces(h, P.split_x - 0.002, P.split_x, -1, P.w + 1, z=P.t / 2), key=lambda bb: bb.min.Y)
+    assert b.min.Y - a.max.Y == pytest.approx(P.key_waist + 2 * P.fit_key, abs=0.01 + flare * 0.002)
 
 
 def test_pivot_hole_centred_on_the_origin(part):
@@ -51,10 +80,11 @@ EDGES = [((1, 0), (0, -1)), ((0, 1), (1, 0)), ((-1, 0), (0, 1)), ((0, -1), (-1, 
 @pytest.mark.parametrize("k", range(4))
 def test_straight_edges_run_through_the_pivot(part, k):
     """Along each arm, a thin probe across the edge: the part stops exactly on the line through the pivot, from the
-    hub out to the tip."""
+    hub out to the tip (on the bar, both sides of the seam)."""
     (dx, dy), (ox, oy) = EDGES[k]
     reach = P.bar_len if k == 0 else P.arm
-    for s in (P.w + 1, (P.w + reach) / 2, reach - 1):
+    spots = (P.w + 1, (P.w + reach) / 2, reach - 1) + ((P.split_x - 1, P.split_x + 1) if k == 0 else ())
+    for s in spots:
         if dx:  # runs along X: probe across Y
             (bb,) = pieces(part, dx * s - 0.05, dx * s + 0.05, -5, 5)
             edge = bb.min.Y if oy < 0 else bb.max.Y
@@ -64,15 +94,14 @@ def test_straight_edges_run_through_the_pivot(part, k):
         assert edge == pytest.approx(0, abs=1e-3)
 
 
-@pytest.mark.parametrize("d", P.diameters_in)
-def test_pencil_hole_draws_its_circle(part, d):
-    """At the bottom, the throat's gap along the bar is centred so the hole is d/2 inches from the pivot."""
-    r = d * INCH / 2
+@pytest.mark.parametrize("n", P.radii_in)
+def test_pencil_hole_is_its_number_of_inches_from_the_screw(part, n):
+    """At the bottom, the throat's gap along the bar is centred so the hole is n inches from the pivot."""
+    r = n * INCH
     x = P.hole_x(r)
     a, b = sorted(pieces(part, x - 6, x + 6, P.hole_off - 0.05, P.hole_off + 0.05), key=lambda bb: bb.min.X)
     assert b.min.X - a.max.X == pytest.approx(P.throat_d, abs=0.02)
-    centre = (a.max.X + b.min.X) / 2
-    assert math.hypot(centre, P.hole_off) == pytest.approx(r, abs=0.01)
+    assert math.hypot((a.max.X + b.min.X) / 2, P.hole_off) == pytest.approx(r, abs=0.01)
 
 
 def test_top_is_bevelled_along_the_straight_edge(part):
@@ -82,20 +111,22 @@ def test_top_is_bevelled_along_the_straight_edge(part):
     assert top.min.Y == pytest.approx(P.bevel - 0.1, abs=0.05)
 
 
-def test_build_writes_an_orange_plate(tmp_path):
+def test_build_writes_orange_plates(tmp_path):
     assert build.main(["--out", str(tmp_path)]) == 0
     assert (tmp_path / "render" / "iso.png").exists() and (tmp_path / "step" / "circle_jig.step").exists()
     s = slicers.active()
-    got = {n: f for n, f, _ in s.read_filaments(tmp_path / "plates" / f"circle_jig_1{s.project_suffix}")}
-    assert got == {"circle_jig": P.filament}
+    for plate in plates(P):
+        got = {n: f for n, f, _ in s.read_filaments(tmp_path / "plates" / f"{plate.name}{s.project_suffix}")}
+        assert got == {name: P.filament for name, _ in plate.items}
 
 
 @pytest.mark.slow
 @pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
-def test_slicer_prints_it_in_one_filament_with_no_supports(tmp_path):
+@pytest.mark.parametrize("plate", [pl.name for pl in plates(P)])
+def test_slicer_prints_each_plate_in_one_filament(tmp_path, plate):
     build.main(["--out", str(tmp_path)])
     s = slicers.active()
-    project = tmp_path / "plates" / f"circle_jig_1{s.project_suffix}"
+    project = tmp_path / "plates" / f"{plate}{s.project_suffix}"
     assert s.same_objects(project, s.roundtrip(project, tmp_path / "rt.3mf"))
     report = s.slice_report(project, tmp_path / "s.3mf")
     assert {f for layer in report["layers"] for f in layer[0]} == {P.filament}

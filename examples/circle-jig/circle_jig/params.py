@@ -8,7 +8,8 @@ INCH = 25.4
 
 @dataclass(frozen=True)
 class Params:
-    diameters_in: tuple = tuple(range(4, 18))  # a pencil hole per circle size, in inches: 4" to 17"
+    radii_in: tuple = tuple(range(2, 18))  # a pencil hole every inch out from the screw: 2" to 17" (34" circle)
+    split_after: int = 8  # the bar comes apart past this hole: the hub piece alone draws up to it
     t: float = 6.0  # thickness: stiff over the bar's length
     w: float = 26.0  # width of the bar and of each short arm
     arm_edge: float = 2 * INCH  # straight edge on each short arm, out past the hub
@@ -20,6 +21,10 @@ class Params:
     sink_deg: float = 30.0  # from vertical: the cone above the throat that guides a sharpened pencil down
     bevel: float = 3.0  # straight edges bevelled on top (like a ruler) so the line shows right at the edge
     label_size: float = 5.0  # raised inch numbers beside the holes
+    key_len: float = 12.0  # bow-tie key across the seam, flush, through the bar (the railroad's key)
+    key_head: float = 14.0
+    key_waist: float = 8.0
+    fit_key: float = 0.0  # key in its socket: the railroad's fit test (0.05 and 0.10 were loose on this printer)
     label_h: float = 0.6
     filament: int = 1  # AMS slot: orange, easy to see on wood
     printer: Printer = Printer()
@@ -30,12 +35,23 @@ class Params:
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
         object.__setattr__(self, "label_h", self.printer.layers(self.label_h))
         if self.radii[0] - self.sink_r <= self.w:
-            raise ValueError(f"smallest circle {self.diameters_in[0]}\" lands in the hub: start above "
-                             f"{2 * (self.w + self.sink_r) / INCH:.1f}\"")
+            raise ValueError(f"smallest radius {self.radii_in[0]}\" lands in the hub: start above "
+                             f"{(self.w + self.sink_r) / INCH:.1f}\"")
+        if self.split_after not in self.radii_in[:-1]:
+            raise ValueError(f"split_after {self.split_after}: pick a hole from {self.radii_in[:-1]}")
+        room = self.hole_x((self.split_after + 1) * INCH) - self.split_x
+        if self.key_len / 2 + self.fit_key + self.sink_r + 1 > room:
+            raise ValueError(f"key {self.key_len} mm long runs into the holes beside the seam: at most "
+                             f"{2 * (room - self.sink_r - 1 - self.fit_key):.1f}")
 
     @property
     def radii(self) -> list[float]:
-        return [d * INCH / 2 for d in self.diameters_in]
+        return [n * INCH for n in self.radii_in]
+
+    @property
+    def split_x(self) -> float:
+        """The seam across the bar: midway between the last hub hole and the first extension hole."""
+        return (self.hole_x(self.split_after * INCH) + self.hole_x((self.split_after + 1) * INCH)) / 2
 
     @property
     def arm(self) -> float:

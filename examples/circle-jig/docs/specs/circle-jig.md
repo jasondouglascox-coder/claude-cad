@@ -22,3 +22,9 @@ quarter lines, "or slightly offset so I can use it as a straight edge".
 
 - 2026-10-29: placed at the turn that leaves the most room (41.5°, from `bed_angle`) and centred on the whole bed:
   at 45° in the usable square it cleared one edge by 0.2 mm. Now 8 mm on every side, still one piece.
+- 2026-10-29: **17" is the radius, not the diameter** (the user's correction): a 34" circle. Holes every inch of
+  radius, 2" to 17", numbered by radius. The bar is now 442 mm from the pivot, so it prints in two: the hub piece
+  (arms and bar past the 8" hole, usable alone) across the diagonal, and a straight extension along X. They butt
+  midway between the 8 and 9 holes, clear of both, locked by the railroad's bow-tie key (12 × 14 × 8 mm waist) flush
+  through the bar at zero clearance (`fit_key`, from the railroad's fit test), and are glued with CA against a
+  straightedge so the edge can't kink at the seam. A spare key prints with the extension.
