@@ -124,7 +124,8 @@ class Params:
     bracket_open_min: float = 30.0  # shorter arm than this is printed as a solid web
     flange_t: float = 6.0
     screw_d: float = 4.6  # #8 screws, into studs or self-drilling drywall anchors
-    screw_head_d: float = 9.0  # the keyhole: a #8 pan head (~8.2 mm) passes
+    screw_head_max: float = 9.0  # the biggest head the keyholes take: the user's gold multi-purpose screws
+    screw_head_d: float = 10.0  # the keyhole: a screw_head_max head passes, with room for holes printing small
     screw_travel: float = 0.25 * INCH  # ± vertical adjustment
     screw_zs: tuple = (15.0, 65.0)  # below tie underside
 

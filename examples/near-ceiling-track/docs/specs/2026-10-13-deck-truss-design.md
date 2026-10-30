@@ -259,7 +259,7 @@ plates and packing, and the bus cradle.
 ## Amendments (2026-10-29): T keyholes for side-to-side play
 
 - The user: "hitting the height is easy, left to right is where I need some flex", and "both top and bottom can
-  have the T". Each flange screw is now a T keyhole: a 9 mm hole (a #8 pan head passes through it), a stem up to a
+  have the T". Each flange screw is now a T keyhole: a 9 mm hole (a #8 pan head passes through it; 10 mm since, below), a stem up to a
   crossbar, and the crossbar giving ±1/2" side to side. The screws go in the wall first, at the gauge marks. The
   bracket hangs on them through the holes and drops, the screws ride up into the crossbars, and the bracket slides
   sideways to its exact spot before the screws are tightened. Gravity seats it on the screws.
@@ -278,3 +278,12 @@ plates and packing, and the bus cradle.
   there, so both arm holes mark the next bracket's screws. The arm alone against the ceiling marks the first
   bracket. A 45° brace keeps the L square. Three glued pieces (the T, the corner, the bar's end), two plates,
   about 22 g.
+
+## Amendments (2026-10-29): bigger keyhole heads
+
+- The user: "the screw head hole needs to be bigger than 8mm, so maybe at least 9mm? im using regular multi purpose
+  gold screws". The keyhole is now 10 mm (was 9): `screw_head_max` (9 mm) is the biggest head it's meant to pass,
+  and the extra millimetre covers holes printing small. That applies to the brackets, rod anchors, deep brackets and
+  the L gauge's hooks. The stems, crossbars, screw lines and marks are unchanged.
+- The three brackets already printed with the old vertical slots get reprinted with keyholes (the user: "not that
+  big a deal, its only 3").

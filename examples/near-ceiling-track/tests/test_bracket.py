@@ -44,7 +44,8 @@ def test_keyhole_ts_give_side_to_side_play(part):
     """The user, 2026-10-29: "hitting the height is easy, left to right is where I need some flex", and both screws
     can have the T. The screws go in the wall first; the bracket hangs on them through two keyholes and drops, so
     each screw rides up a stem into a crossbar it slides along (about 1/2" each way) before it's tightened. The
-    screw lines stay where the ceiling gauge marks them."""
+    screw lines stay where the ceiling gauge marks them. Then: "the screw head hole needs to be bigger than 8mm, so
+    maybe at least 9mm? im using regular multi purpose gold screws"."""
     from hotrain.parts import rod_anchor
     br = (bracket if part == "bracket" else rod_anchor).make(P)
     d, lines = P.bracket_depth, bracket.screw_lines(P)
@@ -56,6 +57,6 @@ def test_keyhole_ts_give_side_to_side_play(part):
         assert (max(bar) - min(bar) + 0.1 - P.screw_d) / 2 >= 0.5 * INCH - 0.2  # within the 0.1 mm probe steps
         assert len(_open_zs(br, y + P.screw_d / 2 + 0.3)) == 0  # solid above the bar: the bracket hangs on it
         entry = _open_zs(br, y - P.screw_head_d)  # the keyhole, below the bar
-        assert max(entry) - min(entry) + 0.1 >= P.screw_head_d - 0.3  # the head passes through it (0.1 mm probe steps)
+        assert max(entry) - min(entry) + 0.1 >= P.screw_head_max + 0.5  # the head passes, though holes print a bit small
         stem = _open_zs(br, y - P.screw_head_d / 2 + 0.3)  # between: narrower than the head, wider than the shank
         assert P.screw_d - 0.2 <= max(stem) - min(stem) + 0.1 < P.screw_head_d
