@@ -29,24 +29,27 @@ class Params:
     # two rings of pointed petals, the front ring over the back ring's gaps; solid down to the bed
     petals: int = 12  # per ring
     # widths: neighbours in a ring overlap (just touching leaves edges meeting edge to edge)
-    back: Ring = Ring(10.0, 38.1, 12.0, ((0.0, 1.6), (0.4, 1.6), (1.0, 0.8)), ((0.0, 1.0), (1.0, 0.8)))
-    # the front petals rise to black_z under the head's rim and sweep down to the tip; their edges stay above the
-    # back petals' midribs
-    front: Ring = Ring(10.0, 34.6, 10.5, ((0.0, 4.0), (0.27, 4.0), (0.6, 2.2), (1.0, 1.2)),
-                       ((0.0, 2.4), (0.27, 2.4), (1.0, 1.0)))
+    # every petal's top angles down to the wall at its edges and tip (petal() keeps one layer there)
+    back: Ring = Ring(10.0, 38.1, 12.0, ((0.0, 1.6), (0.4, 1.6), (1.0, 0.0)), ((0.0, 0.0), (1.0, 0.0)))
+    # the front petals rise to black_z under the head's rim and sweep down to the tip; their sides run down into
+    # the back petals
+    front: Ring = Ring(10.0, 34.6, 10.5, ((0.0, 4.0), (0.27, 4.0), (0.6, 2.2), (1.0, 0.0)),
+                       ((0.0, 0.0), (1.0, 0.0)))
     vary: tuple = (0.06, 0.08)  # petals up to this much shorter, narrower than their ring's
     petal_shape: tuple = (0.85, 0.75)  # half-width ~ sin(pi t^a)^b: widest a little in from the root, pointed tip
     veins: int = 3  # lengthwise grooves across each petal
     vein_depth: float = 0.2  # one layer
 
-    # the head: a yellow riser under it to black_z (hidden), a black disk black_t thick, the brown ring on that
+    # the head: a yellow riser under it to black_z, a black disk black_t thick, the brown ring on that, its side
+    # angling up at `side` all the way from the petals to the brown's top (no straight-up edges)
     head_r: float = 16.5  # about 43% of the flower across, as in the photo
     eye_r: float = 5.0  # the black eye left open in the middle of the brown ring
     black_z: float = 4.0
     black_t: float = 0.4  # two layers
+    side: float = 45.0  # deg from level
     # the brown ring's height above the black: (r, h) control points, eased between; the inner wall drops straight
-    # to the black floor (the eye sunk in), the outer edge stands a little proud of the black
-    brown: tuple = ((5.0, 1.0), (7.5, 3.0), (10.5, 3.4), (15.0, 2.2), (16.5, 0.4))
+    # to the black floor (the eye sunk in); outside, the side's slope takes over
+    brown: tuple = ((5.0, 1.0), (7.5, 3.0), (10.5, 3.4), (14.0, 2.8), (16.5, 2.0))
     # texture: diamonds where the two spirals cross, one on every seed of Vogel's sunflower spiral
     seed_c: float = 1.15  # seed k at r = seed_c * sqrt(k)
     spirals: tuple = (21, 34)  # the crossing families (Fibonacci numbers)

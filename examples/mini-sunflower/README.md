@@ -4,11 +4,12 @@
 
 A 3" (76 mm) wall sunflower, smaller than the 4" roses: 24 pointed yellow petals in two rings, a brown ring standing
 4 mm up from them, textured with diamonds where the sunflower's two seed spirals cross, round a black eye sunk in the
-middle. It prints in one go, back on the bed, with no supports, and hangs on a nail through a keyhole under the head.
+middle. Every petal angles down to the wall, and the head's side angles up from the petals through the black to the
+brown at 45 degrees, with no straight-up edges. It prints in one go, back on the bed, with no supports, and hangs on a nail through a keyhole under the head.
 
 Colours by height, 2 swaps a plate: yellow up to 4 mm, a two-layer black disk, then the brown. AMS as loaded for the
 big sunflower: 1 orange (unused), 2 yellow, 3 black, 4 brown, all PLA. Four to a plate round the prime tower:
-about 2 h 10 min and 34 g (26 yellow, 1.5 black, 6.5 brown).
+about 1 h 46 min and 29 g (21.5 yellow, 1.6 black, 6 brown).
 
 ```bash
 uv sync

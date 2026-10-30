@@ -46,7 +46,8 @@ def half_width(p: Params, rg: Ring, t):
 
 
 def petal(p: Params, rg: Ring) -> Mesh:
-    """One petal along +X, solid down to the bed: high along the midrib, lower at the edges, with vein grooves."""
+    """One petal along +X, solid down to the bed: high along the midrib, its top falling to one layer at the
+    edges and the tip (it angles all the way to the wall), with vein grooves."""
     t = np.linspace(0, 1, ALONG)
     v = np.linspace(-1, 1, ACROSS)
     V, T = np.meshgrid(v, t, indexing="ij")
@@ -56,7 +57,7 @@ def petal(p: Params, rg: Ring) -> Mesh:
     Z = edge + (mid - edge) * (1 - V ** 2)
     for k in range(1, p.veins + 1):
         Z = Z - p.vein_depth * np.exp(-((V - (-1 + 2 * k / (p.veins + 1))) / 0.12) ** 2) * np.sin(np.pi * T)
-    top = np.stack([X, Y, Z], -1)
+    top = np.stack([X, Y, np.maximum(Z, p.printer.layer)], -1)
     return Mesh.from_grids(top, np.stack([X, Y, np.zeros_like(Z)], -1), "petal")
 
 
@@ -92,18 +93,18 @@ def reach(p: Params, deg: float) -> float:
 
 def ring_grid(r: np.ndarray, th: np.ndarray, z: np.ndarray, z0: float, label: str) -> Mesh:
     """A closed solid over an annulus (r[0] > 0): the top skin z[i, j] at radius r[i], angle th[j] (all the way
-    round, not repeating th[0]); a flat bottom at z0; walls straight down inside and out."""
+    round, not repeating th[0]); a flat bottom at z0; a wall straight down inside. Outside the top comes down to
+    z0 itself (z[-1] == z0): a sharp edge, no wall."""
     nr, nt = len(r), len(th)
     R, TH = np.meshgrid(r, th, indexing="ij")
     top = np.stack([R * np.cos(TH), R * np.sin(TH), z], -1).reshape(-1, 3)
-    bot = np.stack([R[[0, -1]] * np.cos(TH[[0, -1]]), R[[0, -1]] * np.sin(TH[[0, -1]]),
-                    np.full((2, nt), z0)], -1).reshape(-1, 3)
+    bot = np.stack([r[0] * np.cos(th), r[0] * np.sin(th), np.full(nt, z0)], -1)
+    assert np.allclose(z[-1], z0)
     t = np.arange(nr * nt).reshape(nr, nt)
-    b = nr * nt + np.arange(2 * nt).reshape(2, nt)
+    b = np.stack([nr * nt + np.arange(nt), t[-1]])  # the bottom's inner ring, and its outer ring: the top's edge
     nxt = np.roll(np.arange(nt), -1)
     quads = [(t[:-1, :], t[1:, :], t[1:, nxt], t[:-1, nxt]),  # top, facing up
              (b[0], b[0, nxt], b[1, nxt], b[1]),  # bottom
-             (t[-1], b[1], b[1, nxt], t[-1, nxt]),  # outer wall
              (t[0], t[0, nxt], b[0, nxt], b[0])]  # inner wall
     tris = []
     for a, bb, c, d in quads:
@@ -118,12 +119,12 @@ def round_angles() -> np.ndarray:
     return (np.arange(ROUND) + 0.5) * 2 * np.pi / ROUND
 
 
-def disk(p: Params, z0: float, z1: float, label: str) -> Mesh:
-    """A flat disk the head's size, with the head's points round its edge (so the colours line up)."""
+def disk(r0: float, r1: float, z0: float, z1: float, label: str) -> Mesh:
+    """A flat-topped disk, r0 across its bottom at z0 and r1 across its top at z1, with the head's points round
+    its edges (so the colours line up)."""
     th = round_angles()
-    edge = np.stack([p.head_r * np.cos(th), p.head_r * np.sin(th)], -1)
-    verts = np.concatenate([np.c_[edge, np.full(ROUND, z0)], np.c_[edge, np.full(ROUND, z1)],
-                            [[0, 0, z0], [0, 0, z1]]])
+    ring = lambda r, z: np.c_[r * np.cos(th), r * np.sin(th), np.full(ROUND, z)]
+    verts = np.concatenate([ring(r0, z0), ring(r1, z1), [[0, 0, z0], [0, 0, z1]]])
     j, k = np.arange(ROUND), np.roll(np.arange(ROUND), -1)
     lo, hi = 2 * ROUND, 2 * ROUND + 1
     tris = np.concatenate([np.stack([np.full(ROUND, lo), k, j], -1), np.stack([np.full(ROUND, hi), ROUND + j, ROUND + k], -1),
@@ -131,8 +132,19 @@ def disk(p: Params, z0: float, z1: float, label: str) -> Mesh:
     return Mesh(verts, tris, label)
 
 
+def run(p: Params, h: float) -> float:
+    """How far in the head's side goes rising h: it angles up at p.side from level."""
+    return h / math.tan(math.radians(p.side))
+
+
+def rim_r(p: Params) -> float:
+    """Where the brown starts: the black's top edge, in from the head's edge by its angled side."""
+    return p.head_r - run(p, p.black_t)
+
+
 def brown_top(p: Params, r, th):
-    """The brown ring's top at (r, theta): its eased profile on the black, plus the spiral diamonds. Each spiral
+    """The brown ring's top at (r, theta): its eased profile on the black, angling up from nothing at the black's
+    edge (a soft minimum of the profile and a p.side slope from rim_r), plus the spiral diamonds. Each spiral
     family F is cos(F theta - d_F r^2 / c^2) with d_F the golden angle's drift over F seeds: 1 on every seed, so
     two families' product peaks in a diamond on each seed."""
     r, th = np.asarray(r, float), np.asarray(th, float)
@@ -140,12 +152,18 @@ def brown_top(p: Params, r, th):
     for F in p.spirals:
         d = F * GOLDEN - 2 * math.pi * round(F * GOLDEN / (2 * math.pi))
         f = f * (0.5 + 0.5 * np.cos(F * th - d * r ** 2 / p.seed_c ** 2))
-    fade = smooth(p.eye_r, p.eye_r + p.texture_edge, r) * smooth(p.head_r, p.head_r - p.texture_edge, r)
-    return p.brown_z + ease(p.brown, r) + p.texture * f ** 0.6 * fade
+    rim = rim_r(p)
+    fade = smooth(p.eye_r, p.eye_r + p.texture_edge, r) * smooth(rim, rim - p.texture_edge, r)
+    cone = np.maximum(rim - r, 0) * math.tan(math.radians(p.side))
+    k = 0.15  # the soft minimum's rounding (mm)
+    lo = np.minimum(ease(p.brown, r), cone)
+    h = lo - k * np.log(np.exp(-(ease(p.brown, r) - lo) / k) + np.exp(-(cone - lo) / k))
+    h = np.where(r >= rim, 0.0, np.clip(h, 0, None))
+    return p.brown_z + h + p.texture * f ** 0.6 * fade
 
 
 def brown(p: Params) -> Mesh:
-    r = np.linspace(p.eye_r, p.head_r, RINGS)
+    r = np.linspace(p.eye_r, rim_r(p), RINGS)
     th = round_angles()
     R, TH = np.meshgrid(r, th, indexing="ij")
     return ring_grid(r, th, brown_top(p, R, TH), p.brown_z, "flower_brown")
@@ -174,8 +192,8 @@ def keyhole(p: Params) -> list:
 @lru_cache
 def parts(p: Params) -> tuple[Mesh, Mesh, Mesh]:
     """(yellow, black, brown), unkeyed."""
-    yellow = Mesh.union([petal(p, rg).rotate_z(a) for rg, a in angles(p)] + [disk(p, 0, p.black_z, "riser")])
-    return yellow, disk(p, p.black_z, p.brown_z, "flower_black"), brown(p)
+    yellow = Mesh.union([petal(p, rg).rotate_z(a) for rg, a in angles(p)] + [disk(p.head_r + run(p, p.black_z), p.head_r, 0, p.black_z, "riser")])
+    return yellow, disk(p.head_r, rim_r(p), p.black_z, p.brown_z, "flower_black"), brown(p)
 
 
 @lru_cache

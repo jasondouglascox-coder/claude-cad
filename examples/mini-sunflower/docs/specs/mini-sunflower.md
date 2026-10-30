@@ -30,3 +30,9 @@ Printer: Bambu A1 + AMS lite, 0.4 nozzle, 0.20 mm layers, PLA.
 - Plate: four in a square 96 mm apart, the 30 mm prime tower in the middle. Bambu: 2 h 9 min, 34.4 g.
 
 ## Amendments
+- 2026-10-30, from the user's look in Bambu Studio: "the brown should angle up, no need for the extra few
+  layers of height. Same on black. Petals should angle all the way to the wall like the big one." The head's
+  side is now one 45-degree slope (`side`): the yellow riser a cone from the petals up to the head's edge, the
+  black disk chamfered in 0.4 mm, and the brown rising from nothing at the black's top edge (a soft minimum of its
+  profile and the slope), no 0.4 mm rim. Every petal's top comes down to one layer at its edges and tip; the front
+  petals' sides run down into the back petals. Bambu: 1 h 46 min, 29.1 g for four (was 2 h 9 min, 34.4 g).

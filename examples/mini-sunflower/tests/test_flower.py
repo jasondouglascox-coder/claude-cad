@@ -3,6 +3,7 @@ spiral diamonds round the sunk black eye, hung plumb from a keyhole under the he
 import json
 import math
 import zipfile
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -47,9 +48,10 @@ def test_one_piece_flat_on_the_bed_three_inches_across(body):
 
 
 def test_no_supports_needed(body):
-    """Nothing overhangs past 45 degrees; the only face looking down is the keyhole's roof (a short bridge)."""
-    assert all(z == pytest.approx(flower.key_top(P), abs=0.05) for z, a in overhangs(body) if a > 0.01)
-    faces = downward_faces(body)
+    """Nothing overhangs past 45 degrees; the only face looking down is the keyhole's roof (a short bridge). Specks
+    under a tenth of a mm^2 don't count: float error where the colours' edges meet (they share their points)."""
+    assert all(z == pytest.approx(flower.key_top(P), abs=0.05) for z, a in overhangs(body) if a > 0.1)
+    faces = [(z, a) for z, a in downward_faces(body) if a > 0.1]
     assert faces and all(z == pytest.approx(flower.key_top(P), abs=0.05) for z, _ in faces)
 
 
@@ -79,6 +81,30 @@ def test_from_the_front_a_sunk_black_eye_in_a_raised_brown_ring(bodies):
     assert ring - np.nanmax(y) >= 3.0  # and well above the petals
     r_eye = min(r for r in np.arange(0, P.head_r, 0.1) if not np.isnan(at(b, r, 0)))
     assert r_eye == pytest.approx(P.eye_r, abs=0.3)
+
+
+def test_head_side_angles_up_from_the_petals_no_straight_edges(bodies):
+    """Riser, black and brown make one slope at `side` from level: the yellow from the petals up to the head's
+    edge, the black in from there, the brown rising from nothing at the black's top edge."""
+    (yellow, _), (black, _), _ = bodies
+    tan = math.tan(math.radians(P.side))
+    r_of = lambda m, z: np.hypot(*m.verts[np.isclose(m.verts[:, 2], z)][:, :2].T).max()
+    assert r_of(black, P.black_z) == pytest.approx(P.head_r, abs=1e-3)
+    assert r_of(black, P.brown_z) == pytest.approx(P.head_r - P.black_t / tan, abs=1e-3)
+    flat = replace(P, texture=0.0)
+    r = np.linspace(flower.rim_r(P) - 2.0, flower.rim_r(P), 400)
+    h = flower.brown_top(flat, r, np.zeros_like(r)) - P.brown_z
+    assert h[-1] == 0.0 and (h[:-1] > 0).all()
+    assert (np.abs(np.diff(h)) <= tan * (r[1] - r[0]) * 1.02).all()  # never steeper than the side
+
+
+def test_petals_angle_down_to_the_wall():
+    """Every petal's top comes down to one layer at its edges and its tip: no straight-up edge round it."""
+    for rg in (P.back, P.front):
+        top = flower.petal(P, rg).verts[:flower.ACROSS * flower.ALONG].reshape(flower.ACROSS, flower.ALONG, 3)
+        assert np.allclose(top[[0, -1], :, 2], P.printer.layer)
+        assert np.allclose(top[:, -1, 2], P.printer.layer)
+        assert top[flower.ACROSS // 2, :, 2].max() > 4 * P.printer.layer
 
 
 def test_brown_ring_has_the_spiral_diamonds():
