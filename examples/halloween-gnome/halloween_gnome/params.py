@@ -43,7 +43,10 @@ class Params:
 
     head_r: float = 9.0  # the head cone at the shoulder: the hat's socket fits over it, no clearance
     head_h: float = 6.0
-    head_angle: float = 35.0  # deg from vertical, the head's sides and the socket's
+    head_angle: float = 35.0  # deg from vertical, the head's sides and the socket's, above...
+    head_collar: float = 3.0  # ... a straight collar at head_r that grips (a 35-degree cone alone slides off)
+    mouth_run: float = 0.3  # every hole's mouth on the bed flares out this much, closing to size mouth_rise up:
+    mouth_rise: float = 0.4  # the first layer's squish never makes it the tightest point of a fit
 
     # the hat (its own z: brim on the bed)
     brim_r: float = 19.0

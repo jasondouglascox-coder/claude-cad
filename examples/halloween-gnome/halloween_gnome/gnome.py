@@ -164,16 +164,23 @@ def peg(p: Params) -> Mesh:
 
 def head(p: Params) -> Mesh:
     zs = levels(p.shoulder_h - 0.4, p.shoulder_h + p.head_h, p.dz)  # sunk into the shoulder: one solid
-    tan = math.tan(math.radians(p.head_angle))
-    return stack([circle(p.head_r - max(0.0, z - p.shoulder_h) * tan, z, p.ring) for z in zs], "head")
+    return stack([circle(min(p.head_r, socket_r(p, z - p.shoulder_h)), z, p.ring) for z in zs], "head")
+
+
+def mouth(p: Params, size, z0: float) -> list:
+    """The bottom rings of a hole whose mouth is on the bed: size(grow) is its section grown by grow, under the
+    bed at z0, on it, and back to size p.mouth_rise up."""
+    return [size(p.mouth_run * (1 - z0 / p.mouth_rise)), size(p.mouth_run), size(0.0)], [z0, 0.0, p.mouth_rise]
 
 
 def tree_hole(p: Params) -> Mesh:
     r = p.hole_d / 2
     tan = math.tan(math.radians(p.hole_roof))
     apex = p.hole_depth + r / tan
-    zs = np.r_[-0.5, levels(p.hole_depth, apex - p.dz, p.dz)]
-    return stack([circle(r - max(0.0, z - p.hole_depth) * tan, z, p.ring) for z in zs], "hole", (0, 0, apex))
+    sizes, zs = mouth(p, lambda g: r + g, -0.5)
+    rings = [circle(rr, z, p.ring) for rr, z in zip(sizes, zs)]
+    rings += [circle(r - (z - p.hole_depth) * tan, z, p.ring) for z in levels(p.hole_depth, apex - p.dz, p.dz)]
+    return stack(rings, "hole", (0, 0, apex))
 
 
 @lru_cache
@@ -203,13 +210,21 @@ def crown(p: Params, z: float) -> tuple[float, float]:
 
 
 def socket_r(p: Params, z: float) -> float:
-    return p.head_r - z * math.tan(math.radians(p.head_angle))
+    """The socket's radius z above the brim's underside (the head's, z above the shoulder): the collar, then the
+    cone."""
+    return p.head_r - max(0.0, z - p.head_collar) * math.tan(math.radians(p.head_angle))
+
+
+def socket_apex(p: Params) -> float:
+    return p.head_collar + p.head_r / math.tan(math.radians(p.head_angle))
 
 
 def socket(p: Params) -> Mesh:
-    apex = p.head_r / math.tan(math.radians(p.head_angle))
-    return stack([circle(socket_r(p, z), z, p.ring) for z in np.r_[-0.5, levels(0, apex - p.dz, p.dz)]],
-                 apex=(0, 0, apex))
+    apex = socket_apex(p)
+    sizes, zs = mouth(p, lambda g: p.head_r + g, -0.5)
+    rings = [circle(r, z, p.ring) for r, z in zip(sizes, zs)]
+    rings += [circle(socket_r(p, z), z, p.ring) for z in levels(p.head_collar, apex - p.dz, p.dz)]
+    return stack(rings, apex=(0, 0, apex))
 
 
 @lru_cache
@@ -241,7 +256,8 @@ def nose_hole(p: Params) -> Mesh:
     depth = p.peg_len + p.peg_room
     far = np.hypot(shape[:, 0], shape[:, 1]).max()  # the teardrop's point, from the round's centre
     rise = far / p.flare
-    rings = [np.c_[shape, np.full(len(shape), -0.5)]]
+    sizes, zs = mouth(p, lambda g: teardrop(p.peg_r + p.nose_fit / 2 + g, p.peg_angle), -0.5)
+    rings = [np.c_[s, np.full(len(s), z)] for s, z in zip(sizes, zs)]
     for z in levels(depth, depth + rise - p.dz, p.dz):
         rings.append(np.c_[shape * (1 - (z - depth) / rise), np.full(len(shape), z)])
     return stack(rings, apex=(0, 0, depth + rise))

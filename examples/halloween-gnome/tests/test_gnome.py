@@ -81,7 +81,7 @@ def test_tree_hole_is_half_an_inch_and_goes_up_to_its_roof():
 
 def test_hat_wall_round_the_socket():
     """The crown leans back; the socket stays inside it with p.hat_wall all round."""
-    for z in np.arange(P.brim_t + P.band_h, P.head_r / math.tan(math.radians(P.head_angle)), 0.2):
+    for z in np.arange(P.brim_t + P.band_h, gnome.socket_apex(P), 0.2):
         c, r = gnome.crown(P, z)
         assert r - abs(c) - gnome.socket_r(P, z) >= P.hat_wall, z
 
@@ -162,3 +162,31 @@ def test_slicer_prints_each_colour_band_once(tmp_path, name, bands):
     assert [r[0] for r in report["layers"]] == [(b,) for b in bands]
     top = {"body": P.shoulder_h + P.head_h, "hat": P.hat_h, "nose": P.nose_back + P.nose_r}[name]
     assert report["layers"][-1][2] + 1 == pytest.approx(top / P.printer.layer, abs=1)
+
+
+def test_hat_grips_on_a_straight_collar():
+    """A 35-degree cone can't hold by friction (tan 35 > PLA's ~0.3): the head and socket share a straight collar
+    p.head_collar tall at head_r, a press fit, and taper above it."""
+    head = gnome.head(P)
+    for z in (0.6, P.head_collar - 0.1):
+        probe = Pos(-20, -20, P.shoulder_h + z) * Box(40, 40, 0.01, align=MIN)
+        assert (head & probe).volume / 0.01 == pytest.approx(math.pi * P.head_r ** 2, rel=0.002)
+        assert gnome.socket_r(P, z) == pytest.approx(P.head_r)
+    assert gnome.socket_r(P, P.head_collar + 1) < P.head_r
+    assert P.head_collar >= 2.0
+
+
+def test_hole_mouths_are_chamfered():
+    """The first layer squishes out: every hole's mouth flares by p.mouth_run, closing to size p.mouth_rise up."""
+    z = 0.05
+    flare = 2 * P.mouth_run * (1 - (z + 0.1) / P.mouth_rise)  # the slab's top, where the hole is narrowest
+    hat, body, nose = Mesh.union(gnome.hat(P)), Mesh.union(gnome.body(P)), gnome.nose(P)
+    for m, size in ((hat, 2 * P.head_r), (body, P.hole_d), (nose, 2 * P.peg_r)):
+        assert hole_width(m, z) == pytest.approx(size + flare, abs=0.03)
+        assert hole_width(m, P.mouth_rise + 0.1) == pytest.approx(size, abs=0.03)
+
+
+def hole_width(m: Mesh, z: float) -> float:
+    """The gap across the axis in a slab from z to z + 0.1."""
+    pieces = sorted((m & slab(z)).solids(), key=lambda s: s.bounding_box().min.X)
+    return pieces[1].bounding_box().min.X - pieces[0].bounding_box().max.X

@@ -22,4 +22,9 @@ A 2" (50.8 mm) witch-hat gnome that sits on top of a mini Christmas tree through
 
 ## Amendments
 
-(none yet)
+- **2026-10-29, after the pre-print review:**
+  - A 35-degree cone can't hold by friction (tan 35° = 0.70, against about 0.3 for PLA on PLA), so the hat would
+    sit loose. The head and the socket now share a 3 mm straight collar at Ø18, a press fit, and taper above it.
+  - Every hole's mouth on the bed (the tree hole, the hat socket, the nose hole) flares 0.3 mm, closing to size
+    0.4 mm up, so first-layer squish never makes the mouth the tightest point of a zero-clearance fit.
+  - Assembly order: the nose first, then the hat (the brim reaches out over the nose).
