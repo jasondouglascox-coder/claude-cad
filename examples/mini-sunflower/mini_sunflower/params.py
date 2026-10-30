@@ -49,7 +49,7 @@ class Params:
     side: float = 45.0  # deg from level
     # the brown ring's height above the black: (r, h) control points, eased between; the inner wall drops straight
     # to the black floor (the eye sunk in); outside, the side's slope takes over
-    brown: tuple = ((5.0, 1.0), (7.5, 3.0), (10.5, 3.4), (14.0, 2.8), (16.5, 2.0))
+    brown: tuple = ((5.0, 0.6), (7.5, 1.8), (10.5, 2.0), (14.0, 1.7), (16.5, 1.2))  # a low dome
     # texture: diamonds where the two spirals cross, one on every seed of Vogel's sunflower spiral
     seed_c: float = 1.15  # seed k at r = seed_c * sqrt(k)
     spirals: tuple = (21, 34)  # the crossing families (Fibonacci numbers)

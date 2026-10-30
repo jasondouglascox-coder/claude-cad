@@ -36,3 +36,6 @@ Printer: Bambu A1 + AMS lite, 0.4 nozzle, 0.20 mm layers, PLA.
   black disk chamfered in 0.4 mm, and the brown rising from nothing at the black's top edge (a soft minimum of its
   profile and the slope), no 0.4 mm rim. Every petal's top comes down to one layer at its edges and tip; the front
   petals' sides run down into the back petals. Bambu: 1 h 46 min, 29.1 g for four (was 2 h 9 min, 34.4 g).
+- 2026-10-30, "can we flatten the brown a little? it should dome up but not that much": the brown ring's profile
+  is 60% of what it was, picked from side renders at 100, 60 and 40%: it peaks 2.0 mm over the black (2.6 with the
+  texture), its inner wall 0.6 mm (was 1.0), the eye now about 2.6 mm below the ring's top. Bambu: 1 h 40 min, 28.2 g for four.

@@ -78,7 +78,7 @@ def test_from_the_front_a_sunk_black_eye_in_a_raised_brown_ring(bodies):
     assert eye == pytest.approx(P.brown_z, abs=0.01) and np.isnan(at(b, 0, 0))  # black in the middle, nothing on it
     ring = np.nanmax(b)
     assert ring - P.brown_z >= max(h for _, h in P.brown)  # the brown stands up round the eye
-    assert ring - np.nanmax(y) >= 3.0  # and well above the petals
+    assert ring - np.nanmax(y) >= P.black_t + max(h for _, h in P.brown)  # and above the petals
     r_eye = min(r for r in np.arange(0, P.head_r, 0.1) if not np.isnan(at(b, r, 0)))
     assert r_eye == pytest.approx(P.eye_r, abs=0.3)
 
