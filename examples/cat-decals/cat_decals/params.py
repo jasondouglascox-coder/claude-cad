@@ -4,8 +4,6 @@ Each cat is one solid black silhouette: the blade cuts its outline, the vinyl in
 100-unit grid (y up) in cats.py and scaled so the longer side is cat_size."""
 from dataclasses import dataclass
 
-MM = 25.4  # mm per inch
-
 
 @dataclass(frozen=True)
 class Params:
@@ -16,7 +14,7 @@ class Params:
 
     mat: tuple = (24.0, 24.0)  # Cameo Pro mat
     margin: float = 0.5  # clear of the mat's edges
-    spacing: float = 0.25  # between cats, for weeding and cutting them apart
+    spacing: float = 0.5  # between cats: room to weed, cut apart and select each one in Studio
     test_square: float = 1.0  # measure it after importing: Studio guesses a DXF's units
 
 

@@ -10,7 +10,7 @@ silhouette that has to read from its shape alone.
 
 - **Format: DXF.** Silhouette Studio's free Basic Edition opens DXF, but SVG needs Designer Edition. The files are R12,
   with every outline and hole a closed POLYLINE, so each one is a single cut. R12 has no units field, and Studio is known to guess a DXF's
-  size wrong, so each sheet is written twice (`_in`, `_mm`) and carries a 1" test square to measure.
+  size wrong, so the sheet (in inches) carries a 1" test square to measure.
 - **Poses (12):** sitting, from behind, lying, yarn (paw on a wound ball, loose end trailing), stretching, arched,
   asleep (tail wrapped, cut free of the body by a groove), walking, washing (paw up, elbow out), pouncing, reaching,
   peeking (head and paws over an edge, tail hanging below). The user named lying, sitting and playing with yarn. The
@@ -19,8 +19,8 @@ silhouette that has to read from its shape alone.
   low. One parameter changes it.
 - **Weedable:** nothing narrower than ⅛" (opening test). Holes at least 0.1" wide and 0.03 sq in. Interior detail
   only as holes big enough to pick out, such as between the legs, the yarn's winding, or the washing cat's elbow.
-- **Sheet:** a ½" margin and ¼" between cats. Rows stand on a common baseline, slid together by true shape distance,
-  so tails tuck under neighbours. The poses repeat in turn until the mat is full (53 cats).
+- **Sheet:** one of each pose (amended below), a ½" margin, and ½" between cats. Rows stand on a common baseline, slid
+  together by true shape distance so tails tuck under neighbours, and the group sits at the mat's top edge.
 - **Drawing:** poses are built in Python from ellipses, tapered spline strokes and two head shapes (profile and
   front), unioned, then closed and opened by small radii, so joins blend and tips round.
 
@@ -30,4 +30,6 @@ silhouette that has to read from its shape alone.
 
 ## Amendments
 
-(none yet)
+- **2026-10-31: one of each, inches only.** The user duplicates and scales cats in Studio, so the sheet carries each
+  pose once (plus the test square), ½" apart (was ¼"), across the top of the mat where the Cameo starts. The repeated
+  53-cat fill, the `_mm` sheet and the per-pose DXFs are gone: only `out/cat_sheet_in.dxf`.

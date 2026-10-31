@@ -50,8 +50,9 @@
   `circle_jig`): a pinwheel whose bar and three short arms each have a straight edge on a line through the pivot
   screw; the bar prints as a hub piece and an extension that dovetails into it, each across its own plate.
 - `examples/cat-decals/`: not a print. Little black cat silhouettes in 12 poses for vinyl on a Silhouette Cameo
-  (package `cat_decals`), drawn in shapely and written as R12 DXF: 53 to a 24 × 24 mat, a 1" test square because Studio
-  guesses DXF units, ⅛" minimum feature. Its `out/` is committed (the cut files).
+  (package `cat_decals`), drawn in shapely and written as R12 DXF in inches: one of each on a 24 × 24 mat (the user
+  duplicates and scales in Studio), a 1" test square because Studio guesses DXF units, ⅛" minimum feature. Its `out/`
+  is committed (the cut file).
 - `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
   with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves, the banner's folds and tails sunk 2 and 4
   layers below it; QR + URL on the back, 22 swaps. Its plate's

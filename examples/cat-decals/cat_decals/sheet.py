@@ -1,6 +1,6 @@
-"""Fill the mat: rows of cats standing on a common baseline, each slid in until it's spacing from its neighbours."""
+"""One of each cat on the mat (duplicate and scale them in Studio): rows standing on a common baseline, each cat slid in
+until it's spacing from its neighbours."""
 from functools import cache
-from itertools import cycle
 
 from shapely import affinity
 from shapely.geometry import box
@@ -25,19 +25,17 @@ def _slide(shape, placed, dx, dy, p):
 
 @cache
 def layout(p=P):
-    """[(name, shape)] on the mat (inches, origin at its corner): the test square first, then the poses in turn."""
+    """[(name, shape)] on the mat (inches, origin at its corner): the test square first, then each pose once."""
     square = box(0, 0, p.test_square, p.test_square)
-    poses = [(n, cats.cat(n, p)) for n in cats.POSES]
-    items = cycle(poses)
-    queue = [("test_square", square)]
+    queue = [("test_square", square)] + [(n, cats.cat(n, p)) for n in cats.POSES]
     top_limit = p.mat[1] - p.margin
     right_limit = p.mat[0] - p.margin
     placed = []
     y = p.margin
     while True:
         row, x = [], p.margin
-        while True:
-            name, s = queue.pop(0) if queue else next(items)
+        while queue:
+            name, s = queue.pop(0)
             s = affinity.translate(s, x, y)
             if s.bounds[2] > right_limit:
                 queue.insert(0, (name, affinity.translate(s, -s.bounds[0], -s.bounds[1])))
@@ -53,8 +51,9 @@ def layout(p=P):
             shift -= STEP
         row = [(n, affinity.translate(q, 0, shift)) for n, q in row]
         if max(q.bounds[3] for _, q in row) > top_limit:
-            row = [(n, q) for n, q in row if q.bounds[3] <= top_limit]
-            placed += row
-            return tuple(placed)
+            raise ValueError("the cats don't fit on the mat: smaller cat_size or spacing")
         placed += row
+        if not queue:  # up to the mat's top edge, where the Cameo starts: a short piece of vinyl will do
+            up = top_limit - max(q.bounds[3] for _, q in placed)
+            return tuple((n, affinity.translate(q, 0, up)) for n, q in placed)
         y = max(q.bounds[3] for _, q in row) + p.spacing

@@ -4,7 +4,7 @@ import pytest
 from shapely.geometry import Polygon
 
 from cat_decals import cats, dxf, sheet
-from cat_decals.params import MM, P
+from cat_decals.params import P
 
 NAMES = list(cats.POSES)
 
@@ -56,18 +56,15 @@ def test_sheet_fits_the_mat_with_room_to_weed():
             assert a.distance(b) >= P.spacing - 1e-9
 
 
-def test_sheet_has_every_pose_and_the_test_square():
+def test_sheet_has_each_pose_once_and_the_test_square():
     names = [n for n, _ in sheet.layout()]
-    assert set(NAMES) <= set(names)
-    assert names.count("test_square") == 1
-    assert len(names) >= 3 * len(NAMES)  # lots of little cats
+    assert sorted(names) == sorted([*NAMES, "test_square"])  # one of each: duplicate and scale in Studio
 
 
-@pytest.mark.parametrize("units, scale", [("in", 1.0), ("mm", MM)])
-def test_dxf_reads_back_closed_and_to_scale(tmp_path, units, scale):
+def test_dxf_reads_back_closed_and_to_scale(tmp_path):
     shapes = sheet.layout()
-    path = tmp_path / f"sheet_{units}.dxf"
-    dxf.write(path, [s for _, s in shapes], units)
+    path = tmp_path / "sheet.dxf"
+    dxf.write(path, [s for _, s in shapes])
     doc = ezdxf.readfile(path)
     lines = list(doc.modelspace())
     assert lines and all(e.dxftype() == "POLYLINE" and e.is_closed for e in lines)
@@ -75,7 +72,7 @@ def test_dxf_reads_back_closed_and_to_scale(tmp_path, units, scale):
     assert len(lines) == rings  # every outline and hole is its own closed cut
     xs = [v.dxf.location.x for e in lines for v in e.vertices]
     ys = [v.dxf.location.y for e in lines for v in e.vertices]
-    assert max(xs) <= P.mat[0] * scale and max(ys) <= P.mat[1] * scale and min(xs) >= 0 and min(ys) >= 0
+    assert max(xs) <= P.mat[0] and max(ys) <= P.mat[1] and min(xs) >= 0 and min(ys) >= 0
     square = dict(shapes)["test_square"]
     x0, y0, x1, y1 = square.bounds
     assert (x1 - x0, y1 - y0) == pytest.approx((P.test_square, P.test_square))
