@@ -50,26 +50,71 @@ def _colors_at(b, z):
     return out
 
 
-def test_colors_per_layer_follow_the_stack(b):
-    """The whole point of the stack: 2 colors on the back, 1 in the body, 2 in the base, 4 in the face, 2 on top."""
-    layer = P.printer.layer
+def sunk_layers(s: int):
+    """(white layers, yellow and brown layers) under a ribbon piece sunk s layers below the banner: its face band
+    moved down s, on at least one layer of white (the base band, the body cut for the rest)."""
+    face_top = P.body_layers + P.base_layers + P.face_layers
+    yellow = range(face_top - s - P.face_layers + 1, face_top - s + 1)
+    return range(yellow[0] - max(P.base_layers - s, 1), yellow[0]), yellow
+
+
+def expected_colors():
+    """{layer: colors}: 2 on the back, 1 in the body, 2 in the base, 4 in the face, 2 on top, and the sunk folds and
+    tails add their white, yellow and brown to the layers they sank into."""
     expect = {}
-    for k in range(1, int(round(P.thickness / layer)) + 1):
-        z = P.z(k) - layer / 2
+    for k in range(1, int(round(P.thickness / P.printer.layer)) + 1):
+        z = P.z(k) - P.printer.layer / 2
         if z < P.z_back:
-            expect[z] = {"brown", "white"}
+            expect[k] = {"brown", "white"}
         elif z < P.z_body:
-            expect[z] = {"brown"}
+            expect[k] = {"brown"}
         elif z < P.z_base:
-            expect[z] = {"white", "orange"}
+            expect[k] = {"white", "orange"}
         elif z < P.z_face:
-            expect[z] = {"white", "orange", "yellow", "brown"}
+            expect[k] = {"white", "orange", "yellow", "brown"}
         else:
-            expect[z] = {"white", "brown"}
-    for z, want in expect.items():
-        assert _colors_at(b, z) == want, f"z={z}"
-    swaps = sum(len(v) - 1 for v in expect.values())
-    assert swaps == P.back_layers + P.base_layers + 3 * P.face_layers + P.top_layers
+            expect[k] = {"white", "brown"}
+    for s in (P.fold_sink, P.tail_sink):
+        white, yellow = sunk_layers(s)
+        for k in white:
+            expect[k] |= {"white"}
+        for k in yellow:
+            expect[k] |= {"yellow", "brown"}
+    return expect
+
+
+def test_colors_per_layer_follow_the_stack(b):
+    expect = expected_colors()
+    for k, want in expect.items():
+        assert _colors_at(b, P.z(k) - P.printer.layer / 2) == want, f"layer {k}"
+    assert sum(len(v) - 1 for v in expect.values()) == P.color_changes  # the accepted budget
+
+
+def _column(b, x, y):
+    """{color: (z min, z max)} of each body in a thin stick at (x, y)."""
+    stick = Pos(x - 0.05, y - 0.05, -1) * Box(0.1, 0.1, P.thickness + 2, align=(Align.MIN,) * 3)
+    out = {}
+    for c, part in b.items():
+        hit = part & stick
+        if hit.volume > 1e-6:
+            bb = hit.bounding_box()
+            out[c] = (round(bb.min.Z, 3), round(bb.max.Z, 3))
+    return out
+
+
+def test_folds_and_tails_sink_below_the_banner(b):
+    from grover import vec as V
+    from grover.regions import design
+    d = design(P)
+    assert sorted(s for _, s in d.sinks) == [P.fold_sink] * 2 + [P.tail_sink] * 2
+    for footprint, s in d.sinks:
+        white, yellow = sunk_layers(s)
+        fill = max(V.multi(d.ribbon.intersection(footprint.buffer(-0.3))).geoms, key=lambda g: g.area)
+        x, y = fill.representative_point().coords[0]
+        col = _column(b, x, y)
+        assert col["yellow"] == (P.z(yellow[0] - 1), P.z(yellow[-1])), s
+        assert col["white"][1] == P.z(white[-1]) and col["white"][0] <= P.z(white[0] - 1), s
+        assert max(hi for _, hi in col.values()) == P.z(yellow[-1]), s  # nothing over it: open to the sky
 
 
 def test_every_band_rests_on_the_one_below(b):

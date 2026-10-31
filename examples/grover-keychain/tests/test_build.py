@@ -4,6 +4,7 @@ import pytest
 from cadkit import bambu, bambu3mf
 from grover import build
 from grover.params import P
+from tests.test_model import expected_colors
 
 
 def test_build_writes_a_colored_bambu_plate(tmp_path):
@@ -25,9 +26,6 @@ def test_bambu_slices_it_into_the_expected_color_bands(tmp_path):
     assert bambu3mf.object_sizes(back) == bambu3mf.object_sizes(src)
     report = bambu.slice_report(src, tmp_path / "s.3mf")
     fil = {c: f for c, f in P.filament}
-    bands = [set(r[0]) for r in report["layers"]]
-    assert bands[0] == {fil["brown"], fil["white"]}  # back inlay
-    assert {fil["brown"]} in bands  # solid body
-    assert {fil["white"], fil["orange"]} in bands  # base
-    assert set(fil.values()) in bands  # face
-    assert bands[-1] == {fil["white"], fil["brown"]}  # top
+    want = {k: {fil[c] for c in cs} for k, cs in expected_colors().items()}
+    got = {k: set(f) for f, lo, hi in report["layers"] for k in range(lo + 1, hi + 2)}  # (0-based)
+    assert got == want

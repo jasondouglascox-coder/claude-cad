@@ -46,6 +46,7 @@ class Design:
     R: float = 0.0
     r: float = 0.0
     masks: dict = field(default_factory=dict)  # named raster masks, for debugging and tests
+    sinks: list = field(default_factory=list)  # (footprint, layers): ribbon folds and tails set below the banner
 
 
 # ---- raster helpers ------------------------------------------------------------------------------------------
@@ -503,6 +504,8 @@ def design(p: Params = P) -> Design:
         face_ink=face_ink_g, ring_ink=ring_ink_g,
         top_white=top_white_g, top_brown=top_brown_g, paws=V.multi(paw_all),
         eyes=eyes, figure_top=fig_top, R=art.R, r=art.r,
+        sinks=[(V.multi(g.intersection(silhouette_g)), p.fold_sink) for g in rib.folds]
+        + [(V.multi(g.intersection(silhouette_g)), p.tail_sink) for g in rib.tails],
         masks=dict(ink=ink, fig_ink=fig_ink_s, thick=thick, thin=thin, figure=figure, face=face, lab=lab,
                    face_ink=face_ink, ring_ink=ring_ink, top_white=top_white, top_brown=top_brown,
                    letters=letters, paws=paws, paw_ink=paw_ink, nose=nose, eye_mask=eye_mask,

@@ -99,6 +99,8 @@ class Drawn:
     region: object  # the whole ribbon, outline included
     yellow: object
     brown: object  # outlines, line_w wide: round each piece, along each fold's crease (none along the ring)
+    folds: list = None  # [left, right] footprints, outline and the whole crease line included
+    tails: list = None  # [left, right] footprints, outline included
 
 
 def drawn(r: Ribbon, r_ring: float, line_w: float, slide: float, lift: float, fold_ring: float,
@@ -109,10 +111,10 @@ def drawn(r: Ribbon, r_ring: float, line_w: float, slide: float, lift: float, fo
     same point: tail, fold and ring meet there. The tail's end is a uniform V (v_notch). One line between neighbours: the
     bands don't outline themselves against the banner or the ring, and the crease is a single line."""
     front = r.front
-    ring = Point(0, 0).buffer(r_ring, quad_segs=128)
+    ring = Point(0, 0).buffer(r_ring, quad_segs=256)  # (the silhouette's circle, exactly)
     fc = np.array(front.exterior.coords)
     meets = shapely.get_coordinates(front.exterior.intersection(ring.exterior))
-    pieces, bands, creases = [], [], []
+    pieces, bands, creases, folds, tails = [], [], [], [], []
     for tail, fold, side in zip(r.backs, sorted(r.folds, key=lambda f: f.centroid.x), (-1, 1)):
         fp = np.array(fold.exterior.coords)
         corner = fc[np.argmin(np.hypot(*(fc - fp[(fp[:, 0] * side).argmax()]).T))]  # banner's lower corner
@@ -136,6 +138,8 @@ def drawn(r: Ribbon, r_ring: float, line_w: float, slide: float, lift: float, fo
         band = unary_union([fold_piece, body])
         pieces += [fold_piece, body]
         bands.append(band)
+        folds.append(fold_piece)
+        tails.append(body)
         # the crease starts flush with the banner's outer edge (a square end would leave a step against it)
         fs = np.array(front.simplify(0.01).exterior.coords)[:-1]
         k = np.argmin(np.hypot(*(fs - corner).T))
@@ -151,10 +155,12 @@ def drawn(r: Ribbon, r_ring: float, line_w: float, slide: float, lift: float, fo
     for g in bands:  # no outline of its own against the ring or the banner: their edges are that line
         cover = unary_union([g, ring.buffer(0.01), front.buffer(0.01)])  # (grown: no hairline gap left to outline)
         brown.append(g.difference(cover.buffer(-line_w, join_style="mitre", mitre_limit=1.5)))
-    brown += [c.buffer(line_w / 2, cap_style="flat").intersection(inside).intersection(band)
-              for c, inside, band in creases]
-    brown = V.multi(unary_union(brown).intersection(region))
-    return Drawn(V.multi(region), V.multi(region.difference(brown)), brown)
+    lines = [c.buffer(line_w / 2, cap_style="flat").intersection(inside).intersection(band)
+             for c, inside, band in creases]
+    brown = V.multi(unary_union(brown + lines).intersection(region))
+    folds = [V.multi(unary_union([f, c])) for f, c in zip(folds, lines)]  # the crease is the fold's edge
+    tails = [V.multi(t.difference(f)) for t, f in zip(tails, folds)]
+    return Drawn(V.multi(region), V.multi(region.difference(brown)), brown, folds, tails)
 
 
 @lru_cache(maxsize=2)

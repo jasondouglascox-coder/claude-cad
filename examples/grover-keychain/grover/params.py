@@ -28,6 +28,8 @@ class Params:
     tail_out: float = 1.0  # mm each tail's lower tip moves out
     notch_depth: float = 2.0  # mm the V between the tail's two tips reaches in, square to the line between them
     fold_ring: float = 2.4  # mm along the ring from where the banner meets it down to where the crease does
+    fold_sink: int = 2  # layers each fold sits below the banner (its face band moved down, open to the sky)
+    tail_sink: int = 4  # layers each tail sits below the banner (through the base band into the body)
     ear_clear: float = 1.5  # ear tips stay this far inside the ring's outer circle
 
     # keyring hole, replacing the top paw print
@@ -153,6 +155,7 @@ class Params:
     base_layers: int = 3  # white/orange base band (to 2.4)
     face_layers: int = 2  # ribbon, cat, ink (to 2.8)
     top_layers: int = 2  # paws, eyes, nose, letters (to 3.2)
+    color_changes: int = 22  # accepted: 14 for the stack, 8 more for the sunk folds and tails (spec, 2026-10-30)
     ring_ink_layers: int = 2  # ring circles, paw prints, hole ring above the base band (to 2.8, the face band's
     # height: the ring ink and the face's brown meet, and must be one shape to mesh cleanly)
 
