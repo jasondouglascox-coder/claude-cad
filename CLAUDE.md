@@ -49,6 +49,9 @@
 - `examples/circle-jig/`: a trammel for marking circles of 2"–20" radius in four exact quarters (package
   `circle_jig`): a pinwheel whose bar and three short arms each have a straight edge on a line through the pivot
   screw; the bar prints as a hub piece and an extension that dovetails into it, each across its own plate.
+- `examples/cat-decals/`: not a print. Little black cat silhouettes in 12 poses for vinyl on a Silhouette Cameo
+  (package `cat_decals`), drawn in shapely and written as R12 DXF: 53 to a 24 × 24 mat, a 1" test square because Studio
+  guesses DXF units, ⅛" minimum feature. Its `out/` is committed (the cut files).
 - `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
   with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves, the banner's folds and tails sunk 2 and 4
   layers below it; QR + URL on the back, 22 swaps. Its plate's
@@ -74,6 +77,7 @@ cd examples/lamp-chimney && uv run pytest -n 4                       # ~15 s, th
 cd examples/circle-jig && uv run pytest -n 6                         # ~40 s, both plates through Bambu
 cd examples/halloween-gnome && uv run pytest -n 6                    # ~10 s, all three plates through Bambu
 cd examples/mini-sunflower && uv run pytest -n 6                     # ~25 s, the plate through Bambu
+cd examples/cat-decals && uv run pytest -n 4                         # ~2 s, DXF sheets read back
 ```
 
 ## Rules

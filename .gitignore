@@ -2,6 +2,7 @@ out/
 # Committed so a pull brings the print files (the keychain: its plate only). The railroad's and sunflower's stay ignored: too big for GitHub.
 !examples/refill-spool/out/
 !examples/grover-keychain/out/
+!examples/cat-decals/out/
 .venv/
 __pycache__/
 *.pyc
