@@ -21,9 +21,9 @@ def test_end_pier_printable():
     assert printable_problems(end_pier.make(P)) == []
 
 
-def _open_zs(br, y, p=P):
+def _open_zs(br, y, p=P, width=None):
     """Print-frame Z (along the wall) where the flange is open at height y (print Y, up from the bracket bottom)."""
-    zs = [z / 10 for z in range(0, int(p.flange_w * 10))]
+    zs = [z / 10 for z in range(0, int((width or p.flange_w) * 10))]
     return [z for z in zs if (br & (Pos(0, y - 0.05, z) * Box(p.flange_t, 0.1, 0.1, align=(Align.MIN, Align.MIN, Align.MIN)))).volume < 1e-9]
 
 
@@ -60,3 +60,19 @@ def test_keyhole_ts_give_side_to_side_play(part):
         assert max(entry) - min(entry) + 0.1 >= P.screw_head_max + 0.5  # the head passes, though holes print a bit small
         stem = _open_zs(br, y - P.screw_head_d / 2 + 0.3)  # between: narrower than the head, wider than the shank
         assert P.screw_d - 0.2 <= max(stem) - min(stem) + 0.1 < P.screw_head_d
+
+
+def test_bump_out_anchor_keeps_its_screws_off_the_corner_bead():
+    """The user, 2026-11-02: the bridge corner's anchor sits right at the bump-out's outside corner, so its screws
+    landed on the bullnose's metal bead; "we can make a slightly bigger bracket. we only need to by a half inch".
+    Its flange runs on bump_anchor_shift farther along the wall, away from the corner, and its keyholes move with it:
+    same T, same play, same height."""
+    from hotrain.parts import rod_anchor
+    std, long = rod_anchor.make(P), rod_anchor.make(P, bump_out=True)
+    assert printable_problems(long) == []
+    assert long.bounding_box().max.Z == pytest.approx(P.flange_w + P.bump_anchor_shift)
+    for line in bracket.screw_lines(P):
+        y = P.bracket_depth - line
+        a, b = _open_zs(std, y), _open_zs(long, y, width=P.flange_w + P.bump_anchor_shift)
+        assert min(b) - min(a) == pytest.approx(P.bump_anchor_shift, abs=0.11)
+        assert max(b) - max(a) == pytest.approx(P.bump_anchor_shift, abs=0.11)

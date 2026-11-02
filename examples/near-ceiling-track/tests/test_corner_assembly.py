@@ -162,3 +162,14 @@ def test_decks_are_single_painted_parts(corner):
     assert split is not None
     cols = {tuple(round(v, 3) for v in tuple(c)[:3]) for _, c in split}
     assert cols == {tuple(round(v, 3) for v in tuple(room.IRON)[:3]), tuple(round(v, 3) for v in tuple(room.TIE_BROWN)[:3])}
+
+
+def test_bridge_corner_ends_on_the_long_flanged_anchor(corner):
+    """The bridge corner's exit anchor sits at the bump-out's outside corner: it's the one whose screws sit
+    bump_anchor_shift farther from the corner (off the bullnose bead). Every other anchor is the standard one."""
+    from hotrain.parts import rod_anchor
+    c, items = corner
+    d = dict(items)
+    want = rod_anchor.make(P, bump_out=not c.wall_b).volume
+    assert d["anchor_out"].volume == pytest.approx(want, rel=1e-6)
+    assert d["anchor_in"].volume == pytest.approx(rod_anchor.make(P).volume, rel=1e-6)

@@ -62,15 +62,16 @@ def screw_lines(p: Params) -> tuple:
     return tuple(z - p.screw_travel for z in p.screw_zs)
 
 
-def flanged(p: Params, prof: Sketch, depth: float, lines: tuple) -> Part:
+def flanged(p: Params, prof: Sketch, depth: float, lines: tuple, extra: float = 0.0) -> Part:
     """Extrude a bracket profile already shifted so the wall is at x = 0 and the bottom at y = 0, and add the wall
     flange (lines: screw centers measured down from the top). The screws go in the wall first: the bracket hangs
     on them through a keyhole each and drops, so each screw rides up a stem into a crossbar it slides along before
-    it's tightened: side-to-side play, the height set."""
+    it's tightened: side-to-side play, the height set. extra runs the flange on that much farther past the plate,
+    the keyholes with it."""
     plate = extrude(prof, p.bracket_t)
-    flange = Box(p.flange_t, depth, p.flange_w, align=(Align.MIN, Align.MIN, Align.MIN))
+    flange = Box(p.flange_t, depth, p.flange_w + extra, align=(Align.MIN, Align.MIN, Align.MIN))
     r = p.screw_d / 2
-    z0, z1 = p.bracket_t + p.flange_edge + r, p.flange_w - p.flange_edge - r  # crossbar ends (screw centers)
+    z0, z1 = extra + p.bracket_t + p.flange_edge + r, extra + p.flange_w - p.flange_edge - r  # crossbar ends
     zc = (z0 + z1) / 2  # the mark: mid-way across the exposed tab
     bar = lambda y: Pos(y, zc) * SlotCenterToCenter(z1 - z0, p.screw_d, rotation=90)
     cuts = Sketch()

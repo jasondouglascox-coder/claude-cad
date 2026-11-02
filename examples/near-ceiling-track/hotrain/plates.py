@@ -162,7 +162,9 @@ def corner_kit(p: Params, corner) -> list[tuple[str, Shape]]:
     for i in range(1, len(CL.portals(p, corner)) - 1):
         items.append(("floor_beam", floor_beam.make(p)))
     items += [("ceiling_anchor", ceiling_anchor.make(p)) for _ in range(2 * len(corner.ceiling))]
-    items += [("rod_anchor", rod_anchor.make(p)) for _ in range(2)]
+    items.append(("rod_anchor", rod_anchor.make(p)))
+    items.append(("rod_anchor", rod_anchor.make(p)) if corner.wall_b else
+                 ("rod_anchor_bump_out", rod_anchor.make(p, bump_out=True)))  # off the bump-out's corner bead
     ps = CL.portals(p, corner)
     for i, wall in corner.deep:
         pt = ps[i]
@@ -180,7 +182,7 @@ def corner_plates(p: Params = P, anchors: bool = True) -> list[Plate]:
     from hotrain.parts import rod_jig
     out = []
     for corner, qty in ((CL.inside_corner(), 3), (CL.bridge_corner(), 1)):
-        kit = [it for it in corner_kit(p, corner) if anchors or it[0] != "rod_anchor"]
+        kit = [it for it in corner_kit(p, corner) if anchors or not it[0].startswith("rod_anchor")]
         petg = [it for it in kit if not it[0].startswith("ceiling_anchor")]
         pla = [it for it in kit if it[0].startswith("ceiling_anchor")]
         packed = pack(p, petg)
@@ -217,9 +219,10 @@ def corner_sections(p: Params = P) -> list[CornerKit]:
         where = [s.name for s in corners if s.kind == kind]
         mine = [replace(pl, qty=1) for pl in pls if pl.name.startswith(f"{kind}_corner")]
         out.append(CornerKit(f"corner_{kind}", len(where), mine, where))
-    n = sum(sum(n == "rod_anchor" for n, _ in corner_kit(p, room.corner(s))) for s in corners)
-    out.append(CornerKit("rod_anchor", n, [Plate("rod_anchor", 1, pack(p, [("rod_anchor", rod_anchor.make(p))])[0])],
-                         [s.name for s in corners]))
+    for name, bump in (("rod_anchor", False), ("rod_anchor_bump_out", True)):
+        n = sum(sum(k == name for k, _ in corner_kit(p, room.corner(s))) for s in corners)
+        where = [s.name for s in corners if any(k == name for k, _ in corner_kit(p, room.corner(s)))]
+        out.append(CornerKit(name, n, [Plate(name, 1, pack(p, [(name, rod_anchor.make(p, bump_out=bump))])[0])], where))
     out.append(CornerKit("rod_jig", 1, [pl for pl in pls if pl.name == "rod_jig"]))
     return out
 

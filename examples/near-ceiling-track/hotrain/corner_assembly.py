@@ -88,7 +88,9 @@ def placed_parts(p: Params = P, c: C.Corner = C.inside_corner()) -> list[tuple[s
     anc = rod_anchor.make(p)
     anc.label = "rod_anchor"
     out.append(("anchor_in", rod_anchor.place(p, 0) * anc))
-    out.append(("anchor_out", wall_b_frame(p, c) * rod_anchor.place(p, ps[-1].y) * anc))
+    anc_out = anc if c.wall_b else rod_anchor.make(p, bump_out=True)  # the bridge ends at the bump-out's corner
+    anc_out.label = "rod_anchor"
+    out.append(("anchor_out", wall_b_frame(p, c) * rod_anchor.place(p, ps[-1].y) * anc_out))
     xb = C.curve_start_x(p, c) + p.curve_r + p.track_offset
     for i, wall in c.deep:
         pt = ps[i]

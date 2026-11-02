@@ -11,10 +11,13 @@ def reach(p: Params) -> float:
     return p.rod_y + p.rod_d / 2 + p.rod_wall + 2
 
 
-def make(p: Params = P) -> Part:
+def make(p: Params = P, bump_out: bool = False) -> Part:
+    """bump_out: the bridge corner's anchor at the bump-out's outside corner, its flange and screws
+    bump_anchor_shift farther along the wall so they miss the corner's bullnose bead."""
     prof = bracket.profile(p, yd1=reach(p))
     prof -= [Pos(y, p.rod_zc) * Circle((p.rod_d + p.fit_thread) / 2) for y in (p.rod_y, -p.rod_y)]
-    return bracket.flanged(p, Pos(p.track_offset, p.bracket_depth) * prof, p.bracket_depth, bracket.screw_lines(p))
+    return bracket.flanged(p, Pos(p.track_offset, p.bracket_depth) * prof, p.bracket_depth, bracket.screw_lines(p),
+                           p.bump_anchor_shift if bump_out else 0.0)
 
 
 def place(p: Params, xp: float) -> Location:

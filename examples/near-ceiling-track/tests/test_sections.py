@@ -87,7 +87,8 @@ def test_corner_kits_hold_every_corner_plate():
     print on their own (2026-10-28: "I need the one that ties to the corner so I can start hanging this"), two a
     corner, so each run hangs as its bays are printed."""
     kits = plates.corner_sections(D)
-    assert {k.name: k.qty for k in kits} == {"corner_inside": 3, "corner_bridge": 1, "rod_anchor": 8, "rod_jig": 1}
+    assert {k.name: k.qty for k in kits} == {"corner_inside": 3, "corner_bridge": 1, "rod_anchor": 7,
+                                                 "rod_anchor_bump_out": 1, "rod_jig": 1}
     got = Counter()
     for k in kits:
         for pl in k.plates:

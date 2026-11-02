@@ -299,3 +299,15 @@ plates and packing, and the bus cradle.
   cone that guides the point down to it (`cadkit.shapes.pencil_hole`, shared with the circle jig).
 - The dovetails are bigger (6 mm neck, 9.5 head, 7 long) and have no clearance (`gauge_fit` 0, was `fit_snap`
   0.05): "make sure the dove tail has no tolerance so it fits tight".
+
+## Amendments (2026-11-02): the bump-out anchor's screws clear the corner bead
+
+- The bridge corner ends on a rod anchor right at the bump-out's outside corner (its pier is on the corner line, by
+  the corners spec). On the closet wall that put its screws 13/16" from the corner, on the bullnose's metal bead.
+  Adding a short straight span onto the wall instead (3 closet-wall bays of 385.5 mm, a third gauge hook, longer
+  rods) was offered; the user chose the small fix: "we can make a slightly bigger bracket. we only need to by a
+  half inch to get us into a good spot to miss the metal trim".
+- That one anchor (`rod_anchor_bump_out`, its own kit, ×1) has a flange `bump_anchor_shift` (1/2") wider on the
+  corner side, so its keyholes sit 1/2" farther along the wall: 1 5/16" from the corner, 81 3/16" from the left wall
+  on the closet wall. Same Ts, same play, same height. The other seven `rod_anchor`s are unchanged. 27 g.
+- The L gauge still marks the standard spot from the bracket before; move that last mark 1/2" toward the left wall.
