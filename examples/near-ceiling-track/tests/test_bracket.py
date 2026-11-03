@@ -1,5 +1,5 @@
 import pytest
-from build123d import Align, Box, Pos, Rectangle
+from build123d import Align, Box, Cylinder, Pos, Rectangle, Rot
 
 from hotrain.checks import printable_problems
 from hotrain.params import INCH, P
@@ -39,11 +39,17 @@ def test_screw_slots_centered_in_flange_tab():
     assert slot_center_x(bracket.make(P)) == pytest.approx(tab_mid, abs=0.1)
 
 
+def _open_at(br, y, z, d, p=P):
+    """True when a d-wide peg pushed straight through the flange at (print Y y, print Z z) touches nothing."""
+    peg = Pos(p.flange_t / 2, y, z) * Rot(0, 90, 0) * Cylinder(d / 2, p.flange_t)
+    return (br & peg).volume < 1e-6
+
+
 @pytest.mark.parametrize("part", ["bracket", "rod_anchor"])
 def test_keyhole_ts_give_side_to_side_play(part):
     """The user, 2026-10-29: "hitting the height is easy, left to right is where I need some flex", and both screws
     can have the T. The screws go in the wall first; the bracket hangs on them through two keyholes and drops, so
-    each screw rides up a stem into a crossbar it slides along (about 1/2" each way) before it's tightened. The
+    each screw rides up a ramp into a crossbar it slides along (about 1/2" each way) before it's tightened. The
     screw lines stay where the ceiling gauge marks them. Then: "the screw head hole needs to be bigger than 8mm, so
     maybe at least 9mm? im using regular multi purpose gold screws"."""
     from hotrain.parts import rod_anchor
@@ -56,10 +62,30 @@ def test_keyhole_ts_give_side_to_side_play(part):
         bar = _open_zs(br, y)
         assert (max(bar) - min(bar) + 0.1 - P.screw_d) / 2 >= 0.5 * INCH - 0.2  # within the 0.1 mm probe steps
         assert len(_open_zs(br, y + P.screw_d / 2 + 0.3)) == 0  # solid above the bar: the bracket hangs on it
-        entry = _open_zs(br, y - P.screw_head_d)  # the keyhole, below the bar
-        assert max(entry) - min(entry) + 0.1 >= P.screw_head_max + 0.5  # the head passes, though holes print a bit small
-        stem = _open_zs(br, y - P.screw_head_d / 2 + 0.3)  # between: narrower than the head, wider than the shank
-        assert P.screw_d - 0.2 <= max(stem) - min(stem) + 0.1 < P.screw_head_d
+        path = bracket.keyhole_path(P, y)
+        (ye, ze), (yb, zb) = path[0], path[-1]
+        assert ye == pytest.approx(y - P.screw_head_d) and yb == pytest.approx(y)  # drops a hole's width
+        assert P.bracket_t + P.flange_edge <= ze - P.screw_head_d / 2  # clear of the plate
+        assert min(bar) <= zb <= max(bar)  # the ramp lands in the crossbar
+        assert _open_at(br, ye, ze, P.screw_head_max + 0.5)  # the head passes, though holes print a bit small
+        for i in range(len(path) - 1):
+            (y0, z0), (y1, z1) = path[i], path[i + 1]
+            for t in (k / 10 for k in range(11)):
+                py, pz = y0 + t * (y1 - y0), z0 + t * (z1 - z0)
+                assert _open_at(br, py, pz, P.screw_d - 0.2)  # the shank rides up the ramp
+                if ((py - ye) ** 2 + (pz - ze) ** 2) ** 0.5 > P.screw_head_d / 2:
+                    assert not _open_at(br, py, pz, P.screw_head_max)  # and past the hole the head can't get out
+
+
+@pytest.mark.parametrize("part", ["bracket", "rod_anchor", "rod_anchor_bump_out"])
+def test_keyholes_have_nothing_printing_in_mid_air(part):
+    """The user, 2026-11-03, watching the plate print: "this isn't a bridge, its a free hang". The old keyhole's
+    stem ran level from the head hole to the crossbar, so the flange over it started in mid-air between the two
+    holes (Bambu: "floating regions"). The ramp climbs at 45 degrees from the hole's side into the crossbar."""
+    from cadkit.checks import floating_islands
+    from hotrain.parts import rod_anchor
+    br = bracket.make(P) if part == "bracket" else rod_anchor.make(P, bump_out=part.endswith("bump_out"))
+    assert floating_islands(br, P.printer) == []
 
 
 def test_bump_out_anchor_keeps_its_screws_off_the_corner_bead():

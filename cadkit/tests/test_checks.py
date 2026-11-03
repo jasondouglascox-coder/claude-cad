@@ -97,3 +97,15 @@ def test_overhangs_flag_undersides_steeper_than_45_only():
     assert overhangs(Cone(0.01, 17.3, 10, align=up)) != []         # a 60° flare doesn't
     z, area = overhangs(lean(60))[0]
     assert z > 0 and area > 0
+
+
+def test_floating_islands_finds_a_roof_with_holes_on_both_sides():
+    """Two tall holes joined low by a neck: the block over the neck starts in mid-air, with nothing beside it to
+    hang from until the holes close over. A plain hole's arch closes from both sides and isn't one."""
+    from cadkit.checks import floating_islands
+    block = box(0, 0, 0, 20, 6, 20)
+    two_holes = block - box(2, 0, 4, 4, 6, 10) - box(10, 0, 4, 4, 6, 10) - box(6, 0, 4, 4, 6, 4)
+    got = floating_islands(two_holes, A1)
+    assert got and got[0][0] == pytest.approx(8.0, abs=A1.layer)
+    assert got[0][1] == pytest.approx(4 * 6, rel=0.05)
+    assert floating_islands(block - box(2, 0, 4, 12, 6, 10), A1) == []

@@ -126,6 +126,7 @@ class Params:
     screw_d: float = 4.6  # #8 screws, into studs or self-drilling drywall anchors
     screw_head_max: float = 9.0  # the biggest head the keyholes take: the user's gold multi-purpose screws
     screw_head_d: float = 10.0  # the keyhole: a screw_head_max head passes, with room for holes printing small
+    screw_ramp_w: float = 6.5  # keyhole to crossbar, climbing at 45 degrees: the shank rides it, the head can't pass
     bump_anchor_shift: float = 0.5 * INCH  # the bridge's bump-out anchor: screws this much farther from the corner bead
     screw_travel: float = 0.25 * INCH  # ± vertical adjustment
     screw_zs: tuple = (15.0, 65.0)  # below tie underside

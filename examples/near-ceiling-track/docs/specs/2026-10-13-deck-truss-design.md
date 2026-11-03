@@ -311,3 +311,17 @@ plates and packing, and the bus cradle.
   corner side, so its keyholes sit 1/2" farther along the wall: 1 5/16" from the corner, 81 3/16" from the left wall
   on the closet wall. Same Ts, same play, same height. The other seven `rod_anchor`s are unchanged. 27 g.
 - The L gauge still marks the standard spot from the bracket before; move that last mark 1/2" toward the left wall.
+
+## Amendments (2026-11-03): keyhole ramps, nothing printing in mid-air
+
+- Printing the opposite-door wall's hangers, Bambu warned "floating regions" and the user saw why: "this isn't a
+  bridge, its a free hang". The flange prints standing up, so the T's level stem ran sideways between the round
+  hole and the crossbar, and the flange over it (3 × 6 mm, 26.3 to 29 mm up) started in mid-air with a hole on
+  each side and nothing to hang from. That plate printed anyway; its stems get cleaned out with a 3/16" bit.
+- The stem is now a ramp (`screw_ramp_w` 6.5 mm wide: the shank rides it, the 9 mm head can't pass) climbing at
+  45° from the round hole into the crossbar. The round hole sits by the plate, still a hole's width (10 mm) below
+  the crossbar, and the ramp's roof is tangent to it, so every underside is 45° or steeper. The crossbar, its play
+  and the screw lines are unchanged; the gauge's marks still hold. Hanging: hole over the head, push flat, and the
+  bracket drops 10 mm and slides 10 mm sideways down the ramp before the screw reaches the crossbar.
+- `cadkit.checks.floating_islands` finds any layer piece with nothing under it; the bracket and both rod anchors are
+  tested clean.

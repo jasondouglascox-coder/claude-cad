@@ -116,6 +116,27 @@ def downward_faces(part: Shape) -> list[tuple[float, float]]:
     return sorted(out)
 
 
+def floating_islands(part: Shape, printer: Printer | None = None, min_area: float = 0.0) -> list[tuple[float, float]]:
+    """(z, area) of every piece of a layer with nothing at all under it: it prints in mid-air. A bridge or an arch
+    joins the walls either side within its layer, so it isn't one; a roof between two holes is (Bambu Studio warns
+    "floating regions"). Islands of min_area mm^2 or less are left out."""
+    from cadkit.mesh import Mesh
+    printer = printer or default()
+    man = (part if isinstance(part, Mesh) else Mesh.from_shape(part))._manifold()
+    top = man.bounding_box()[5]
+    out, below = [], None
+    z = printer.first / 2
+    while z < top:
+        cut = man.slice(z)
+        if below is not None:
+            for piece in cut.decompose():
+                if (piece ^ below).area() < 1e-9 and piece.area() > min_area:
+                    out.append((round(z, 4), round(piece.area(), 3)))
+        below = cut
+        z = printer.first + printer.layer / 2 if z < printer.first else z + printer.layer
+    return out
+
+
 def overhangs(part: Shape, max_deg: float = 45.0) -> list[tuple[float, float]]:
     """(z, area) of every face with an underside steeper than max_deg from vertical, above the bed: angled
     overhangs that need support. Flat ones (bridges) are downward_faces; a 45° roof or flare prints fine."""
