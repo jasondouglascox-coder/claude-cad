@@ -325,3 +325,33 @@ plates and packing, and the bus cradle.
   bracket drops 10 mm and slides 10 mm sideways down the ramp before the screw reaches the crossbar.
 - `cadkit.checks.floating_islands` finds any layer piece with nothing under it; the bracket and both rod anchors are
   tested clean.
+
+## Amendments (2026-11-04): the rail presses into a sunk groove, clips hold it down
+
+- With fit-test groove 1 (0.10 mm over the base) the rail "flops about"; the user wanted it to really click in.
+  Seven coupons later, these held:
+  1. A one-layer gauge-side catch, 0.2 / 0.3 / 0.4 mm over the base: only 0.4 held.
+  2. Lip and catch alike, 0.35 / 0.40 / 0.45 mm, two layers with a sloped lead-in: 0.45 held.
+  3. 0.5–0.6 mm on 45° undersides, 1 mm tall: every hook snapped off as the rail went in.
+  4. 0.45 mm hooks whose undersides rise 0.2–0.4 mm to the tip: 0.2 and 0.3 best, but the tie plates are flimsy.
+  5. No ties: channels in a solid gray bar, 0.0 / −0.05 / −0.10 mm against the 2.286 mm base: all way loose.
+  6. Channels −0.20 / −0.35 / −0.50 mm: **−0.35 held the base well side to side**.
+  7. That channel sunk in brown, small gray clips on top both sides reaching 0.15 / 0.25 / 0.35 mm over the base:
+     **0.15 held**, and the user's wheels cleared the clips "with tons of room to spare".
+- **The deck now:** tie plates and shoulders are gone. Each rail's base presses into a groove `fit_rail` = −0.35 mm
+  narrower than nominal (1.936 mm), `rail_sink` = 0.6 mm deep, cut the length of the runners and through every tie
+  (straight ladders and corner decks alike, on through the corner end stubs). On every tie (`clip_every` 1) a gray
+  clip on each side of each rail reaches `clip_reach` 0.15 mm over the base. Its underside rises 0.2 mm from the
+  groove wall to a one-layer tip, and its top slopes up to 0.6 mm at the wall as a lead-in. The user asked for them
+  on every tie at half a tie's width (`clip_len` 1.3 mm, centred) "so they look like nails": coupon 7's were a tie
+  long, every 4th tie, so this is twice the grip length, untested until the reprinted ladder_08 (`out/ladder_test`).
+  The ladders are brown with only the clips gray; still one color change. Ties over a panel tab's slot or in a
+  solder gap get no clips.
+- **The rail sits 1.0 mm lower.** The user chose not to thicken the ties ("we used code 100, its already tall"):
+  rail top 4.34 mm above the tie underside (was 5.34). The brackets' screws don't move, so the rail top is now
+  241.0 mm (9.49") below the ceiling, the handrails and trusses 1 mm lower with it. The panels' tabs stop at the
+  groove floor, under the rail.
+- **Deep flanges:** the gauge-side clips top out 1.34 mm under the rail top, inside the 1.6 mm deep-flange line
+  (`clip_flange_clear` 1.3 is now tested for them); everything else on the gauge side still clears 1.6 mm. Coupon 7
+  says the user's wheels clear them. If a deep-flanged car ever ticks, the gauge-side clips can drop to one layer.
+- The coupons are `rail-channel-test` (6) and `rail-lip-test` (7); 1–5's code is gone, their results recorded here.

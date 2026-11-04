@@ -1,14 +1,15 @@
 """Corner deck for one span, one flat printable part like the straight tie ladder: open ties on two
-runners under the rails, gauge-setting tie plates following the true track curve. It rests on the two
-aluminum rods, which sit in shallow part-circle grooves under the ties (alignment), and its tie ends slide
-into the side frames' U ledges (glued). Two colors, one change: brown ties/runners, gray tie plates on top."""
+runners under the rails, a groove sunk in them for each rail's base following the true track curve, gray clips over
+the base on every clip_every-th tie. It rests on the two aluminum rods, which sit in shallow part-circle grooves
+under the ties (alignment), and its tie ends slide into the side frames' U ledges (glued). Two colors, one change:
+brown ties/runners, gray clips on top."""
 import math
 
 from build123d import Axis, Circle, Compound, Part, Plane, Polygon, Pos, Rectangle, Rot, Sketch, extrude, revolve
 
 from hotrain.joints import jigsaw, poly, rect
 from hotrain.params import P, Params
-from hotrain.parts import bow_frame
+from hotrain.parts import bow_frame, tie_ladder
 from hotrain.span_geom import SpanGeom, end_fractions, frame_x_range, offset_at, span_geom, track_at, track_len
 
 
@@ -53,6 +54,12 @@ def _rail_runner(p: Params, g: SpanGeom, u: float) -> Part:
     return _along(p, g, u, lambda c: Pos(c, p.tie_h / 2) * Rectangle(p.runner_w, p.tie_h))
 
 
+def _rail_groove(p: Params, g: SpanGeom, u: float) -> Part:
+    """The rail base's groove along a rail, rail_sink deep from the tie tops (cut from the ties and runners)."""
+    return _along(p, g, u, lambda c: Pos(c, p.rail_base_z + (p.rail_sink + 1) / 2) * Rectangle(p.groove_w,
+                                                                                               p.rail_sink + 1))
+
+
 def _rod_groove(p: Params, g: SpanGeom, u: float) -> Part:
     """Rod-sized cylinder along the rod's true path: cut from the ties it leaves a shallow groove."""
     return _along(p, g, u, lambda c: Pos(c, p.rod_zc) * Circle((p.rod_d + p.fit_slide) / 2))
@@ -66,7 +73,7 @@ def tie_fracs(p: Params, g: SpanGeom) -> list[float]:
 
 def bodies(p: Params, curved: bool, end: bool = False) -> dict[str, Part]:
     """Deck in the span frame as two print colors: "wood" (ties + rod runners, one connected piece, all at or
-    below the tie tops) and "steel" (tie plates, shoulders, spike lips, all above): one color change.
+    below the tie tops) and "steel" (the rail clips, all above): one color change.
     end: a corner's first (or, turned round, last) straight span, where a run meets it: its runners reach back to
     the portal (the anchor) with the jigsaw sockets the run deck's tabs drop into."""
     if end and curved:
@@ -89,28 +96,20 @@ def bodies(p: Params, curved: bool, end: bool = False) -> dict[str, Part]:
         sockets = [jigsaw(p, 0, u, p.fit_snap) for u in p.rail_ys]
         wood += extrude(Sketch() + stubs, p.tie_h)
         wood -= extrude(Sketch() + sockets, p.tie_h)
+    for u in (p.rail_ctc / 2, -p.rail_ctc / 2):
+        wood -= _rail_groove(p, g, u)
+    if end:  # on through the stubs to the run's ladder
+        wood -= Pos(0, 0, p.rail_base_z) * extrude(
+            Sketch() + [rect(-1, g.d + 1, u - p.groove_w / 2, u + p.groove_w / 2) for u in p.rail_ys], p.rail_sink + 1)
     wood = Part(wood.solids())
-    # tie plates, shoulders, outer spike lips along the true rails
-    gw, sw = p.groove_w / 2, p.shoulder_w
-    plates, shoulders, lips = [], [], []
+    gw, clips = p.groove_w / 2, []
     for k, f in enumerate(tie_fracs(p, g)):
-        x, y, a = track_at(g, f)
-        for rail in (p.rail_ctc / 2, -p.rail_ctc / 2):
-            plates.append(_oriented_rect(x, y, a, p.tie_w, 2 * (gw + sw), rail))
-            for side in (1, -1):
-                shoulders.append(_oriented_rect(x, y, a, p.tie_w, sw, rail + side * (gw + sw / 2)))
-            if k % p.spike_lip_every == 0:
-                side = 1 if rail > 0 else -1  # outside of the rail only
-                lips.append(_oriented_rect(x, y, a, p.tie_w, sw + p.spike_lip_overhang,
-                                           rail + side * (gw + sw / 2 - p.spike_lip_overhang / 2)))
-    z = p.tie_h
-    steel = Pos(0, 0, z) * extrude(Sketch() + plates, p.tie_plate_h)
-    z += p.tie_plate_h
-    steel += Pos(0, 0, z) * extrude(Sketch() + shoulders, p.shoulder_h)
-    z += p.shoulder_h
-    if lips:
-        steel += Pos(0, 0, z) * extrude(Sketch() + lips, p.spike_lip_t)
-    steel = Part(steel.solids())
+        if k % p.clip_every == 0:
+            x, y, a = track_at(g, f)
+            at = Pos(x, y, p.tie_h) * Rot(0, 0, math.degrees(a)) * Pos(-p.clip_len / 2, 0, 0)
+            clips += [at * tie_ladder._clip(p, rail + s * gw, s) for rail in (p.rail_ctc / 2, -p.rail_ctc / 2)
+                      for s in (1, -1)]
+    steel = Part(Compound(children=clips).solids())
     return {"wood": wood, "steel": steel}
 
 

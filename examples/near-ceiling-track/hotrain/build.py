@@ -16,6 +16,8 @@
     uv run python -m hotrain.build makerworld   # out/makerworld: one sliced project per print profile, to upload
     uv run python -m hotrain.build latch-test   # out/latch_test: three latch hook lengths + two pier stubs
     uv run python -m hotrain.build cf-clip-test # out/cf_clip_test: three cross-frame slot fits to push onto a bay
+    uv run python -m hotrain.build rail-channel-test  # out/rail_channel_test: three channels to press a rail into
+    uv run python -m hotrain.build rail-lip-test  # out/rail_lip_test: groove 2 with three lip reaches
     uv run python -m hotrain.build ceiling-gauge # out/ceiling_gauge: the T that marks bracket screws from the ceiling
     uv run python -m hotrain.build sections --run-style deck_truss   # out/sections: the room a bay at a time
 Options: --out DIR (default out), --mesh (also STL), --preview (also SVG line drawings)
@@ -297,6 +299,24 @@ def cmd_latch_test(p: Params, out: Path) -> Path:
     return d
 
 
+def cmd_rail_channel_test(p: Params, out: Path) -> Path:
+    """The rail-channel coupon on its own plate, gray only: out/rail_channel_test/."""
+    from hotrain.plates import Plate
+    d = out / "rail_channel_test"
+    write_plates([Plate("rail_channel_test", 1, [("rail_channel_test", fit_test.rail_channel_coupon(p))])], d,
+                 d / "plates.csv", p=p)
+    return d
+
+
+def cmd_rail_lip_test(p: Params, out: Path) -> Path:
+    """The rail-lip coupon on its own plate, brown with gray clips: out/rail_lip_test/."""
+    from hotrain.plates import Plate
+    d = out / "rail_lip_test"
+    write_plates([Plate("rail_lip_test", 1, [("rail_lip_test", fit_test.rail_lip_coupon(p))])], d,
+                 d / "plates.csv", p=p)
+    return d
+
+
 def cmd_cf_clip_test(p: Params, out: Path) -> Path:
     """The cross-frame clip coupon on its own plate: out/cf_clip_test/."""
     from hotrain.plates import Plate
@@ -334,7 +354,7 @@ def params_from_args(a: argparse.Namespace) -> Params:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="hotrain.build", description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["all", "parts", "assembly", "fit-test", "plates", "corners", "room", "show", "glb", "web",
-                                        "check", "render", "wire-test", "makerworld", "latch-test", "cf-clip-test", "ceiling-gauge", "sections"])
+                                        "check", "render", "wire-test", "makerworld", "latch-test", "cf-clip-test", "rail-channel-test", "rail-lip-test", "ceiling-gauge", "sections"])
     ap.add_argument("target", nargs="?", default="room", help="for show: room | run | inside | bridge | fit-test")
     ap.add_argument("--out", default="out")
     ap.add_argument("--mesh", action="store_true")
@@ -376,6 +396,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if a.command == "ceiling-gauge":
         print(f"wrote {cmd_ceiling_gauge(p, out)}/ (the L gauge in three pieces; glue each dovetail)")
+        return 0
+    if a.command == "rail-lip-test":
+        print(f"wrote {cmd_rail_lip_test(p, out)}/ (brown bar, gray clips: press the rail base in under each pair of clips)")
+        return 0
+    if a.command == "rail-channel-test":
+        print(f"wrote {cmd_rail_channel_test(p, out)}/ (one gray plate: press the rail base into each channel)")
         return 0
     if a.command == "cf-clip-test":
         print(f"wrote {cmd_cf_clip_test(p, out)}/ (one plate: cf_clip_test)")

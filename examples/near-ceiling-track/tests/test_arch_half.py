@@ -15,7 +15,7 @@ def test_arch_half_extent():
     bb = arch_half.make(P, 16 * INCH).bounding_box()
     assert bb.min.X == pytest.approx(0, abs=1e-6)
     assert bb.max.X == pytest.approx(8 * INCH)
-    assert bb.max.Y == pytest.approx(P.pier_depth + P.tie_h)  # tabs poke up tie_h above the band
+    assert bb.max.Y == pytest.approx(P.pier_depth + P.rail_base_z)  # tabs poke up to the rail groove floor
     assert bb.max.Z == pytest.approx(P.panel_t)
 
 

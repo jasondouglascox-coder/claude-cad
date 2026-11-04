@@ -187,7 +187,7 @@ def ties(p: Params, bays: list[float], ends: tuple = RUN_ENDS) -> list[Tie]:
                 a, b = min(pairs, key=lambda ab: abs((ab[0] + ab[1]) / 2 + 0.5 - n / 2))
                 gap = set(range(a + 1, b))
         for k in range(n):
-            out.append(Tie(x0 + pb * (k + 0.5), is_post(k), k % p.spike_lip_every == 0, k in gap))
+            out.append(Tie(x0 + pb * (k + 0.5), is_post(k), k % p.clip_every == 0, k in gap))
     xl, pbl, nl = sum(bays), bay_pitch(p, bays[-1]), ties_per_bay(p, bays[-1])
     m = 0
     while xl + pbl * (m + 0.5) + p.tie_w / 2 <= x_hi:  # ties over the far end pier

@@ -1,4 +1,5 @@
-"""Open bridge-tie ladder: ties on two hidden runners, gauge-setting tie plates, spike lips, long ties.
+"""Open bridge-tie ladder: ties on two hidden runners, a groove sunk in them for each rail's base (it presses in),
+gray clips over the base both sides on every clip_every-th tie, like spikes (it snaps under them), long ties.
 At each bay's mid is a solder gap for feeders, which solder to the OUTSIDE of the rail (the gauge side must
 stay clear for deep vintage flanges): over the gap, each runner is notched from the rail groove's outer
 edge outward, and the gap ties keep only their center part between the rails. The runners' inner parts
@@ -7,21 +8,21 @@ set-back bar on top, flush with the tie tops) so the tie line still reads from t
 opening a feeder groove runs straight across under both rails, over a thin floor, so the room rail's feeder
 ducks under both rails to the wall side and the rest of the gap is free to bend the wire and solder.
 A tie over a panel tab's slot gets no tie plate (it would bridge the slot), so the slot is open to the sky."""
-from build123d import Align, Box, Compound, Cylinder, Location, Part, Pos, Rot, Sketch, extrude
+from build123d import Align, Box, Compound, Cylinder, Location, Part, Plane, Pos, Rot, Sketch, extrude
 
 from hotrain import layout as L
-from hotrain.joints import jigsaw, rect
+from hotrain.joints import jigsaw, poly, rect
 from hotrain.params import P, Params
 
 
 def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[float],
            female_start: bool, male_end: bool, rod_spans: list = (), male_start: bool = False) -> dict[str, Part]:
     """Ladder in the run frame (x along track, y across, z = 0 at tie underside) as two print colors:
-    "wood" (ties, runners, jigsaw tabs; one piece, up to the tie tops) and "steel" (tie plates,
-    shoulders, spike lips; all above): one color change."""
+    "wood" (ties, runners, jigsaw tabs, the rail grooves; one piece, up to the tie tops) and "steel" (the rail
+    clips, all above): one color change."""
     gaps = [t for t in ties if x_start < t.x < x_end and t.gap]
     ts = [t for t in ties if x_start < t.x < x_end and not t.gap]
-    hw, g, sw = p.tie_w / 2, p.groove_w / 2, p.shoulder_w
+    hw, g = p.tie_w / 2, p.groove_w / 2
     base = []
     for t in ts:
         base.append(rect(t.x - hw, t.x + hw, -p.tie_l / 2, p.long_tie_reach if t.long else p.tie_l / 2))
@@ -69,6 +70,9 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
         xn, yw = min(t.x for t in gaps) - pb / 2, max(p.rail_ys) + p.runner_w / 2 + 0.01
         wood -= Pos(xn, 0, p.solder_feed_floor) * Box(p.solder_feed_w, 2 * yw, p.tie_h,
                                                       align=(Align.CENTER, Align.CENTER, Align.MIN))
+    for y in p.rail_ys:  # the rail grooves, the length of the ladder
+        wood -= Pos(x_start - 1, y, p.rail_base_z) * Box(x_end - x_start + 2, p.groove_w, p.rail_sink + 1,
+                                                       align=(Align.MIN, Align.CENTER, Align.MIN))
     if bars:  # on top, flush with the tie tops: hidden from below, reads as a guard timber from above
         wood += Pos(0, 0, p.tie_h - p.solder_bar_h) * extrude(Sketch() + bars, p.solder_bar_h)
     for x0, x1 in rod_spans:  # a corner's rod tails reach under the run's end ties: same shallow grooves
@@ -77,25 +81,24 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
                 wood -= Pos(x0, y, p.rod_zc) * Rot(0, 90, 0) * Cylinder((p.rod_d + p.fit_slide) / 2, x1 - x0,
                                                                       align=(Align.CENTER, Align.CENTER, Align.MIN))
 
-    plates, shoulders, lips = [], [], []
+    clips = []
     slots = [x for x in tab_xs if x_start + tl < x < x_end - tl]
-    for t in (t for t in ts if all(abs(t.x - x) >= tl + hw for x in slots)):  # over a tab slot: no plate, open
+    for t in (t for t in ts if t.lip and all(abs(t.x - x) >= tl + hw for x in slots)):  # over a tab slot: open
         for y in p.rail_ys:
-            plates.append(rect(t.x - hw, t.x + hw, y - g - sw, y + g + sw))
-            shoulders += [rect(t.x - hw, t.x + hw, y - g - sw, y - g), rect(t.x - hw, t.x + hw, y + g, y + g + sw)]
-            if t.lip:  # outside of the rail only: the gauge side must stay clear for deep vintage flanges
-                o = p.spike_lip_overhang
-                lips.append(rect(t.x - hw, t.x + hw, y + g - o, y + g + sw) if y > 0
-                            else rect(t.x - hw, t.x + hw, y - g - sw, y - g + o))
-    z = p.tie_h
-    steel = Pos(0, 0, z) * extrude(Sketch() + plates, p.tie_plate_h)
-    z += p.tie_plate_h
-    steel += Pos(0, 0, z) * extrude(Sketch() + shoulders, p.shoulder_h)
-    z += p.shoulder_h
-    if lips:
-        steel += Pos(0, 0, z) * extrude(Sketch() + lips, p.spike_lip_t)
+            clips += [Pos(t.x - p.clip_len / 2, 0, p.tie_h) * _clip(p, y + s * g, s) for s in (1, -1)]
+    steel = Part(Compound(children=clips).solids())
     steel &= extrude(footprint, p.tie_h + 10)  # gray only over brown: nothing hangs over a socket or slot
     return {"wood": Part(wood.solids()), "steel": Part(steel.solids())}
+
+
+def _clip(p: Params, yw: float, s: int) -> Part:
+    """A rail clip on the tie top, clip_len long in x from x = 0: its foot clip_back wide outside the groove wall at yw
+    (s = +1: the groove is toward -y), reaching clip_reach over the groove, clip_h tall. Its underside rises
+    clip_rise from the wall to the tip, so each printed layer overhangs the one below by only part of the reach; the
+    tip is clip_tip thick and the top slopes from it up to full height at the wall, a lead-in the base pushes past."""
+    yt, yo, h = yw - s * p.clip_reach, yw + s * p.clip_back, p.clip_h
+    pts = [(yo, 0), (yw, 0), (yt, p.clip_rise), (yt, p.clip_rise + p.clip_tip), (yw, h), (yo, h)]
+    return extrude(Plane.YZ * poly(*pts), p.clip_len)
 
 
 def build(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[float],

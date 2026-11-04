@@ -38,9 +38,10 @@ Common to both:
 - **Wall brackets:** an L-flange with vertical slots for #8 screws (±¼" leveling) into studs or self-drilling
   drywall anchors. The brackets are **half-lapped** with the panels: the panels' pier notch goes up half the pier and
   the bracket slots come down the other half. A snap latch on each bracket clicks into a window in the pier.
-- **Tie ladders:** open ties, see-through from below, on two strips under the rails, with gauge-setting tie plates.
-  Spike lips sit on the outside of the rail only, so deep flanges clear. Jigsaw joints sit at the quarter points.
-  The ladders print in **two colors with one change**: brown up to the tie tops, gray tie plates above.
+- **Tie ladders:** open ties, see-through from below, on two strips under the rails. Each rail's base presses into
+  a tight groove sunk in the strips and ties; small gray clips each side of it on every tie, like spikes, snap over
+  the base. Jigsaw joints sit at the quarter points. The ladders print in **two colors with one change**: brown up
+  to the tie tops, the gray clips above.
 - **Solder gap:** at each bay's mid, the plain ties between two handrail posts are left out beside the rails. That
   gives an iron access to the **outside** of each rail.
   - A **feeder groove** runs straight across under both rails in the gap's first opening, next to the full tie. The
@@ -60,7 +61,7 @@ Common to both:
 - **Structure:** two ¼" aluminum rods bent to the curve. Floor beams cradle the rods; wall anchors and 6" deep
   brackets hold the floor beams and rod ends. The printed bending jig is a **gauge**: bend a little past it, since
   6061 springs back.
-- **Deck:** one flat printable ladder per span (brown ties, gray tie plates on top). It rests on the two rods,
+- **Deck:** one flat printable ladder per span (brown ties with the rail grooves, gray clips on top). It rests on the two rods,
   which sit in shallow grooves under the ties.
 - **Side frames:** Pratt **pony trusses** (`corner_style="pony"`; `"bowstring"` also builds).
   - Ledges on the inside of each truss's bottom form a U that hugs the deck's tie ends (glued).
@@ -81,9 +82,9 @@ Common to both:
   - Two-color parts (tie ladders, corner decks) are pooled onto their own plates.
   - Each two-color part is one object with a brown "wood" part and a gray "steel" part.
   - Every other plate is single-color.
-- **Gray only over brown:** a tie plate never hangs over a hole. A tie over a panel tab's slot gets no plate, so
-  the slot is open to the sky.
-- **Print the fit-test coupon first.** It has 3 variants each of the tie-plate groove, tab slot, keystone socket,
+- **Gray only over brown:** a clip never hangs over a hole. A tie over a panel tab's slot gets no clips, so the
+  slot is open to the sky.
+- **Print the fit-test coupon first.** It has 3 variants each of the rail groove, tab slot, keystone socket,
   latch and rod-groove seat. Pick the one that fits, then retune `fit_slide`, `fit_snap` and `rail_base_w` in
   `hotrain/params.py`.
 

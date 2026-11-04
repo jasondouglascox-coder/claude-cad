@@ -1,4 +1,5 @@
 """Every dimension in the project. Units: millimetres. Parts read these; nothing else hard-codes a size."""
+import math
 from dataclasses import dataclass, field
 
 from cadkit import Printer
@@ -31,12 +32,17 @@ class Params:
     tie_w: float = 2.6
     tie_h: float = 2.4  # layer multiple (0.2): the brown/gray seam and every top land on a layer boundary
     tie_pitch: float = 5.5  # nominal; each bay adjusts slightly to fit a whole number of ties
-    tie_plate_h: float = 0.4
-    shoulder_h: float = 0.6
-    shoulder_w: float = 0.8
-    spike_lip_every: int = 4
-    spike_lip_overhang: float = 0.3
-    spike_lip_t: float = 0.4
+    # the rail: its base pressed into a groove in the brown (runners and ties), gray clips over it on the lip ties
+    # (2026-11-04, after seven coupons: tie plates and shoulders let the rail flop; the docs/specs amendment)
+    rail_sink: float = 0.6  # groove depth: the base sits this far down in the wood (coupon 6)
+    clip_every: int = 1  # ties apart: a pair of clips on every tie, so they read as spikes (coupon 7 had every 4th)
+    clip_reach: float = 0.15  # each clip over the base, both sides of the rail: coupon 7, notch 1
+    clip_rise: float = 0.2  # a clip's underside rises this much from the groove wall to its tip (no flat overhang)
+    clip_tip: float = 0.2  # tip thickness; above it the top slopes up to full height at the wall, a lead-in
+    clip_back: float = 0.8  # each clip's foot on the wood beyond the groove wall
+    clip_len: float = 1.3  # along the track, centred on its tie: half a tie, a spike head (coupon 7's were a tie long)
+    clip_flange_clear: float = 1.3  # the gauge-side clips stay this far under the rail top (coupon 7: the user's
+    # wheels cleared them with room to spare); everything else on the gauge side clears flange_depth_max
     long_tie_every: int = 4  # handrail post spacing in ties; bays hold a multiple of this
     solder_feed_w: float = 1.6  # feeder groove straight across under both rails, in the gap's first opening
     solder_feed_floor: float = 0.8  # floor under the feeder groove: keeps both runners, and so the ladder, in one piece
@@ -249,6 +255,7 @@ class Params:
 
     # fits
     fit_slide: float = 0.20
+    fit_rail: float = -0.35  # rail base pressed into its groove: coupon 6, groove 2 (0.10 flopped, 0.0 to -0.10 loose)
     fit_snap: float = 0.05
     fit_key: float = 0.0  # keystone in its socket: fit-test variant 1 (2026-10-26; 0.05 and 0.10 were loose)
     fit_tab: float = 0.10  # truss tab into the tie ladder's slot: fit-test variant 1 (0.10 and 0.20 both fit)
@@ -280,13 +287,23 @@ class Params:
         return (-self.rail_ctc / 2, self.rail_ctc / 2)
 
     @property
+    def rail_base_z(self) -> float:
+        """Rail base underside (the groove floor) above the tie underside (Z=0)."""
+        return self.tie_h - self.rail_sink
+
+    @property
     def rail_top(self) -> float:
         """Rail top above the tie underside (Z=0)."""
-        return self.tie_h + self.tie_plate_h + self.rail_height
+        return self.rail_base_z + self.rail_height
+
+    @property
+    def clip_h(self) -> float:
+        """A clip's height above the tie tops: the rise and two tips' worth, in whole layers."""
+        return self.printer.layer * math.ceil((self.clip_rise + 2 * self.clip_tip) / self.printer.layer - 1e-6)
 
     @property
     def groove_w(self) -> float:
-        return self.rail_base_w + self.fit_slide
+        return self.rail_base_w + self.fit_rail
 
     @property
     def curve_r(self) -> float:

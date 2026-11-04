@@ -156,7 +156,7 @@ yet: their room face prints against the bed.
 4. **Tie ladders** on top: tabs into the top chord, jigsaw joints between pieces. A single free-standing bay can
    have its ladders and handrail fitted on the bench before hanging.
 5. **Handrail:** pegs into the long-tie sockets, a drop of glue each.
-6. **Rail:** press it into the tie plates (the outer lips catch the rail base).
+6. **Rail:** press it down into the grooves; it snaps under the gray clips (the spikes).
 7. **Feeders:** solder at the mid-bay gaps, to the **outside** of the rail.
    - Wall rail: the feeder drops behind the wall-side panel.
    - Room rail: thread the feeder through the groove under both rails (the gap's first opening), solder it along

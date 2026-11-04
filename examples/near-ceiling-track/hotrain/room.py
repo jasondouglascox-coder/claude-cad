@@ -133,7 +133,7 @@ def track_ends(p: Params, s: Section) -> tuple:
 
 def _rail_face(p: Params) -> Polygon:
     """Code 100 rail cross-section (u across, z up from the tie underside), centered on u = 0."""
-    z0 = p.tie_h + p.tie_plate_h
+    z0 = p.rail_base_z
     hb, wb, hh = p.rail_base_w / 2, 0.25, p.rail_head_w / 2
     zb, zh = z0 + p.rail_base_edge, z0 + p.rail_height - p.rail_head_depth
     pts = [(-hb, z0), (hb, z0), (hb, zb), (wb, zb), (wb, zh), (hh, zh), (hh, z0 + p.rail_height),

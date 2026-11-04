@@ -5,13 +5,25 @@ from dataclasses import replace
 
 from build123d import Align, Box, Circle, Compound, Cylinder, Part, Plane, Pos, Rectangle, Rot, Sketch, extrude
 
-from hotrain.joints import butterfly, rect
+from hotrain.joints import butterfly, poly, rect
 from hotrain.parts import keystone
 from hotrain.layout import Tie
 from hotrain.params import P, Params
 from hotrain.parts import bracket, cross_frame, tie_ladder
 
 GROOVE_FITS = (0.10, 0.20, 0.30)
+# rail coupons, 2026-11-03/04 (each in docs/specs/2026-10-13-deck-truss-design.md): 1, a one-layer gauge catch 0.2-0.4
+# over the base (only 0.4 held); 2, lip and catch alike, 0.35-0.45, two layers with a sloped lead-in (0.45 held);
+# 3, 0.5-0.6 on 45-degree undersides, 1 mm tall (all snapped off); 4, 0.45 with undersides rising 0.2-0.4 (0.2 and
+# 0.3 best, but the tie plates flimsy); 5, channels in a solid bar 0.0 to -0.10 (all way loose)
+CHANNEL_FITS = (-0.20, -0.35, -0.50)  # coupon 6: a solid bar, a channel per fit pressing the rail base in (1-3 notches)
+# coupon 6: groove 2 (-0.35) held the base well side to side, but nothing stops it lifting
+CHANNEL_LIPS = (0.15, 0.25, 0.35)  # coupon 7: groove 2 sunk in brown, gray clips both sides reaching this far over
+# the base (notch 1 held, the wheels clearing it with room to spare)
+CLIP_SPAN = 22.0  # coupon 7's clips apart, every 4th tie as the decks then had them
+CHANNEL_LEN, CHANNEL_PITCH, CHANNEL_FLOOR = 40.0, 8.0, 2.0  # bar length, channels apart, solid under the channels
+CHANNEL_DEPTH = 0.6  # the channels (coupons 6 and 7), as deep as the shoulders then were
+CHANNEL_LEAD = 0.2  # each side: the channel's top 0.1 flares out this much, above the base edge, as a lead-in
 SLOT_FITS = (0.10, 0.20, 0.30)
 KEY_FITS = (0.0, 0.05, 0.10)
 ROD_SEAT_FITS = (0.1, 0.2, 0.3)  # clearance of the corner deck's rod grooves on the 1/4" rods: tighter -> looser
@@ -29,11 +41,47 @@ def marks(n: int, x: float, y: float) -> list[Sketch]:
 
 
 def groove_sample(p: Params, fit: float, n: int) -> Part:
-    q = replace(p, fit_slide=fit)
+    q = replace(p, fit_rail=fit)
     ties = [Tie(2.75 + 5.5 * k, False, k == 1) for k in range(3)]
     lad = Pos(0, q.tie_l / 2, 0) * tie_ladder.build(q, ties, 0, 16.5, [], False, False)
     notches = [rect(t.x - 0.5, t.x + 0.5, -0.01, 1.0) for t in ties[:n]]  # wall-side tie ends
     return lad - extrude(Sketch() + notches, q.tie_h)
+
+
+def rail_channel_coupon(p: Params = P, fits: tuple = CHANNEL_FITS, lead: float = CHANNEL_LEAD,
+                        label: str = "rail_channel_test") -> Part:
+    """Coupon 6: no ties, one gray bar with a channel per fit (rail_base_w + fit wide, CHANNEL_DEPTH deep,
+    flaring `lead` at the top), 1-3 notches in the x = 0 end beside each. Press the rail base straight down into it."""
+    from hotrain.room import IRON
+    top, a = CHANNEL_FLOOR + CHANNEL_DEPTH, lead
+    bar = Box(CHANNEL_LEN, CHANNEL_PITCH * len(fits) + 4, top, align=(Align.MIN,) * 3)
+    cuts, notches = Sketch(), []
+    for k, fit in enumerate(fits):
+        y, hw = 7 + CHANNEL_PITCH * k, (p.rail_base_w + fit) / 2
+        cuts += poly((y - hw, CHANNEL_FLOOR), (y + hw, CHANNEL_FLOOR), (y + hw, top - 0.1), (y + hw + a, top),
+                     (y + hw + a, top + 1), (y - hw - a, top + 1), (y - hw - a, top), (y - hw, top - 0.1))
+        notches += [rect(-1, 1, y - hw - 1.8 - 1.6 * i, y - hw - 1.0 - 1.6 * i) for i in range(k + 1)]
+    bar -= Pos(-1, 0, 0) * extrude(Plane.YZ * cuts, CHANNEL_LEN + 2)
+    bar = Part((bar - extrude(Sketch() + notches, top)).solids())
+    bar.label, bar.color = label, IRON
+    return bar
+
+
+def rail_lip_coupon(p: Params = P) -> Compound:
+    """Coupon 7: groove 2 of coupon 6 three times, no flare, sunk in a brown bar (the rail down in the wood), and on
+    top short gray clips both sides, a lip-tie spacing apart, reaching CHANNEL_LIPS past the wall (1-3 notches)."""
+    from hotrain.room import IRON, TIE_BROWN
+    fit, top = CHANNEL_FITS[1], CHANNEL_FLOOR + CHANNEL_DEPTH
+    wood = rail_channel_coupon(p, (fit,) * len(CHANNEL_LIPS), 0.0, "rail_lip_wood")
+    wood.color = TIE_BROWN
+    span, hw = CLIP_SPAN, (p.rail_base_w + fit) / 2
+    clip = lambda over, k, s: tie_ladder._clip(replace(p, clip_reach=over, clip_len=p.tie_w),
+                                               7 + CHANNEL_PITCH * k + s * hw, s)  # a tie long, as printed
+    clips = [Pos(xc - p.tie_w / 2, 0, top) * clip(over, k, s) for k, over in enumerate(CHANNEL_LIPS)
+             for xc in (CHANNEL_LEN / 2 - span / 2, CHANNEL_LEN / 2 + span / 2) for s in (1, -1)]
+    steel = Part(Compound(children=clips).solids())
+    steel.label, steel.color = "rail_lip_clips", IRON
+    return Compound(children=[wood, steel], label="rail_lip_test")
 
 
 def slot_plate(p: Params) -> Part:

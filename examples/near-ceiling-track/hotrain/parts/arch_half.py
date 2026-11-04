@@ -26,7 +26,7 @@ def _bar(a: tuple[float, float], b: tuple[float, float], w: float) -> Sketch:
 
 def _shared(p: Params, bay_len: float) -> tuple[list, list]:
     """Tabs into the tie ladder, cross-frame notches, bracket tongue and latch window: every style."""
-    adds = [rect(u - p.tab_len / 2, u + p.tab_len / 2, -1, p.tie_h) for u in L.tab_us(p, bay_len)]
+    adds = [rect(u - p.tab_len / 2, u + p.tab_len / 2, -1, p.rail_base_z) for u in L.tab_us(p, bay_len)]  # under the rail
     cuts = []
     nw = (p.cf_t + p.fit_slide) / 2
     for u in L.frame_us(p, bay_len):  # cross-frame locating notch under the rib / bottom chord (half of it at mid-bay)
