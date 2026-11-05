@@ -35,12 +35,15 @@ class Params:
     # the rail: its base pressed into a groove in the brown (runners and ties), gray clips over it on the lip ties
     # (2026-11-04, after seven coupons: tie plates and shoulders let the rail flop; the docs/specs amendment)
     rail_sink: float = 0.6  # groove depth: the base sits this far down in the wood (coupon 6)
-    clip_every: int = 1  # ties apart: a pair of clips on every tie, so they read as spikes (coupon 7 had every 4th)
+    clip_every: int = 4  # ties apart (~22 mm), like coupon 7: on every tie the rail wouldn't press in (2026-11-05)
     clip_reach: float = 0.15  # each clip over the base, both sides of the rail: coupon 7, notch 1
     clip_rise: float = 0.2  # a clip's underside rises this much from the groove wall to its tip (no flat overhang)
     clip_tip: float = 0.2  # tip thickness; above it the top slopes up to full height at the wall, a lead-in
     clip_back: float = 0.8  # each clip's foot on the wood beyond the groove wall
-    clip_len: float = 1.3  # along the track, centred on its tie: half a tie, a spike head (coupon 7's were a tie long)
+    clip_len: float = 2.6  # along the track, centred on its tie: a tie long, like coupon 7's
+    spike_len: float = 1.3  # the ties between get spike heads: half a tie long, clip_h tall, holding nothing
+    spike_w: float = 0.8
+    spike_clear: float = 0.1  # off the base's edge, so the rail presses in past them
     clip_flange_clear: float = 1.3  # the gauge-side clips stay this far under the rail top (coupon 7: the user's
     # wheels cleared them with room to spare); everything else on the gauge side clears flange_depth_max
     long_tie_every: int = 4  # handrail post spacing in ties; bays hold a multiple of this

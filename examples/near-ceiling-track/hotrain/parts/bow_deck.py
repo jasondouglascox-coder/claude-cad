@@ -1,6 +1,6 @@
 """Corner deck for one span, one flat printable part like the straight tie ladder: open ties on two
 runners under the rails, a groove sunk in them for each rail's base following the true track curve, gray clips over
-the base on every clip_every-th tie. It rests on the two aluminum rods, which sit in shallow part-circle grooves
+the base on every clip_every-th tie, spike heads clear of it on the rest. It rests on the two aluminum rods, which sit in shallow part-circle grooves
 under the ties (alignment), and its tie ends slide into the side frames' U ledges (glued). Two colors, one change:
 brown ties/runners, gray clips on top."""
 import math
@@ -104,11 +104,14 @@ def bodies(p: Params, curved: bool, end: bool = False) -> dict[str, Part]:
     wood = Part(wood.solids())
     gw, clips = p.groove_w / 2, []
     for k, f in enumerate(tie_fracs(p, g)):
-        if k % p.clip_every == 0:
-            x, y, a = track_at(g, f)
-            at = Pos(x, y, p.tie_h) * Rot(0, 0, math.degrees(a)) * Pos(-p.clip_len / 2, 0, 0)
-            clips += [at * tie_ladder._clip(p, rail + s * gw, s) for rail in (p.rail_ctc / 2, -p.rail_ctc / 2)
-                      for s in (1, -1)]
+        x, y, a = track_at(g, f)
+        at = Pos(x, y, p.tie_h) * Rot(0, 0, math.degrees(a))
+        for rail in (p.rail_ctc / 2, -p.rail_ctc / 2):
+            for s in (1, -1):
+                if k % p.clip_every == 0:
+                    clips.append(at * Pos(-p.clip_len / 2, 0, 0) * tie_ladder._clip(p, rail + s * gw, s))
+                else:
+                    clips.append(at * Pos(-p.spike_len / 2, 0, 0) * tie_ladder._spike(p, rail, s))
     steel = Part(Compound(children=clips).solids())
     return {"wood": wood, "steel": steel}
 

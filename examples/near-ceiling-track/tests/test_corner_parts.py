@@ -67,7 +67,7 @@ def test_curve_deck_clips(curved):
     g = span_geom(P, curved)
     deck = bow_deck.build(P, curved)
     fr = bow_deck.tie_fracs(P, g)
-    x, y, a = track_at(g, fr[len(fr) // 2])  # every clip_every-th tie from the first
+    x, y, a = track_at(g, fr[(len(fr) // 2) // P.clip_every * P.clip_every])  # every clip_every-th tie from the first
     probe = Pos(x, y, P.tie_h + P.clip_rise + 0.05) * Rot(0, 0, math.degrees(a)) * Box(
         0.2, 40, 0.02, align=(Align.CENTER, Align.CENTER, Align.MIN))
     n = (-math.sin(a), math.cos(a))
@@ -76,6 +76,23 @@ def test_curve_deck_clips(curved):
     assert len(spans) == 4
     assert [spans[1][0] - spans[0][1], spans[3][0] - spans[2][1]] == pytest.approx(
         [P.groove_w - 2 * P.clip_reach] * 2, abs=0.02)
+
+
+@pytest.mark.parametrize("curved", [False, True])
+def test_curve_deck_spike_heads(curved):
+    """On the ties between: a spike head each side of each rail, standing spike_clear off the base's edges."""
+    g = span_geom(P, curved)
+    deck = bow_deck.build(P, curved)
+    fr = bow_deck.tie_fracs(P, g)
+    x, y, a = track_at(g, fr[(len(fr) // 2) // P.clip_every * P.clip_every + 1])
+    probe = Pos(x, y, P.tie_h + P.clip_h / 2) * Rot(0, 0, math.degrees(a)) * Box(
+        0.2, 40, 0.02, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    n = (-math.sin(a), math.cos(a))
+    across = lambda v: (v.X - x) * n[0] + (v.Y - y) * n[1]
+    spans = sorted((min(map(across, s.vertices())), max(map(across, s.vertices()))) for s in (deck & probe).solids())
+    assert len(spans) == 4
+    assert [spans[1][0] - spans[0][1], spans[3][0] - spans[2][1]] == pytest.approx(
+        [P.rail_base_w + 2 * P.spike_clear] * 2, abs=0.02)
 
 
 @pytest.mark.slow

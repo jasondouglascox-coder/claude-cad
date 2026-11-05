@@ -355,3 +355,13 @@ plates and packing, and the bus cradle.
   (`clip_flange_clear` 1.3 is now tested for them); everything else on the gauge side still clears 1.6 mm. Coupon 7
   says the user's wheels clear them. If a deep-flanged car ever ticks, the gauge-side clips can drop to one layer.
 - The coupons are `rail-channel-test` (6) and `rail-lip-test` (7); 1–5's code is gone, their results recorded here.
+
+### Amendment (2026-11-05): holding clips back to coupon 7's spacing, spike heads between; the groove runs out through the jigsaw tabs
+- **The reprinted ladder_08:** with a clip on every tie the rail "slid in from the ends and it's great" but wouldn't
+  press in from the top. Coupon 7 (two tie-long clips a side, 22 mm apart) pressed in, so the holding clips go back
+  to that: `clip_every` 4 (~22 mm), `clip_len` 2.6 mm (a tie). The ties between keep the nail look with gray spike
+  heads (`spike_len` 1.3 × `spike_w` 0.8 mm, `clip_h` tall) standing `spike_clear` 0.1 mm off the base's edges,
+  so they never touch the rail. Straight ladders and corner decks alike. Untested until the next reprint.
+- **A nub on the jigsaw tab:** the groove was cut 1 mm past each ladder's end, but the jigsaw tab reaches
+  `jig_len` 2 mm out, so its tip kept full tie height in the rail's path and the sliding rail caught on it. The
+  groove now runs `jig_len` + 1 past both ends, on out through the tabs.

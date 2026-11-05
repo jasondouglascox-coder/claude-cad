@@ -1,5 +1,6 @@
 """Open bridge-tie ladder: ties on two hidden runners, a groove sunk in them for each rail's base (it presses in),
-gray clips over the base both sides on every clip_every-th tie, like spikes (it snaps under them), long ties.
+gray clips over the base both sides on every clip_every-th tie (it snaps under them), gray spike heads clear of it on
+the ties between, long ties.
 At each bay's mid is a solder gap for feeders, which solder to the OUTSIDE of the rail (the gauge side must
 stay clear for deep vintage flanges): over the gap, each runner is notched from the rail groove's outer
 edge outward, and the gap ties keep only their center part between the rails. The runners' inner parts
@@ -7,7 +8,7 @@ stay continuous and carry the rail. On the room side the gap ties keep a short e
 set-back bar on top, flush with the tie tops) so the tie line still reads from the room. In the gap's first
 opening a feeder groove runs straight across under both rails, over a thin floor, so the room rail's feeder
 ducks under both rails to the wall side and the rest of the gap is free to bend the wire and solder.
-A tie over a panel tab's slot gets no tie plate (it would bridge the slot), so the slot is open to the sky."""
+A tie over a panel tab's slot gets no clip or spike (it would bridge the slot), so the slot is open to the sky."""
 from build123d import Align, Box, Compound, Cylinder, Location, Part, Plane, Pos, Rot, Sketch, extrude
 
 from hotrain import layout as L
@@ -70,9 +71,10 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
         xn, yw = min(t.x for t in gaps) - pb / 2, max(p.rail_ys) + p.runner_w / 2 + 0.01
         wood -= Pos(xn, 0, p.solder_feed_floor) * Box(p.solder_feed_w, 2 * yw, p.tie_h,
                                                       align=(Align.CENTER, Align.CENTER, Align.MIN))
+    run_out = p.jig_len + 1  # on out through the jigsaw tabs, so no nub of them stands in the rail's path
     for y in p.rail_ys:  # the rail grooves, the length of the ladder
-        wood -= Pos(x_start - 1, y, p.rail_base_z) * Box(x_end - x_start + 2, p.groove_w, p.rail_sink + 1,
-                                                       align=(Align.MIN, Align.CENTER, Align.MIN))
+        wood -= Pos(x_start - run_out, y, p.rail_base_z) * Box(x_end - x_start + 2 * run_out, p.groove_w,
+                                                             p.rail_sink + 1, align=(Align.MIN, Align.CENTER, Align.MIN))
     if bars:  # on top, flush with the tie tops: hidden from below, reads as a guard timber from above
         wood += Pos(0, 0, p.tie_h - p.solder_bar_h) * extrude(Sketch() + bars, p.solder_bar_h)
     for x0, x1 in rod_spans:  # a corner's rod tails reach under the run's end ties: same shallow grooves
@@ -83,9 +85,12 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
 
     clips = []
     slots = [x for x in tab_xs if x_start + tl < x < x_end - tl]
-    for t in (t for t in ts if t.lip and all(abs(t.x - x) >= tl + hw for x in slots)):  # over a tab slot: open
+    for t in (t for t in ts if all(abs(t.x - x) >= tl + hw for x in slots)):  # over a tab slot: open
         for y in p.rail_ys:
-            clips += [Pos(t.x - p.clip_len / 2, 0, p.tie_h) * _clip(p, y + s * g, s) for s in (1, -1)]
+            if t.lip:
+                clips += [Pos(t.x - p.clip_len / 2, 0, p.tie_h) * _clip(p, y + s * g, s) for s in (1, -1)]
+            else:
+                clips += [Pos(t.x - p.spike_len / 2, 0, p.tie_h) * _spike(p, y, s) for s in (1, -1)]
     steel = Part(Compound(children=clips).solids())
     steel &= extrude(footprint, p.tie_h + 10)  # gray only over brown: nothing hangs over a socket or slot
     return {"wood": Part(wood.solids()), "steel": Part(steel.solids())}
@@ -99,6 +104,14 @@ def _clip(p: Params, yw: float, s: int) -> Part:
     yt, yo, h = yw - s * p.clip_reach, yw + s * p.clip_back, p.clip_h
     pts = [(yo, 0), (yw, 0), (yt, p.clip_rise), (yt, p.clip_rise + p.clip_tip), (yw, h), (yo, h)]
     return extrude(Plane.YZ * poly(*pts), p.clip_len)
+
+
+def _spike(p: Params, y: float, s: int) -> Part:
+    """A spike head on the tie top beside the rail at y (s = +1: on its +y side), spike_len long in x from x = 0, clip_h
+    tall, standing spike_clear off the base's edge: it looks like a nail and never touches the rail."""
+    yi = y + s * (p.rail_base_w / 2 + p.spike_clear)
+    yo = yi + s * p.spike_w
+    return extrude(Plane.YZ * rect(min(yi, yo), max(yi, yo), 0, p.clip_h), p.spike_len)
 
 
 def build(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[float],

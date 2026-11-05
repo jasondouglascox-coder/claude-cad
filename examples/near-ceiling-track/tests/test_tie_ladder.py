@@ -49,15 +49,16 @@ def test_rail_presses_in_and_clips_hold_it():
 
 
 def test_clips_hold_the_base_from_both_sides():
-    """2026-11-04: a clip each side of each rail on every tie, half a tie long (clip_len), centred on it, so they
-    read as spikes. Just above the tips, the base's way in between them is groove_w - 2 clip_reach wide."""
+    """2026-11-05: the rail wouldn't press in past a clip on every tie (it slid in from the ends). Holding clips go back
+    to coupon 7's: every clip_every-th tie, a tie long (clip_len), centred on it. Just above the tips, the base's way
+    in between them is groove_w - 2 clip_reach wide."""
     bays = [16 * INCH]
     seg = L.segments(P, bays)[1]
     lad = tie_ladder.make(P, bays, seg)
-    ties = [t for t in L.ties(P, bays) if seg.x_start < t.x < seg.x_end and not t.long and not t.gap]
-    assert P.clip_every == 1 and all(t.lip for t in ties)
+    ties = [t for t in L.ties(P, bays) if seg.x_start < t.x < seg.x_end and not t.gap]
+    assert P.clip_every == 4 and P.clip_len == P.tie_w
     z = P.tie_h + P.clip_rise + 0.05
-    t = ties[len(ties) // 2]
+    t = [t for t in ties if t.lip][1]
     probe = Pos(t.x - seg.x_start - 0.1, 0, z) * Box(0.2, P.tie_l, 0.05, align=(Align.MIN, Align.MIN, Align.MIN))
     pieces = sorted((s.bounding_box() for s in (lad & probe).solids()), key=lambda b: b.min.Y)
     assert len(pieces) == 4
@@ -71,13 +72,51 @@ def test_clips_hold_the_base_from_both_sides():
         assert bb.center().X == pytest.approx(t.x - seg.x_start, abs=0.01)
 
 
+def test_spike_heads_on_the_other_ties_stand_clear_of_the_base():
+    """2026-11-05: the ties between the holding clips get a gray spike head each side of each rail, spike_len long,
+    centred, clip_h tall, spike_w wide, set spike_clear back from the base's edge: they read as nails but never touch
+    the rail, so it presses in past them."""
+    bays = [16 * INCH]
+    seg = L.segments(P, bays)[1]
+    lad = tie_ladder.make(P, bays, seg)
+    ties = [t for t in L.ties(P, bays) if seg.x_start < t.x < seg.x_end and not t.long and not t.gap and not t.lip]
+    t = ties[len(ties) // 2]
+    x = t.x - seg.x_start
+    probe = Pos(x - P.tie_w, 0, P.tie_h + 0.01) * Box(2 * P.tie_w, P.tie_l, P.clip_h + 1,
+                                                       align=(Align.MIN, Align.MIN, Align.MIN))
+    heads = sorted((s.bounding_box() for s in (lad & probe).solids()), key=lambda b: b.min.Y)
+    assert len(heads) == 4
+    for bb in heads:
+        assert bb.size.X == pytest.approx(P.spike_len, abs=0.01)
+        assert bb.center().X == pytest.approx(x, abs=0.01)
+        assert bb.size.Y == pytest.approx(P.spike_w, abs=0.01)
+        assert bb.max.Z == pytest.approx(P.tie_h + P.clip_h, abs=0.01)
+    for y in P.rail_ys:
+        clear = Pos(x - P.tie_w, y + P.tie_l / 2, P.tie_h + 0.01) * Box(
+            2 * P.tie_w, P.rail_base_w + 2 * P.spike_clear - 0.02, P.clip_h + 1, align=(Align.MIN, Align.CENTER, Align.MIN))
+        assert (lad & clear).volume < 1e-9
+
+
+def test_groove_runs_out_through_the_jigsaw_tabs():
+    """2026-11-05: the groove stopped 1 mm past the ladder's end, so the jigsaw tab's tip kept a nub of full tie
+    height in the rail's path. It now runs out through the tabs: no wood over the groove floor anywhere on them."""
+    bays = [16 * INCH, 14 * INCH]
+    for seg in [s for s in L.segments(P, bays) if s.male_end]:
+        lad = tie_ladder.make(P, bays, seg)
+        x0 = seg.x_end - seg.x_start
+        for y in P.rail_ys:
+            path = Pos(x0 - 0.5, y + P.tie_l / 2, P.rail_base_z + 0.01) * Box(
+                P.jig_len + 1, P.groove_w - 0.02, P.rail_sink + 1, align=(Align.MIN, Align.CENTER, Align.MIN))
+            assert (lad & path).volume < 1e-9
+
+
 def test_flangeway_clear_for_deep_vintage_flanges():
     """Nothing inside the gauge, next to the rail head, rises within flange_depth_max of the rail top, but the
     gauge-side clips: those stay clip_flange_clear below it (the user's wheels cleared coupon 7 with room to spare)."""
     bays = [16 * INCH]
     seg = L.segments(P, bays)[1]
     lad = tie_ladder.make(P, bays, seg)
-    lips = [t.x - seg.x_start for t in L.ties(P, bays) if seg.x_start < t.x < seg.x_end and t.lip]
+    lips = [t.x - seg.x_start for t in L.ties(P, bays) if seg.x_start < t.x < seg.x_end and not t.gap]
     assert P.rail_top - (P.tie_h + P.clip_h) >= P.clip_flange_clear
     for z0, clips in ((P.rail_top - P.flange_depth_max, False), (P.rail_top - P.clip_flange_clear, True)):
         for yc in P.rail_ys:
@@ -88,14 +127,14 @@ def test_flangeway_clear_for_deep_vintage_flanges():
             hit = lad & probe
             if clips:
                 assert hit.volume < 1e-9
-            else:  # only the clips, on the lip ties
+            else:  # only the clips and spike heads, on the ties
                 assert all(any(abs(s.center().X - x) < P.clip_len for x in lips) for s in hit.solids())
 
 
 @pytest.mark.parametrize("b", [16 * INCH, 76 * 5.5, P.max_bay_len])
 def test_clips_rest_on_wood_and_tab_slots_open_to_the_sky(b):
-    """The gray prints on the brown with no supports: every clip sits on wood, only its rising underside leaning out
-    over the groove. A tie over a panel tab's slot gets no clips, so the slot runs up through everything."""
+    """The gray prints on the brown with no supports: every clip and spike head sits on wood, only a clip's rising
+    underside leaning out over the groove. A tie over a panel tab's slot gets no clips, so the slot runs up through everything."""
     from cadkit.checks import unsupported
     bays = [b]
     mn = (Align.MIN, Align.MIN, Align.MIN)
@@ -106,7 +145,8 @@ def test_clips_rest_on_wood_and_tab_slots_open_to_the_sky(b):
         wood, steel = body["wood"], body["steel"]
         probe = 0.1
         sliver = P.clip_reach * probe ** 2 / (2 * P.clip_rise) * P.clip_len
-        assert unsupported(steel, wood, probe) == pytest.approx(len(steel.solids()) * sliver, rel=1e-3)
+        clips = [s for s in steel.solids() if s.bounding_box().size.X > (P.clip_len + P.spike_len) / 2]
+        assert unsupported(steel, wood, probe) == pytest.approx(len(clips) * sliver, rel=1e-3)
         for x in L.tab_xs(P, bays):
             if seg.x_start + P.tab_len < x < seg.x_end - P.tab_len:
                 for y in P.rail_ys:
