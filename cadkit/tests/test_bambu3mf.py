@@ -302,3 +302,30 @@ def test_a_round_part_near_the_tower_corner_does_not_warn(tmp_path):
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         _write(tmp_path, [("disc", Compound(children=[lo, hi], label="disc"))])
+
+
+def test_plate_settings_go_on_every_object_on_it(tmp_path, two_color):
+    """Plate.settings: slicer settings for that plate's parts only (Bambu: per-object overrides), e.g. slower walls
+    for thin parts, while the other plates of a combined project keep the project's."""
+    slow = {"outer_wall_speed": "40", "inner_wall_speed": "60"}
+    kit = [Plate("thin", 1, [("rail", box(0, 0, 0, 100, 3, 2)), ("post", box(0, 20, 0, 3, 30, 2))], settings=slow),
+           Plate("deck", 1, [("deck", two_color())])]
+    write_plates(kit, tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit")
+    for f, n in ((tmp_path / "thin.3mf", 2), (tmp_path / "kit.3mf", 2)):
+        cfg = zipfile.ZipFile(f).read("Metadata/model_settings.config").decode()
+        assert cfg.count('<metadata key="outer_wall_speed" value="40"/>') == n
+        assert cfg.count('<metadata key="inner_wall_speed" value="60"/>') == n
+    assert "outer_wall_speed" not in zipfile.ZipFile(tmp_path / "deck.3mf").read("Metadata/model_settings.config").decode()
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_prints_a_plate_at_its_own_speeds(tmp_path, two_color):
+    from cadkit import gcode
+    kit = [Plate("thin", 1, [("rail", box(0, 0, 0, 100, 3, 2))], settings={"outer_wall_speed": "40"}),
+           Plate("plain", 1, [("rail", box(0, 0, 0, 100, 3, 2))])]
+    write_plates(kit, tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit")
+    bambu.slice_all(tmp_path / "kit.3mf", tmp_path / "s.3mf")
+    thin, plain = (gcode.speeds(bambu.plate_gcode(tmp_path / "s.3mf", k), above=0.3)["Outer wall"] for k in (1, 2))
+    assert thin == pytest.approx(40, abs=0.5)
+    assert plain > 60  # the template (200), less what a small layer's minimum time takes off

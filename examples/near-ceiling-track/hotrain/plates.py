@@ -140,9 +140,9 @@ def _flatten(pl: list) -> list:
 
 def all_in_one(p: Params, bays: list[float], ends: tuple = L.RUN_ENDS, name: str = "kit") -> list[Plate]:
     """Every part of a short run packed together on as few plates as possible (no per-bay kits), e.g. a
-    single test bay."""
+    single test bay; the handrails on their own slow plate."""
     items = [it for _, _, kit in _kits(p, bays, ends) for it in kit]
-    return [Plate(f"{name}_{n + 1}", 1, _flatten(pl)) for n, pl in enumerate(pack(p, items))]
+    return _with_handrails_apart(p, name, items, fill_gaps=False)
 
 
 def corner_kit(p: Params, corner) -> list[tuple[str, Shape]]:
@@ -273,6 +273,31 @@ def sections(p: Params = P) -> list[Section]:
     return out
 
 
+HANDRAIL_SPEEDS = ("outer_wall_speed", "inner_wall_speed", "top_surface_speed", "internal_solid_infill_speed",
+                   "sparse_infill_speed", "gap_infill_speed")
+
+
+def handrail_settings(p: Params) -> dict:
+    """The handrail plates' slicer settings: every feature at handrail_speed (they failed among the other parts)."""
+    return {k: f"{p.handrail_speed:g}" for k in HANDRAIL_SPEEDS}
+
+
+def handrails_apart(items: list) -> tuple[list, list]:
+    """(everything else, the handrails)."""
+    rail = lambda it: it[0].startswith("handrail")
+    return [it for it in items if not rail(it)], [it for it in items if rail(it)]
+
+
+def _with_handrails_apart(p: Params, name: str, items: list, fill_gaps: bool) -> list[Plate]:
+    """items packed onto plates name_1, name_2, ..., the handrails on their own slow plate(s) name_handrails."""
+    rest, rails = handrails_apart(items)
+    out = [Plate(f"{name}_{n + 1}", 1, _flatten(pl)) for n, pl in enumerate(pack(p, rest, fill_gaps=fill_gaps))]
+    rp = pack(p, rails, fill_gaps=fill_gaps) if rails else []
+    return out + [Plate(f"{name}_handrails" + (f"_{n + 1}" if len(rp) > 1 else ""), 1, _flatten(pl),
+                        settings=handrail_settings(p)) for n, pl in enumerate(rp)]
+
+
 def section_plates(p: Params, sec: Section) -> list[Plate]:
-    """One section's parts packed onto as few plates as possible (ladders on their own two-color plates)."""
-    return [Plate(f"{sec.name}_{n + 1}", 1, _flatten(pl)) for n, pl in enumerate(pack(p, sec.items, fill_gaps=True))]
+    """One section's parts packed onto as few plates as possible (ladders on their own two-color plates, the
+    handrails on their own slow plate)."""
+    return _with_handrails_apart(p, sec.name, sec.items, fill_gaps=True)

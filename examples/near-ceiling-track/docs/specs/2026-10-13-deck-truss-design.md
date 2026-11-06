@@ -368,3 +368,9 @@ plates and packing, and the bus cradle.
 - **Still caught (bay 3's deck, same day):** grooved through, the tab's groove walls still stopped the sliding rail
   ("hard to push it through"). At the user's ask, the jigsaw tabs now stop at the groove floor (`rail_base_z`) over
   their whole length: a flat 1.8 mm tab under each rail, the socket around it a 0.6 mm pocket the base spans.
+
+### Amendment (2026-11-05): the handrails print on their own plate, slowly
+- The handrails (1.6 mm thick, flat on the bed) failed to print among each kit's other parts. Each section kit (and
+  the free-standing bay) now packs them on their own plate, `<kit>_handrails`, printed with every feature at
+  `handrail_speed` 40 mm/s (the template's walls run 200–300). Set as Bambu per-object overrides through cadkit's
+  new `Plate.settings`, so the kit's other plates keep their speeds; the slow suite checks the sliced G-code.

@@ -75,10 +75,30 @@ def test_build_writes_a_combined_project_per_section(tmp_path):
 
 def test_section_kits_fill_the_gaps_between_parts():
     """Packed by real outlines, no kit needs more plates than by rectangles, and the kits together need fewer."""
-    by_rect = {s.name: len(plates.pack(D, s.items)) for s in secs()}
+    by_rect = {s.name: sum(len(plates.pack(D, part)) for part in plates.handrails_apart(s.items) if part)
+               for s in secs()}
     filled = {s.name: len(plates.section_plates(D, s)) for s in secs()}
     assert all(filled[n] <= by_rect[n] for n in by_rect)
     assert sum(filled.values()) < sum(by_rect.values())
+
+
+def test_handrails_print_on_their_own_slow_plate():
+    """2026-11-05: the handrails failed to print among the other parts ("i need them on their own plate, and i need it
+    slowed down"). Every kit's handrails share a plate with nothing else, which prints every feature at handrail_speed;
+    the other plates keep the project's speeds."""
+    for sec in secs():
+        pls = plates.section_plates(D, sec)
+        rails = [pl for pl in pls if any(n.startswith("handrail") for n, _ in pl.items)]
+        assert rails, sec.name
+        for pl in pls:
+            if pl in rails:
+                assert all(n.startswith("handrail") for n, _ in pl.items), pl.name
+                assert pl.name.startswith(f"{sec.name}_handrails")
+                assert pl.settings == plates.handrail_settings(D)
+            else:
+                assert pl.settings == {}
+    assert set(plates.handrail_settings(D).values()) == {f"{D.handrail_speed:g}"}
+    assert {"outer_wall_speed", "inner_wall_speed", "top_surface_speed"} <= set(plates.handrail_settings(D))
 
 
 def test_corner_kits_hold_every_corner_plate():

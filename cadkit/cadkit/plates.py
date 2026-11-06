@@ -21,6 +21,7 @@ class Plate:
     items: list  # (part name, shape placed on the bed)
     color_changes: int | None = None  # swaps this plate's design accepts; None = the budget in settings
     blockers: list = field(default_factory=list)  # (part name, volume placed on the bed): no support inside it
+    settings: dict = field(default_factory=dict)  # slicer settings for this plate's parts only, e.g. slower walls
 
 
 @dataclass

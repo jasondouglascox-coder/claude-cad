@@ -52,6 +52,10 @@ Some do (a flower's curled petals). Set them per project, and prove them in the 
   volume)])` writes a Bambu support blocker on that object. The volume has to take in the *whole* overhang, from
   the bed to just over it. Bambu drops only the overhang area inside it and grows support back from any strip
   left outside. `bridge_no_support` didn't stop it; tree(auto) goes "hybrid" under a flat roof.
+- **A plate that must print slower** (long thin parts that fail at the template's 200 mm/s): `Plate(settings={
+  "outer_wall_speed": "40", ...})` writes Bambu per-object overrides on every object of that plate; the other plates
+  of a combined project keep the project's speeds. `cadkit.gcode.speeds(gcode, above=first layer)` checks what the
+  slice did (`examples/near-ceiling-track`'s handrail plates).
 - **Check the slice:** `cadkit.gcode.extrusions(bambu.plate_gcode(sliced))` gives every extruding move with its layer
   and feature (`Support`, `Support interface`, `Overhang wall`...). Assert there's no support inside the regions
   that must stay open, and that the overhangs you meant to support have some under them.

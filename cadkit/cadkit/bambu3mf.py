@@ -168,7 +168,7 @@ def write_plates_project(path: Path, plates: list[tuple[str, list]], settings: P
         place = IDENTITY if (dx, dy) == (0.0, 0.0) else f"1 0 0 0 1 0 0 0 1 {dx:g} {dy:g} 0"
         plate = ["  <plate>", f'    <metadata key="plater_id" value="{pi}"/>',
                  f'    <metadata key="plater_name" value={quoteattr(pname)}/>', '    <metadata key="locked" value="false"/>']
-        for name, parts in objects:
+        for name, parts, *own in objects:
             k += 1
             ids = list(range(last + 1, last + 1 + len(parts)))
             oid, last, fname = ids[-1] + 1, ids[-1] + 1, f"/3D/Objects/object_{k}.model"
@@ -183,6 +183,7 @@ def write_plates_project(path: Path, plates: list[tuple[str, list]], settings: P
                                f'transform="{place}" printable="1"/>')
             cfg += [f'  <object id="{oid}">', f'    <metadata key="name" value={quoteattr(name)}/>',
                     f'    <metadata key="extruder" value="{parts[0][2]}"/>']
+            cfg += [f'    <metadata key={quoteattr(key)} value={quoteattr(str(v))}/>' for key, v in (own[0] if own else {}).items()]
             for i, (part, _, fil) in zip(ids, parts):
                 if fil == BLOCKER:
                     cfg += [f'    <part id="{i}" subtype="support_blocker">',

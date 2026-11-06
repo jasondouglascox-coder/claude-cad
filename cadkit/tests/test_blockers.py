@@ -109,3 +109,13 @@ def support_under_slab(tmp_path, blockers) -> int:
 def test_bambu_supports_the_shelf_and_a_blocker_stops_it(tmp_path):
     assert support_under_slab(tmp_path / "a", []) > 50
     assert support_under_slab(tmp_path / "b", [("shelf", box(*BLOCK))]) == 0
+
+
+def test_gcode_speeds_are_the_fastest_extruding_move_per_feature():
+    """mm/s from the feed rate in force (set on the move or before it), per feature, above a height if asked."""
+    text = "\n".join(["; FEATURE: Outer wall", "; Z_HEIGHT: 0.2", "G1 X0 Y0 F600", "G1 X10 Y0 E1 F1200",
+                      "G1 X20 Y0 E1", "; Z_HEIGHT: 0.4", "G1 F2400", "G1 X30 Y0 E1", "G1 X40 Y0 F9000",
+                      "; FEATURE: Inner wall", "G1 X50 Y0 E1 F3000", "G1 X60 Y0 E-1 F6000"])
+    assert gcode.speeds(text) == {"Outer wall": 40.0, "Inner wall": 50.0}  # travel and retracts don't count
+    assert gcode.speeds(text, above=0.3) == {"Outer wall": 40.0, "Inner wall": 50.0}
+    assert gcode.speeds(text, above=0.5) == {}

@@ -31,6 +31,25 @@ def centre_of_mass(text: str, skip: tuple[str, ...] = NOT_THE_PART,
     return sx / w, sy / w, sz / w
 
 
+def speeds(text: str, above: float = 0.0) -> dict[str, float]:
+    """{feature: fastest extruding move in mm/s}, from the feed rate in force, on layers higher than `above` (pass the
+    first layer's height to leave out its slow first-layer speeds)."""
+    out, z, feature, f = {}, 0.0, "", 0.0
+    for line in text.splitlines():
+        if line.startswith("; FEATURE:"):
+            feature = line.split(":", 1)[1].strip()
+        elif line.startswith("; Z_HEIGHT:"):
+            z = float(line.split(":", 1)[1])
+        elif line[:3] in ("G0 ", "G1 ", "G2 ", "G3 "):
+            code = line.split(";")[0]
+            m = re.search(r"F([\d.]+)", code)
+            f = float(m.group(1)) / 60 if m else f
+            e = re.search(r"E(-?[\d.]+)", code)
+            if e and float(e.group(1)) > 0 and z > above and feature:
+                out[feature] = max(out.get(feature, 0.0), f)
+    return out
+
+
 def _moves(text: str) -> list[tuple[float, float, float, float, float, str, float]]:
     """extrusions, each with its E (an arc's shared out over its chords)."""
     out, x, y, z, feature = [], 0.0, 0.0, 0.0, ""

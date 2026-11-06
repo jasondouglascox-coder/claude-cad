@@ -169,6 +169,7 @@ class Params:
     dt_handrail_h: float = 12.0  # deck truss: short single-bar walkway railing (~3.5 scale ft)
     handrail_offset: float = 25.0  # track center to handrail centerline
     handrail_t: float = 1.6
+    handrail_speed: float = 40.0  # mm/s, every feature of the handrail plates: thin, they failed at the template's 200
     handrail_post_w: float = 2.0
     handrail_bar: float = 1.6
     peg_w: float = 1.6

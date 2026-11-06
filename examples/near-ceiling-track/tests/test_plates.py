@@ -130,3 +130,29 @@ def test_stragglers_share_plates():
     assert sum(pl.qty for pl in extras) == 1
     printed = Counter(n.split("#")[0] for pl in pls for n, _ in pl.items for _ in range(pl.qty))
     assert sum(q for n, q in printed.items() if n.startswith("cross_frame")) == 3 * (2 * len(L.post_us(D, 418.2)) + 1)
+
+
+@pytest.mark.slow
+def test_handrail_plate_slices_slow_and_the_rest_keep_their_speed(tmp_path):
+    """2026-11-05: the handrail plate prints every wall at handrail_speed; the kit's other plates keep the template's."""
+    from cadkit import bambu, gcode, slicers
+    from hotrain import build
+    s = slicers.active()
+    if not s.available():
+        pytest.skip("no slicer installed (settings: slicer)")
+    D = replace(P, run_style="deck_truss")
+    sec = next(x for x in plates.sections(D) if x.name == "section_418mm_middle")
+    pls = plates.section_plates(D, sec)
+    build.write_plates(pls, tmp_path, tmp_path / "p.csv", p=D, combined="kit")
+    s.slice_all(tmp_path / f"kit{s.project_suffix}", tmp_path / "kit.sliced.3mf")
+    above = D.printer.layer + 0.01
+    got = {pl.name: gcode.speeds(bambu.plate_gcode(tmp_path / "kit.sliced.3mf", k), above=above)
+           for k, pl in enumerate(pls, start=1)}
+    for name, sp in got.items():
+        walls = max(sp[f] for f in ("Outer wall", "Inner wall") if f in sp)
+        if name.endswith("_handrails"):
+            slowed = ("Outer wall", "Inner wall", "Top surface", "Internal solid infill", "Sparse infill", "Gap infill")
+            assert max(v for f, v in sp.items() if f in slowed) <= D.handrail_speed + 0.5, sp
+            assert sp["Outer wall"] == pytest.approx(D.handrail_speed, abs=0.5), sp
+        else:
+            assert walls > 2 * D.handrail_speed, (name, sp)
