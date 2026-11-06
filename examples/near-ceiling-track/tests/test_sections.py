@@ -56,6 +56,14 @@ def test_last_bay_has_no_bracket_and_first_carries_the_corner_ladder():
     assert ladders(by["section_418mm_first"]) == ladders(by["section_418mm_middle"]) + 1
 
 
+def test_each_bracket_between_bays_comes_with_its_leg_clip():
+    """The last bay's end sits on the corner's rod anchor: no bracket, no clip."""
+    by = {s.name: _parts(s.items) for s in secs()}
+    assert {n: c["leg_clip"] for n, c in by.items()} == {n: c["bracket"] for n, c in by.items()}
+    assert by["section_418mm_middle"]["leg_clip"] == 1 and by["section_418mm_last"]["leg_clip"] == 0
+    assert not any(n == "leg_clip" for k in plates._kits(P, [16 * 25.4] * 2, ("free", "free")) for n, _ in k[2])
+
+
 def test_build_writes_a_combined_project_per_section(tmp_path):
     import csv
     from cadkit import slicers

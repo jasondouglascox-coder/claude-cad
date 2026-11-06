@@ -374,3 +374,14 @@ plates and packing, and the bus cradle.
   the free-standing bay) now packs them on their own plate, `<kit>_handrails`, printed with every feature at
   `handrail_speed` 40 mm/s (the template's walls run 200–300). Set as Bambu per-object overrides through cadkit's
   new `Plate.settings`, so the kit's other plates keep their speeds; the slow suite checks the sliced G-code.
+
+### Amendment (2026-11-06): a leg clip under each bracket between bays
+- The brackets hold well, but the bottoms of the wall-side truss's pier legs spread at each bracket: the bracket's
+  slots only grip their top half, and below it the two bays' legs just flank the bracket's bottom.
+- At the user's ask, a gray `leg_clip` slides up from below over both legs: a U `fit_pier` (0.10) wider than a leg
+  (panel plus the pier's raised face), its end walls on the legs' outer ends at the batter's widest (the bottom),
+  and its middle under the bracket's bottom bar through a notch, its floor stopping against the bar. Thin, at the
+  user's ask (it is mostly waste plastic): walls and floor 1.2 (three lines), gripping 8 mm up the legs; it prints
+  as installed, floor down.
+- One per bracket between two bays, in that bay's kit (none in the last kit, none at a run's free end, none for
+  the arch style, whose rib leaves the pier there). The room-side truss takes the same clip if it spreads too.

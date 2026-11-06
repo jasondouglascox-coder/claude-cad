@@ -7,7 +7,7 @@ from cadkit.clash import find_clashes  # noqa: F401  (assembly.find_clashes for 
 
 from hotrain import layout as L
 from hotrain.params import P, Params
-from hotrain.parts import arch_half, bracket, cross_frame, end_pier, handrail, keystone, tie_ladder
+from hotrain.parts import arch_half, bracket, cross_frame, end_pier, handrail, keystone, leg_clip, tie_ladder
 
 
 def named(part: Part, name: str) -> Part:
@@ -48,6 +48,9 @@ def placed_parts(p: Params = P, bays: list[float] = L.BAYS, ends: tuple = L.RUN_
         if (i == 0 and ends[0] == L.CORNER) or (i == len(xs) - 1 and ends[1] == L.CORNER):
             continue
         out.append((f"bracket{i}", bracket.place(p, x) * br))
+    if p.run_style == "deck_truss":  # the arch's piers have their ribs where the clip's ends go
+        clip = named(leg_clip.make(p), "leg_clip")
+        out += [(f"leg_clip{i}", leg_clip.place(p, x) * clip) for i, x in enumerate(xs) if 0 < i < len(xs) - 1]
     ep = named(end_pier.make(p), "end_pier")
     for y in p.rail_ys:
         if ends[0] == L.FREE:

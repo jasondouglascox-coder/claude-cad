@@ -14,7 +14,7 @@ from cadkit.plates import zeroed as _zeroed
 
 from hotrain import layout as L
 from hotrain.params import P, Params
-from hotrain.parts import arch_half, bracket, cross_frame, end_pier, handrail, keystone, tie_ladder
+from hotrain.parts import arch_half, bracket, cross_frame, end_pier, handrail, keystone, leg_clip, tie_ladder
 
 @lru_cache(maxsize=None)
 def nested_arch_pair(p: Params, bay_len: float) -> Compound:
@@ -83,6 +83,8 @@ def _kits(p: Params, bays: list[float], ends: tuple) -> list[tuple[str, tuple, l
                  for k, u in enumerate(L.post_us(p, b))]
         last_corner = i == len(bays) - 1 and ends[1] == L.CORNER  # the corner's anchor replaces this bracket
         b_extra = [] if last_corner else [("bracket", bracket.make(p))]
+        if p.run_style == "deck_truss" and i < len(bays) - 1:  # a bracket between two bays: its legs' clip
+            b_extra.append(("leg_clip", leg_clip.make(p)))
         mid = [(f"cross_frame_{tag}_mid", cross_frame.make(p, L.mid_cf_depth(p, b)))] * L.mid_frame(p)
         for role, k, extra in (("A", 2 * i + 1, mid), ("B", 2 * i + 2, b_extra)):
             d_items, d_keys = deck(k)

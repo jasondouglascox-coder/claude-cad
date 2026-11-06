@@ -131,6 +131,11 @@ class Params:
     flange_w: float = 42.0  # wide enough for a crossbar with 1/2" of side-to-side play
     flange_edge: float = 3.0  # flange beyond each end of the screw crossbars
     bracket_open_min: float = 30.0  # shorter arm than this is printed as a solid web
+    # leg clip (deck truss): a U slid up under each bracket between bays over the wall-side truss's two pier legs,
+    # end walls on their outer ends, so the legs' bottoms can't spread (2026-11-06); a fit_pier fit all round
+    leg_clip_wall: float = 1.2  # three 0.4 lines: thin, it is mostly waste plastic (the user, 2026-11-06)
+    leg_clip_floor: float = 1.2  # under the bracket's bottom bar
+    leg_clip_grip: float = 8.0  # up the legs from their bottoms
     flange_t: float = 6.0
     screw_d: float = 4.6  # #8 screws, into studs or self-drilling drywall anchors
     screw_head_max: float = 9.0  # the biggest head the keyholes take: the user's gold multi-purpose screws
