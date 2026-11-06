@@ -71,10 +71,14 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
         xn, yw = min(t.x for t in gaps) - pb / 2, max(p.rail_ys) + p.runner_w / 2 + 0.01
         wood -= Pos(xn, 0, p.solder_feed_floor) * Box(p.solder_feed_w, 2 * yw, p.tie_h,
                                                       align=(Align.CENTER, Align.CENTER, Align.MIN))
-    run_out = p.jig_len + 1  # on out through the jigsaw tabs, so no nub of them stands in the rail's path
     for y in p.rail_ys:  # the rail grooves, the length of the ladder
-        wood -= Pos(x_start - run_out, y, p.rail_base_z) * Box(x_end - x_start + 2 * run_out, p.groove_w,
-                                                             p.rail_sink + 1, align=(Align.MIN, Align.CENTER, Align.MIN))
+        wood -= Pos(x_start - 1, y, p.rail_base_z) * Box(x_end - x_start + 2, p.groove_w, p.rail_sink + 1,
+                                                       align=(Align.MIN, Align.CENTER, Align.MIN))
+    out = p.jig_len + 1  # the jigsaw tabs stop at the groove floor: grooved, their walls still caught the rail
+    for x0 in ((x_end,) if male_end else ()) + ((x_start - out,) if male_start else ()):
+        for y in p.rail_ys:
+            wood -= Pos(x0, y, p.rail_base_z) * Box(out, p.jig_head + 2, p.tie_h,
+                                                     align=(Align.MIN, Align.CENTER, Align.MIN))
     if bars:  # on top, flush with the tie tops: hidden from below, reads as a guard timber from above
         wood += Pos(0, 0, p.tie_h - p.solder_bar_h) * extrude(Sketch() + bars, p.solder_bar_h)
     for x0, x1 in rod_spans:  # a corner's rod tails reach under the run's end ties: same shallow grooves

@@ -97,17 +97,22 @@ def test_spike_heads_on_the_other_ties_stand_clear_of_the_base():
         assert (lad & clear).volume < 1e-9
 
 
-def test_groove_runs_out_through_the_jigsaw_tabs():
-    """2026-11-05: the groove stopped 1 mm past the ladder's end, so the jigsaw tab's tip kept a nub of full tie
-    height in the rail's path. It now runs out through the tabs: no wood over the groove floor anywhere on them."""
+@pytest.mark.parametrize("start", [False, True])
+def test_jigsaw_tabs_top_out_at_the_groove_floor(start):
+    """2026-11-05: even grooved through, the tab sticking out of a ladder's end caught the rail sliding in (its groove
+    walls stand proud of the next ladder's in the socket). The whole tab now stops at the groove floor, rail_base_z:
+    nothing of it rises into the rail's path. Both a run's male end and a corner end's tab pointing back out."""
     bays = [16 * INCH, 14 * INCH]
-    for seg in [s for s in L.segments(P, bays) if s.male_end]:
-        lad = tie_ladder.make(P, bays, seg)
-        x0 = seg.x_end - seg.x_start
-        for y in P.rail_ys:
-            path = Pos(x0 - 0.5, y + P.tie_l / 2, P.rail_base_z + 0.01) * Box(
-                P.jig_len + 1, P.groove_w - 0.02, P.rail_sink + 1, align=(Align.MIN, Align.CENTER, Align.MIN))
-            assert (lad & path).volume < 1e-9
+    seg = L.segments(P, bays)[0]
+    seg = replace(seg, male_start=True) if start else replace(seg, male_end=True)
+    b = tie_ladder.bodies(P, L.ties(P, bays), seg.x_start, seg.x_end, L.tab_xs(P, bays), seg.female_start,
+                          seg.male_end, (), seg.male_start)
+    x0 = seg.x_start - P.jig_len - 0.5 if start else seg.x_end + 0.01
+    out = Pos(x0, -P.tie_l, -1) * Box(P.jig_len + 0.49, 2 * P.tie_l, P.tie_h + 5, align=(Align.MIN, Align.MIN, Align.MIN))
+    tabs = b["wood"] & out
+    assert len(tabs.solids()) == 2, "a tab under each rail"
+    assert tabs.bounding_box().max.Z == pytest.approx(P.rail_base_z, abs=1e-3)
+    assert (b["steel"] & out).volume < 1e-9
 
 
 def test_flangeway_clear_for_deep_vintage_flanges():

@@ -365,3 +365,6 @@ plates and packing, and the bus cradle.
 - **A nub on the jigsaw tab:** the groove was cut 1 mm past each ladder's end, but the jigsaw tab reaches
   `jig_len` 2 mm out, so its tip kept full tie height in the rail's path and the sliding rail caught on it. The
   groove now runs `jig_len` + 1 past both ends, on out through the tabs.
+- **Still caught (bay 3's deck, same day):** grooved through, the tab's groove walls still stopped the sliding rail
+  ("hard to push it through"). At the user's ask, the jigsaw tabs now stop at the groove floor (`rail_base_z`) over
+  their whole length: a flat 1.8 mm tab under each rail, the socket around it a 0.6 mm pocket the base spans.
