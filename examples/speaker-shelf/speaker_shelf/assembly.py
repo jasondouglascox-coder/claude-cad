@@ -19,7 +19,7 @@ def rail_boxes(p: Params = P, extra: float = 0.0) -> list[tuple[str, Box]]:
 
 
 def speaker_box(p: Params = P) -> Box:
-    return Pos(0, -p.speaker_offset, p.floor_t) * Box(p.speaker_w, p.speaker_d, SPEAKER_H,
+    return Pos(0, 0, p.floor_t) * Box(p.speaker_w, p.speaker_d, SPEAKER_H,
                                                       align=(Align.CENTER, Align.CENTER, Align.MIN))
 
 

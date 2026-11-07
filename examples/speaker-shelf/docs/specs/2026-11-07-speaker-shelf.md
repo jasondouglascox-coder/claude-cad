@@ -16,3 +16,9 @@
   88. With the wider gap the rails no longer act as the speaker's side walls: the pocket gets four walls of its own
   (1.6 mm, 0.4 mm clear of the rails). The arm sits 0.1 mm off the rail's outer face and flexes out if the gap is
   over 88.
+- 2026-11-07, the real gap is 86; the user wants the clips at 88 (about 1 mm side play each way) and the speaker
+  centered front to back on the rails, shelf on first, speaker set in after. So no offset load cocking the clips: the
+  shelf holds on the clips' squeeze (12.3 jaws on a ~12.4 rail) alone. Between the rails the pocket has no side walls
+  (the rails are its walls, the floor 0.5 clear of them), only its back wall. The arm is shorter and thinner (42 mm,
+  2 mm) so its fused root stays at least 8 mm long; the hook is 5.3 deep from the arm, 4.3 on the real rail.
+  If it creeps down the rails, the fix is to move the speaker forward again (the first design) or add a pinch screw.

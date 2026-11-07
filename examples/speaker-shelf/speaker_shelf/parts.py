@@ -44,12 +44,14 @@ def gap_gauge(p: Params = P) -> Part:
     return out
 
 
-# The shelf, in the rail frame: rails centered on y = 0 at x = ±(rail_gap + rail) / 2, the speaker forward (-y).
-# You push it on from the front: each rail slides in from behind, past a hook on a flexing arm, which snaps behind it.
+# The shelf, in the rail frame: rails centered on y = 0, their inner faces ±rail_gap / 2 apart; the speaker centered
+# on the rail line, its middle between the rails. You push it on from the front: each rail slides in from behind,
+# past a hook on a flexing arm, which snaps behind it. The arms sit as if the rails were clip_gap apart.
 
 
 def rail_outer_x(p: Params) -> float:
-    return p.rail_gap / 2 + p.rail
+    """Where the clip expects each rail's outer face (from clip_gap, not the real gap)."""
+    return p.clip_gap / 2 + p.rail
 
 
 def hook_end_y(p: Params) -> float:
@@ -57,11 +59,11 @@ def hook_end_y(p: Params) -> float:
     return p.rail / 2 + p.hook_tip + p.hook_depth
 
 
-def _clip_side(p: Params) -> tuple[list, list, list]:
-    """The +x clip as (floor, full-height, clip-height) sketches; the -x one is its mirror."""
+def _clip_side(p: Params) -> tuple[list, list]:
+    """The +x clip as (floor, clip-height) sketches; the -x one is its mirror."""
     r, xo = p.rail / 2, rail_outer_x(p)
     ox = p.speaker_w / 2 + p.speaker_clear + p.wall  # pocket outside
-    front = -p.speaker_offset - p.speaker_d / 2 - p.speaker_clear - p.wall
+    front = -p.speaker_d / 2 - p.speaker_clear - p.wall
     xa = xo + p.arm_gap  # arm inner face
     y_end = hook_end_y(p)
     root_y = y_end - p.arm_free
@@ -72,20 +74,22 @@ def _clip_side(p: Params) -> tuple[list, list, list]:
             poly((xo - p.hook_depth, r), (xa + p.arm_t, r), (xa + p.arm_t, y_end), (xo, y_end),
                  (xo - p.hook_depth, r + p.hook_tip)),  # hook, lead-in on its back
             rect(xa + p.arm_t - 1, xa + p.arm_t + p.tab, y_end - p.tab_w, y_end)]  # finger tab
-    return floor, [], clip
+    return floor, clip
 
 
 def shelf_body(p: Params = P) -> Part:
-    """The shelf in the rail frame, floor on Z = 0."""
+    """The shelf in the rail frame, floor on Z = 0. From the rails' front faces back, the pocket narrows to fit
+    between the rails (the rails are its side walls there) and keeps only its back wall."""
     px, py = p.speaker_w / 2 + p.speaker_clear, p.speaker_d / 2 + p.speaker_clear
-    cy = -p.speaker_offset
-    pocket_out = rect(-px - p.wall, px + p.wall, cy - py - p.wall, cy + py + p.wall)
-    floor, _, clip = _clip_side(p)
-    floor_sk = Sketch() + [pocket_out] + floor + [mirror(s, Plane.YZ) for s in floor]
+    xin = p.rail_gap / 2 - p.rail_clear
+    pocket_out = rect(-px - p.wall, px + p.wall, -py - p.wall, py + p.wall)
+    rail_lanes = [rect(xin, 200, -p.rail / 2, 200), rect(-200, -xin, -p.rail / 2, 200)]  # the rails' way in
+    floor, clip = _clip_side(p)
+    floor_sk = Sketch() + [pocket_out] + floor + [mirror(s, Plane.YZ) for s in floor] - rail_lanes
     clip_sk = Sketch() + clip + [mirror(s, Plane.YZ) for s in clip]
-    walls_sk = Sketch() + [pocket_out] - [rect(-px, px, cy - py, cy + py)]
+    walls_sk = Sketch() + [pocket_out] - [rect(-px, px, -py, py)] - rail_lanes
     out = extrude(floor_sk, p.floor_t) + extrude(walls_sk, p.wall_h) + extrude(clip_sk, p.clip_h)
-    out = Part(out.solids()) if len(out.solids()) == 1 else out
+    out = Part(out.solids())
     out.label = "speaker_shelf"
     return out
 

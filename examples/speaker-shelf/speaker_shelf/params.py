@@ -8,24 +8,26 @@ from cadkit import Printer
 class Params:
     # The banister, from the fit coupon (docs/measurements.md).
     rail: float = 12.3  # clip jaw spacing: the fork's 12.4 slot slid on right, the user asked one step tighter
-    rail_gap: float = 88.0  # face to face: the gauge's widest step went in (maybe a bit more; the arms flex to take it)
+    rail_gap: float = 86.0  # face to face, the real gap (gap gauge)
+    clip_gap: float = 88.0  # the clip arms sit as if the rails were 88 apart: about 1 mm play each side (user's call)
+    rail_clear: float = 0.5  # floor and walls between the rails to each rail's inner face
 
-    # The speaker and the shelf (rail frame: rails at y = 0, +y toward the back, the speaker forward at -y).
+    # The speaker and the shelf (rail frame: rails at y = 0, +y toward the back). The speaker sits centered on the
+    # rail line, its middle between the rails, which are its side walls there.
     speaker_w: float = 83.0  # along the banister
     speaker_d: float = 75.0
     speaker_clear: float = 0.5  # each side, in the pocket
-    speaker_offset: float = 30.0  # speaker center forward of the rail line: its weight cocks the clips onto the rails
-    mu: float = 0.3  # PLA on painted steel, a cautious guess; the clips hold if offset > clip_h / (2 mu)
     floor_t: float = 3.0
     wall: float = 1.6  # pocket walls (4 lines)
     wall_h: float = 12.0  # pocket walls, floor included
-    clip_h: float = 10.0  # front jaw, arm and hook: the pinch span
+    clip_h: float = 10.0  # front jaw, arm and hook
     jaw_t: float = 3.0  # front jaw, in front of each rail
-    arm_t: float = 2.4  # the flexing arm along each rail's outer face
+    arm_t: float = 2.0  # the flexing arm along each rail's outer face
     arm_gap: float = 0.1  # arm to rail outer face
     arm_slot: float = 0.6  # frees the arm from the floor and jaw
-    arm_free: float = 50.0  # flexing length, root to arm end
-    hook_depth: float = 4.3  # how far the hook reaches behind the rail
+    arm_free: float = 42.0  # flexing length, root to arm end
+    arm_root: float = 8.0  # at least this much of the arm stays fused to the floor
+    hook_depth: float = 5.3  # behind the rail, from the arm's design face: 4.3 on the real rail
     hook_tip: float = 0.8  # the hook's tip, before its 45-degree lead-in
     tab: float = 4.0  # finger tab on the arm end, to pull it open
     tab_w: float = 3.0
