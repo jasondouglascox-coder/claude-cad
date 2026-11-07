@@ -58,18 +58,23 @@ Common to both:
 - One radius everywhere: R = 550.3 mm (21.67"). Spans are 172.2 mm, one per 18° of turn. Curved spans are straight
   chords, and the track curves through them.
 - The inside corner has 7 spans; the bridge corner has 9.
-- **Structure:** two ¼" aluminum rods bent to the curve. Floor beams cradle the rods; wall anchors and 6" deep
-  brackets hold the floor beams and rod ends. The printed bending jig is a **gauge**: bend a little past it, since
-  6061 springs back.
-- **Deck:** one flat printable ladder per span (brown ties with the rail grooves, gray clips on top). It rests on the two rods,
-  which sit in shallow grooves under the ties.
+- **Inside corners: no rods.** A support under every portal: the end anchors, a **portal bracket** (floor beam and
+  bracket in one) at each end of the curve, and deep brackets under the other four floor beams. Each span is a short
+  bridge whose frame ends and end ties sit on the floor beams' seats.
+- **Bridge corner:** two ¼" aluminum rods bent to the curve carry it over the alcove. Floor beams cradle the rods;
+  wall anchors and a 6" deep bracket hold the floor beams and rod ends. The printed bending jig is a **gauge**: bend
+  a little past it, since 6061 springs back.
+- **Deck:** one flat printable ladder per span (brown ties with the rail grooves, gray clips on top). Its runners
+  reach both portals and **lock to the next deck with a jigsaw tab**, flat at the groove floor; the end decks take
+  the runs' tabs. On the bridge the decks also rest on the rods, in shallow grooves under the ties.
 - **Side frames:** Pratt **pony trusses** (`corner_style="pony"`; `"bowstring"` also builds).
   - Ledges on the inside of each truss's bottom form a U that hugs the deck's tie ends (glued).
   - The outside reads as solid gray.
   - A step at each end sits the truss on the floor beam.
 - **Bridge corner drop:** 50 lb **braided** line (not monofilament, which creeps) around tie ends outside a truss,
   up to a small **horn cleat** screwed into a ceiling joist. The cleat can be re-tied with its screws in.
-- The bus wires run in hooks under the floor beams, on the wall side, below the deep brackets' arms.
+- The bus wires lie on the floor beams' tops at track height, just outside the wall-side truss, behind its solid
+  band, so they don't show from the room. At each end anchor they drop 4 mm into the run's wire notch.
 
 ## Printing
 
@@ -91,7 +96,7 @@ Common to both:
 ## Wiring
 
 - DC power pack (≥1 A, no pulse power).
-- 14–16 AWG bus along the wall: in the cross-frame cradles on straights, in the floor-beam hooks on corners.
+- 14–16 AWG bus along the wall: in the cross-frame cradles on straights, on the floor beams' tops on corners.
 - 20–22 AWG feeders soldered to the outside of the rail at the bay solder gaps. No feeders on corners.
 - Feeders join the bus with lever connectors (e.g. WAGO 221), so no soldering on the ceiling.
 

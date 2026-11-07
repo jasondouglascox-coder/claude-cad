@@ -27,7 +27,8 @@ def test_part_counts(corner):
     names = [n for n, _ in items]
     assert sum(x.startswith("deck") and not x.endswith("_steel") for x in names) == n
     assert sum(x.startswith("frame") for x in names) == 2 * n
-    assert sum(x.startswith("floor_beam") for x in names) == n - 1
+    assert sum(x.startswith("floor_beam") for x in names) == n - 1 - len(c.portal)
+    assert sum(x.startswith("portal") for x in names) == len(c.portal)
     assert sum(x.startswith("deep") for x in names) == len(c.deep)
 
 
@@ -131,6 +132,9 @@ def test_bus_through_floor_beam_hooks_clears_everything(corner):
 def test_rods_run_past_both_anchors(corner):
     c, items = corner
     d = dict(items)
+    if not c.rods:  # inside corners, 2026-11-07
+        assert not any(n.startswith("rod_") for n in d)
+        return
     for side in ("inner", "outer"):
         rod = d[f"rod_{side}"]
         for anchor in ("anchor_in", "anchor_out"):

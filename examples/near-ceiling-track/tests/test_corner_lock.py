@@ -1,6 +1,7 @@
 """The run deck locks to the corner deck ("the deck is what's adding stability to the whole unit", the user,
 2026-10-28). At a corner end a run's ladder has a jigsaw tab, like the tabs between its ladders, and each corner's
 end spans print as an end deck with runner stubs reaching the anchor and the matching sockets in them."""
+import math
 from dataclasses import replace
 
 import pytest
@@ -13,6 +14,7 @@ from hotrain import layout as L
 from hotrain import plates
 from hotrain.params import INCH, P
 from hotrain.parts import bow_deck, tie_ladder
+from hotrain.span_geom import span_geom, track_at
 
 D = replace(P, run_style="deck_truss")
 B = 16 * INCH
@@ -37,11 +39,11 @@ def test_run_ladders_get_a_tab_at_each_corner_end():
 
 
 def test_end_deck_has_sockets_in_runner_stubs_at_the_anchor():
-    wood = bow_deck.bodies(D, False, end=True)["wood"]
+    wood = bow_deck.bodies(D, False, end="in")["wood"]
     assert len(wood.solids()) == 1
     assert wood.bounding_box().min.X == pytest.approx(0, abs=0.02)  # reaches the anchor (portal) line
     plain = bow_deck.bodies(D, False)["wood"]
-    assert plain.bounding_box().min.X > 1  # the other spans still stop short of their floor beams
+    assert plain.bounding_box().min.X == pytest.approx(D.portal_gap / 2, abs=0.02)  # every deck's runners reach its portals now
 
     def solid(x, y):
         return (wood & (Pos(x, y, D.tie_h / 2) * Box(0.2, 0.2, 0.2))).volume > 1e-6
@@ -50,15 +52,50 @@ def test_end_deck_has_sockets_in_runner_stubs_at_the_anchor():
         assert not solid(D.jig_len / 2, y)  # the socket
         assert solid(D.jig_len / 2, y + (D.runner_w / 2 - 0.3))  # its walls
         assert solid(D.jig_len / 2, y - (D.runner_w / 2 - 0.3))
-    assert printable_problems(bow_deck.make(D, False, end=True), D.printer) == []
+    assert printable_problems(bow_deck.make(D, False, end="in"), D.printer) == []
 
 
 @pytest.mark.parametrize("corner", [C.inside_corner(), C.bridge_corner()])
 def test_each_corner_prints_two_end_decks(corner):
     names = [n for n, _ in plates.corner_kit(D, corner)]
-    assert names.count("corner_deck_end") == 2
+    assert names.count("corner_deck_end_in") == 1 and names.count("corner_deck_end_out") == 1
     spans = C.spans(D, corner)
     assert names.count("corner_deck_straight") == sum(not s.curved for s in spans) - 2
+
+
+@pytest.fixture(scope="module", params=["inside", "bridge"])
+def decks(request):
+    c = C.inside_corner() if request.param == "inside" else C.bridge_corner()
+    items = dict(A.placed_parts(D, c))
+    return c, [items[f"deck{sp.index}"] for sp in C.spans(D, c)]
+
+
+def test_corner_decks_lock_together_at_every_portal(decks):
+    """The user, 2026-11-07: the corner decks should interlock. Each deck's flat jigsaw tab sits in the next one's
+    socket: they touch nowhere else, and pulled apart along the track by a hair they catch."""
+    c, ds = decks
+    ps = C.portals(D, c)
+    for i in range(1, len(ps) - 1):
+        a, b = ds[i - 1], ds[i]
+        assert (a & b).volume < 1e-3, i
+        h = math.radians(ps[i].heading)
+        pulled = Pos(0.3 * math.cos(h), 0.3 * math.sin(h), 0) * b
+        assert (a & pulled).volume > 1e-3, i
+        pushed = Pos(-0.3 * math.cos(h), -0.3 * math.sin(h), 0) * b  # slack, so a deck drops in between two
+        assert (a & pushed).volume < 1e-3, i
+
+
+@pytest.mark.parametrize("curved", [False, True])
+def test_deck_tabs_stop_at_the_groove_floor(curved):
+    """Like the run ladders' tabs: flat under the rail, so the rail slides over them."""
+    wood = bow_deck.bodies(D, curved)["wood"]
+    s = span_geom(D, curved).s
+    x, y, a = track_at(span_geom(D, curved), 1.0)
+    for u in D.rail_ys:
+        px, py = x - u * math.sin(a) + D.jig_len / 2 * math.cos(a), y + u * math.cos(a) + D.jig_len / 2 * math.sin(a)
+        assert (wood & (Pos(px, py, D.rail_base_z / 2) * Box(0.2, 0.2, 0.2))).volume > 1e-6  # the tab, past the portal
+        assert (wood & (Pos(px, py, D.rail_base_z + 0.2) * Box(0.2, 0.2, 0.2))).volume < 1e-9  # no higher
+    assert wood.bounding_box().max.X > s  # it reaches past the portal
 
 
 @pytest.mark.slow

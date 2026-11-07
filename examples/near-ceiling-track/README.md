@@ -1,7 +1,7 @@
 # Near-ceiling HO track (claude-cad example)
 
 A parametric, 3D-printable bridge shelf that carries HO Code 100 track around a room near the ceiling. Straight
-runs are deck trusses (or open-spandrel arches) on wall brackets. Corners are pony-truss spans on bent aluminum rods.
+runs are deck trusses (or open-spandrel arches) on wall brackets. Corners are pony-truss spans on brackets, the bridge corner on bent aluminum rods.
 Everything prints flat, with no supports, at most one color change per plate, and snaps together. It's the big
 example for claude-cad: the generic tooling it uses (print checks, plate packing, two-color parts, Bambu plates,
 slicer checks) lives in [`cadkit`](../../cadkit), and the lessons it taught are in the
@@ -38,7 +38,7 @@ uv sync
 | `uv run python -m hotrain.build sections --run-style deck_truss` | `out/sections/`: **the room a bay at a time**. One folder per section kit (first / middle / last bay of a run, per bay length), the corner kits (`corner_inside` ×3, `corner_bridge` ×1), the `rod_anchor`s (×7, two a corner: print one as you hang each run's corner end, before its corner) and the `rod_anchor_bump_out` (×1: the bridge's anchor at the bump-out corner, its screws 1/2" farther from the corner bead), and the `rod_jig`. Each folder has one project file holding every plate; `sections.csv` says how many times to print each and where it goes. Facing the wall, a run's first bay is at its right-hand corner |
 | `uv run python -m hotrain.build plates --run-style deck_truss` | `out/plates/*.3mf` + `.step`: every build plate for the runs and corners; `out/plates.csv` says how many of each |
 | `uv run python -m hotrain.build all --run-style deck_truss` | Every part (`out/step/*.step`), the run assembly, the fit test and `out/manifest.csv` |
-| `uv run python -m hotrain.build corners` | `out/corners/*.step`, both corner assemblies, and `out/corners_layout.csv` (where to mark anchors, brackets and ceiling cleats; rod cut lengths) |
+| `uv run python -m hotrain.build corners` | `out/corners/*.step`, both corner assemblies, and `out/corners_layout.csv` (where to mark anchors, brackets and ceiling cleats; the bridge's rod cut lengths) |
 | `uv run python -m hotrain.build room --run-style deck_truss` | `out/step/office.step`: the whole room, colored (~200 MB) |
 | `uv run python -m hotrain.build render --run-style deck_truss` | `out/render/*.png`: shaded pictures of a bay, both corners and the room |
 | `uv run python -m hotrain.build check` | Interference check; exits 1 on any clash |
@@ -162,8 +162,9 @@ yet: their room face prints against the bed.
    - Room rail: thread the feeder through the groove under both rails (the gap's first opening), solder it along
      the rest of the gap, and drop it on the wall side with the wall rail's feeder.
 
-Corner spans: bend and fit the two rods, set the anchors, deep brackets and floor beams, lay each deck on the rods,
-then glue its trusses on. Hang the bridge corner from the ceiling cleat with braided line. Details are in
+Corner spans: set the anchors, portal and deep brackets and floor beams (on the bridge corner, bend and fit the two
+rods first), lay the bus on the beams, then each deck from the entry anchor, its tab into the last one's socket, and
+glue its trusses on. Hang the bridge corner from the ceiling cleat with braided line. Details are in
 [docs/overview.md](docs/overview.md).
 
 ## Change it for your room

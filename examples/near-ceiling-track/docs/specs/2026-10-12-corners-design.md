@@ -216,3 +216,39 @@ The bus leaves the viaduct's wall-side cradle at each corner anchor and runs und
 - `corner_plates` now packs the cleats separately: plate `bridge_corner_cleats` (white PLA only, printed once). The
   gray corner plates repack without them. A test keeps PLA off PETG plates and every corner plate to at most one
   color change.
+
+## 17. Amendment (2026-11-07): inside corners without rods
+- **Why.** The rods cost about $13 each (6 ft), two per corner. The user asked whether the inside corners could do
+  without them, with the straight runs unchanged. The bridge corner keeps its rods: it crosses the alcove's open air.
+- **A support under every portal.** The rods carried two 3-span (517 mm) gaps between the deep brackets. Rodless,
+  each of the 7 spans (172 mm, under half a straight bay) is a short bridge on its own two portals:
+  - P0, P7: the end anchors, unchanged (they print on their own, so a run hangs before its corner, and some are
+    already up). Their rod bores stay empty; the end deck's runner stubs already sit on the anchor's top.
+  - P1, P6 (the curve's ends, 44.45 mm off the wall, the beam square to it): a **portal bracket**, the floor beam
+    and a bracket in one part in the beam's plane.
+  - P2, P5 (18°, 71.5 mm off the wall) and P3, P4 (36°, 150 mm): deep brackets under the floor beams, as at P3/P4
+    before.
+- **Seats.** Each span stops `portal_gap` short of its floor beam and rested only on the rods. The rodless beams
+  are thicker along the track (`fb_seat`), so each span's frame ends, runner ends and end ties sit on them. The frames' ends
+  come down to the tie underside, so the trusses bear on the seat. Rails, continuous over the portals, and the end
+  decks' jigsaw sockets keep the spans in line.
+- `Corner.rods` (inside: False, bridge: True). Decks keep their shallow rod grooves (shared with the bridge), and
+  the run ladders keep their rod-tail reliefs, unused.
+- **The bus at track height (both corners).** It hung in hooks under the floor beams, in plain view under the
+  bridge (the user: "it's the corners where it's under the bridge"). It now lies on each floor beam's top just
+  outside the wall-side frames (`corner_bus_clear` 1 mm past the curve spans' outer faces), behind the frames' solid
+  band (skirt and bottom chord), a lip on the beam at its wall side. At each end anchor it drops 4 mm, in the open
+  end span, into the anchor's wire notch, where the straight runs carry it; it stays level past the beam and any
+  wall flange beside it first. The beams reach on to 0.5 mm short of the wall; the hooks are gone.
+- **The decks lock together (both corners).** The user asked whether the corner decks or arches interlock: they
+  didn't (the rods kept them in line). Every deck's runners now reach both portals over the floor beam, a jigsaw
+  socket at its start and a tab at its far end (flat at the groove floor, like the run ladders' tabs), so each
+  deck's tab drops into the next one's socket, laid in order from the entry anchor. The end decks become
+  `corner_deck_end_in` (run sockets, then a tab) and `corner_deck_end_out` (run sockets and a socket: it's laid
+  turned round).
+- **From the print review (same day).** The seat beams on deep brackets could slide along their own length (the rods
+  had held them): each now hangs two keys (`fb_key_w` × `fb_key_h`) either side of its bracket's plate, so it prints
+  as `floor_beam_seat_18` or `_36` by the bracket's crossing angle. The portal brackets reach down to the deep
+  brackets' bottoms with their screws at the deep brackets' heights (one set of marks; their top screw head had also
+  rubbed the beam). Between decks the stubs stop `portal_gap`/2 short of the portal and the sockets run on past the
+  tabs' tips, so a deck drops in between two others; the run joints at the anchors are unchanged.

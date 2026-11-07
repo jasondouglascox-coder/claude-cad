@@ -117,6 +117,8 @@ class Params:
 
     # bus wires (two 16 AWG) along the wall, carried on cross-frame fingers
     bus_floor: float = -4.0  # Z of the cradle floor (tie underside = 0)
+    bus_w: float = 4.8  # the two 16 AWG bus wires side by side
+    bus_h: float = 2.4
     finger_h: float = 2.0
     finger_lip_w: float = 1.2
     finger_lip_top: float = -1.0
@@ -214,7 +216,11 @@ class Params:
     fit_thread: float = 0.6  # loose bores that slide along hand-bent rods
     fb_t: float = 6.0  # floor beam thickness along the track
     fb_drop: float = 6.0  # floor beam depth below the runners
-    bus_hook_drop: float = 11.0  # bus hook bottom below the beam bottom: wire passes under the deep brackets' 5 mm arm
+    fb_key_w: float = 1.6  # rodless seat beams: keys hanging under the beam either side of its deep bracket, so it
+    fb_key_h: float = 4.0  # can't slide along its own length (the rods held it)
+    corner_bus_clear: float = 1.0  # corner bus beside the wall-side frames' outer faces, on the beams' tops
+    corner_bus_lip_h: float = 3.0  # lip on the beam top at the bus's wall side
+    corner_bus_wall_gap: float = 0.5  # beams stop this short of the wall at the curve's ends
     fb_reach: float = 10.0  # floor beam beyond the frames (cable eyes)
     cable_d: float = 2.5
     # ceiling anchor + 50 lb braided line (bridge corner), wrapped around tie ends outside a truss

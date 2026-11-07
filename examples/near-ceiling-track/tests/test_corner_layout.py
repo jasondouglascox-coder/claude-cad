@@ -27,8 +27,10 @@ def test_inside_corner_supports_are_near_walls():
     ps = C.portals(P, c)
     assert C.wall_offset(P, c, ps[0]) == pytest.approx(P.track_offset)
     assert C.wall_offset(P, c, ps[-1]) == pytest.approx(P.track_offset)
-    for i, _ in c.deep:
-        assert C.wall_offset(P, c, ps[i]) == pytest.approx(149.6, abs=0.5)  # ~5.9"
+    for i, _ in c.deep:  # P2/P5 ~2.8", P3/P4 ~5.9"
+        assert C.wall_offset(P, c, ps[i]) == pytest.approx(71.5 if i in (2, 5) else 149.6, abs=0.5)
+    for i, _ in c.portal:
+        assert C.wall_offset(P, c, ps[i]) == pytest.approx(P.track_offset)
 
 
 def test_rods_fit_six_foot_stock():

@@ -37,9 +37,10 @@ def _bar(a: tuple[float, float], b: tuple[float, float], w: float) -> Sketch:
 
 def _skirt(p: Params, length: float, z0: float) -> list[Sketch]:
     """Outer face carried down past the deck edge to the bottom of the U, except at each end, where the
-    frame sits on the floor beam (the step locates the span along the track)."""
+    frame sits on the floor beam (the step locates the span along the track): from the tie underside, so the ends
+    bear on a rodless corner's seat beams."""
     e = p.frame_ledge_end
-    return [rect(e, length - e, u_bottom(p), z0 + 0.5), rect(0, length, p.fit_slide, z0 + 0.5)]
+    return [rect(e, length - e, u_bottom(p), z0 + 0.5), rect(0, length, 0, z0 + 0.5)]
 
 
 def pony_profile(p: Params, length: float) -> Sketch:

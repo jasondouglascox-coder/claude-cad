@@ -29,11 +29,15 @@ class Corner:
     n_out: int
     wall_b: bool  # True for an inside corner (wall along the exit straights)
     ceiling: tuple  # portal indices hung from the ceiling
-    deep: tuple  # (portal index, "A" | "B") deep wall brackets
+    deep: tuple  # (portal index, "A" | "B") deep wall brackets under a floor beam
+    rods: bool = True  # two aluminum rods carry the spans; without, every portal between the anchors has a support
+    portal: tuple = ()  # (portal index, "A" | "B") portal brackets: floor beam and bracket in one, square to the wall
 
 
 def inside_corner() -> Corner:
-    return Corner("inside", 1, 1, True, (), ((3, "A"), (4, "B")))
+    """No rods (2026-11-07): a portal bracket at each end of the curve, deep brackets at the other four portals."""
+    return Corner("inside", 1, 1, True, (), ((2, "A"), (3, "A"), (4, "B"), (5, "B")), rods=False,
+                  portal=((1, "A"), (6, "B")))
 
 
 def bridge_corner() -> Corner:
@@ -131,17 +135,18 @@ def layout_sheet(p: Params, c: Corner) -> list[tuple[str, str, float]]:
     else:
         rows.append(("anchor (bump-out)", "down the bump-out face from its corner (rods slide in it ±9.5 mm)",
                      ps[-1].y + p.track_offset - p.alcove_w))
-    for i, wall in c.deep:
-        pt = ps[i]
-        if wall == "A":
-            rows.append((f"6in bracket P{i} (wall A)", a_ref, xb - pt.x))
-        else:
-            rows.append((f"6in bracket P{i} (wall B)", "from the corner along wall B", pt.y + p.track_offset))
+    for kind, brackets in (("deep bracket", c.deep), ("portal bracket", c.portal)):
+        for i, wall in brackets:
+            pt = ps[i]
+            if wall == "A":
+                rows.append((f"{kind} P{i} (wall A)", a_ref, xb - pt.x))
+            else:
+                rows.append((f"{kind} P{i} (wall B)", "from the corner along wall B", pt.y + p.track_offset))
     for i in c.ceiling:
         for s, side in ((1, "inner"), (-1, "outer")):
             x, y = line_point(p, ps[i], s)
             rows.append((f"ceiling anchor P{i} {side}: along", a_ref + " (negative = over the alcove)", xb - x))
             rows.append((f"ceiling anchor P{i} {side}: out", "from the top wall", y + p.track_offset))
-    for side, mm in rod_cut_lengths(p, c).items():
+    for side, mm in (rod_cut_lengths(p, c) if c.rods else {}).items():
         rows.append((f"rod cut length ({side})", "1/4 in aluminum, before bending", mm))
     return rows

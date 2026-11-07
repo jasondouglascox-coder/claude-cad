@@ -17,10 +17,10 @@ def top(p: Params) -> float:
     return floor_beam.bottom(p)
 
 
-def band(p: Params, beam_angle_deg: float) -> float:
+def band(p: Params, beam_angle_deg: float, rods: bool = True) -> float:
     """Half-width of the floor beam's footprint where it crosses the bracket's thickness."""
     a = math.radians(beam_angle_deg)
-    return (p.fb_t / 2) / math.sin(a) + (p.bracket_t / 2) / math.tan(a)
+    return (floor_beam.thickness(p, rods) / 2) / math.sin(a) + (p.bracket_t / 2) / math.tan(a)
 
 
 def _strut(a: tuple, b: tuple, w: float, ext: float) -> Sketch:
@@ -32,9 +32,9 @@ def _strut(a: tuple, b: tuple, w: float, ext: float) -> Sketch:
     return poly((a2[0] + nx, a2[1] + ny), (b2[0] + nx, b2[1] + ny), (b2[0] - nx, b2[1] - ny), (a2[0] - nx, a2[1] - ny))
 
 
-def profile(p: Params, w_beam: float, beam_angle_deg: float) -> Sketch:
+def profile(p: Params, w_beam: float, beam_angle_deg: float, rods: bool = True) -> Sketch:
     """(w, z): w out from the wall, z from the bottom; the beam crosses at w = w_beam."""
-    bw = band(p, beam_angle_deg) + p.portal_gap
+    bw = band(p, beam_angle_deg, rods) + p.portal_gap
     end = w_beam + bw + 3 + p.deep_reach_margin
     m, f = p.bracket_member, p.flange_t
     bound = rect(0, end, 0, DEPTH)
@@ -50,8 +50,9 @@ def profile(p: Params, w_beam: float, beam_angle_deg: float) -> Sketch:
     ]
 
 
-def make(p: Params, w_beam: float, beam_angle_deg: float) -> Part:
-    return bracket.flanged(p, profile(p, w_beam, beam_angle_deg), DEPTH, SCREWS)
+def make(p: Params, w_beam: float, beam_angle_deg: float, rods: bool = True) -> Part:
+    """rods=False: under a rodless corner's seat beam, thicker along the track."""
+    return bracket.flanged(p, profile(p, w_beam, beam_angle_deg, rods), DEPTH, SCREWS)
 
 
 def place(p: Params, x_plane: float) -> Location:

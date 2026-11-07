@@ -266,9 +266,9 @@ def test_colored_deck_matches_print_part_and_colors():
         assert (v.X, v.Y, v.Z) == pytest.approx((w.X, w.Y, w.Z), abs=1e-6)
 
 
-# ---- bus wire hook --------------------------------------------------------------------------------
+# ---- bus on the beams' tops (tests/test_corner_bus.py) ---------------------------------------------
 
-def test_bus_hook_on_wall_side():
+def test_bus_on_wall_side():
     """u is measured left of the track = toward the curve center = the room; the walls are at -u."""
     assert floor_beam.bus_u(P) < -P.rod_y
-    assert floor_beam.bus_u(P) - 5 > -floor_beam.half_len(P)  # hook stays on the beam
+    assert floor_beam.bus_u(P) - P.bus_w / 2 > -floor_beam.wall_end(P)  # the bus stays on the beam

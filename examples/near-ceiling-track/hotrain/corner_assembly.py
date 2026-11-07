@@ -1,4 +1,4 @@
-"""Every part of one corner placed in the corner frame (see corner_layout), plus the rods,
+"""Every part of one corner placed in the corner frame (see corner_layout), plus the rods (where it has them),
 for review and clash checks."""
 import math
 
@@ -6,7 +6,7 @@ from build123d import Align, Axis, Box, Circle, Cylinder, Location, Part, Plane,
 
 from hotrain import corner_layout as C
 from hotrain.params import P, Params
-from hotrain.parts import bow_deck, bow_frame, ceiling_anchor, deep_bracket, floor_beam, rod_anchor
+from hotrain.parts import bow_deck, bow_frame, ceiling_anchor, deep_bracket, floor_beam, portal_bracket, rod_anchor
 from hotrain.span_geom import frame_x_range, span_geom
 
 
@@ -56,17 +56,24 @@ def rod(p: Params, c: C.Corner, u: float) -> Part:
     return out
 
 
+def beam_key(p: Params, c: C.Corner, i: int) -> float:
+    """The angle its deep bracket's plate crosses portal i's floor beam at (off square)."""
+    wall = dict(c.deep)[i]
+    h = C.portals(p, c)[i].heading
+    return h if wall == "A" else 90 - h
+
+
 def placed_parts(p: Params = P, c: C.Corner = C.inside_corner()) -> list[tuple[str, Part]]:
     out = []
     decks = {cv: bow_deck.painted(p, cv) for cv in (False, True)}  # one part each, gray tie plates painted on
-    end = bow_deck.painted(p, False, end=True)  # where a run meets the corner: sockets at the portal
+    end_in, end_out = (bow_deck.painted(p, False, end=e) for e in ("in", "out"))  # where a run meets the corner
     spans = C.spans(p, c)
     for sp in spans:
         loc = span_location(sp)
         if sp == spans[0]:
-            out.append((f"deck{sp.index}", loc * end))
-        elif sp == spans[-1]:  # turned round: its sockets at the exit portal
-            out.append((f"deck{sp.index}", loc * Pos(span_geom(p, False).s, 0, 0) * Rot(0, 0, 180) * end))
+            out.append((f"deck{sp.index}", loc * end_in))
+        elif sp == spans[-1]:  # turned round: its run sockets at the exit portal
+            out.append((f"deck{sp.index}", loc * Pos(span_geom(p, False).s, 0, 0) * Rot(0, 0, 180) * end_out))
         else:
             out.append((f"deck{sp.index}", loc * decks[sp.curved]))
         for kind, yl, xs, ln in frame_lines(p, sp.curved):
@@ -75,10 +82,19 @@ def placed_parts(p: Params = P, c: C.Corner = C.inside_corner()) -> list[tuple[s
             side = "inner" if yl > span_geom(p, sp.curved).yc else "outer"
             out.append((f"frame{sp.index}_{side}", loc * frame_location(p, sp.curved, yl, xs, ln) * fr))
     ps = C.portals(p, c)
-    beams = {False: floor_beam.make(p, False), True: floor_beam.make(p, True)}
-    beams[False].label, beams[True].label = "floor_beam", "floor_beam_drop"  # drop variant no longer used
+    pb = portal_bracket.make(p)
+    pb.label = "portal_bracket"
+    walls = dict(c.portal)
     for i, pt in enumerate(ps[1:-1], start=1):
-        out.append((f"floor_beam{i}", floor_beam.place(p, pt.x, pt.y, pt.heading) * beams[False]))
+        if i not in walls:
+            key = None if c.rods else beam_key(p, c, i)  # rodless: keyed to its deep bracket
+            beam = floor_beam.make(p, rods=c.rods, key_deg=key)
+            beam.label = "floor_beam" if c.rods else f"floor_beam_seat_{key:.0f}"
+            out.append((f"floor_beam{i}", floor_beam.place(p, pt.x, pt.y, pt.heading, rods=c.rods, key_deg=key) * beam))
+        elif walls[i] == "A":
+            out.append((f"portal{i}", portal_bracket.place(p, pt.x) * pb))
+        else:
+            out.append((f"portal{i}", wall_b_frame(p, c) * portal_bracket.place(p, pt.y) * pb))
     anchor = ceiling_anchor.make(p)
     anchor.label = "ceiling_anchor"
     for i in c.ceiling:
@@ -95,14 +111,14 @@ def placed_parts(p: Params = P, c: C.Corner = C.inside_corner()) -> list[tuple[s
     for i, wall in c.deep:
         pt = ps[i]
         if wall == "A":
-            db = deep_bracket.make(p, pt.y + p.track_offset, pt.heading)
+            db = deep_bracket.make(p, pt.y + p.track_offset, pt.heading, c.rods)
             db.label = "deep_bracket"
             out.append((f"deep{i}", deep_bracket.place(p, pt.x) * db))
         else:
-            db = deep_bracket.make(p, xb - pt.x, 90 - pt.heading)
+            db = deep_bracket.make(p, xb - pt.x, 90 - pt.heading, c.rods)
             db.label = "deep_bracket"
             out.append((f"deep{i}", wall_b_frame(p, c) * deep_bracket.place(p, pt.y) * db))
-    for u, side in ((p.rod_y, "inner"), (-p.rod_y, "outer")):
+    for u, side in ((p.rod_y, "inner"), (-p.rod_y, "outer")) if c.rods else ():
         r = rod(p, c, u)
         r.label = f"aluminum_rod_{side}"
         out.append((f"rod_{side}", r))
@@ -121,20 +137,50 @@ def cables(p: Params, c: C.Corner) -> list[tuple[str, Part]]:
     return out
 
 
+def _flat(p: Params, c: C.Corner, i: int) -> float:
+    """How far from portal i toward its end anchor the bus stays at that portal's height: past the part under it and
+    any wall flange on that side. Flanges run along +x of their bracket frame: at P0 (and wall A) into the corner,
+    on wall B out of it, toward the exit anchor."""
+    n = len(C.portals(p, c)) - 1
+    if i in (0, n):
+        return p.flange_w - p.bracket_t / 2 + 1 if i == 0 else p.bracket_t / 2 + 1
+    t = floor_beam.thickness(p, c.rods)
+    flange_toward_anchor = i == n - 1 and dict(c.portal).get(i) == "B"
+    return p.flange_w - t / 2 + 1 if flange_toward_anchor else t / 2 + 1
+
+
+def bus_points(p: Params, c: C.Corner) -> list[tuple[float, float, float]]:
+    """Centers of the bus bundle: in each end anchor's wire notch (where the straight runs carry it), then on each
+    floor beam's top just outside the wall-side frames. Next to an anchor it stays level past whatever is under it
+    (the beam, a wall flange) and climbs or drops the 4 mm in the open span."""
+    ps = C.portals(p, c)
+    n = len(ps) - 1
+    notch = -(p.track_offset - p.flange_t - 0.5 - p.bus_w / 2)  # against the notch's wall end, as on the runs
+    out = []
+    for i, pt in enumerate(ps):
+        end = i in (0, n)
+        u, z = (notch, p.bus_floor + p.bus_h / 2) if end else (floor_beam.bus_u(p), floor_beam.bus_z(p))
+        x, y = floor_beam.plan(p, pt, u)
+        here = [(x, y, z)]
+        toward = 1 if i in (0, n - 1) else -1 if i in (1, n) else 0  # along the heading toward the anchor's span
+        if toward:
+            a, k = math.radians(pt.heading), _flat(p, c, i) * toward
+            more = (x + k * math.cos(a), y + k * math.sin(a), z)
+            here = here + [more] if toward > 0 else [more] + here
+        out += here
+    return out
+
+
 def bus(p: Params, c: C.Corner) -> list[tuple[str, Part]]:
-    """Two 16 AWG wires (4.8 x 2.4 mm bundle) resting in the floor-beam hooks, straight between hooks."""
-    ps = C.portals(p, c)[1:-1]
-    hb, zc = floor_beam.bus_u(p), floor_beam.bus_z(p)
-    pts = []
-    for pt in ps:
-        a = math.radians(pt.heading)
-        pts.append((pt.x - hb * math.sin(a), pt.y + hb * math.cos(a)))
+    """Two 16 AWG wires (bus_w x bus_h bundle), straight from notch to beam top to beam top to notch."""
+    pts = bus_points(p, c)
     out = []
     for k, (a, b) in enumerate(zip(pts, pts[1:])):
-        ln = math.dist(a, b)
-        hd = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
-        out.append((f"bus{k}", Pos(a[0], a[1], zc) * Rot(0, 0, hd)
-                    * Box(ln, 4.8, 2.4, align=(Align.MIN, Align.CENTER, Align.CENTER))))
+        dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+        run = math.hypot(dx, dy)
+        hd, pitch = math.degrees(math.atan2(dy, dx)), math.degrees(math.atan2(dz, run))
+        out.append((f"bus{k}", Pos(*a) * Rot(0, 0, hd) * Rot(0, -pitch, 0)
+                    * Box(math.hypot(run, dz), p.bus_w, p.bus_h, align=(Align.MIN, Align.CENTER, Align.CENTER))))
     return out
 
 
