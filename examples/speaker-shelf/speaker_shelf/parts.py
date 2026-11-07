@@ -1,7 +1,7 @@
 """Parts in PRINT orientation: flat on Z = 0."""
 from build123d import Align, Part, Plane, Pos, Sketch, Text, extrude, mirror
 
-from cadkit.shapes import rect
+from cadkit.shapes import poly, rect
 from speaker_shelf.params import P, Params
 
 
@@ -46,6 +46,7 @@ def gap_gauge(p: Params = P) -> Part:
 
 # The shelf, in the rail frame: rails centered on y = 0, their inner faces ±rail_gap / 2; the speaker centered.
 # A rectangular tray exactly rail_gap wide, with a U on each side opening outward: the tray's side is the U's bottom.
+# Triangle braces outside each prong tie it to the tray side, so the U can't spread.
 
 
 def shelf_body(p: Params = P) -> Part:
@@ -53,7 +54,10 @@ def shelf_body(p: Params = P) -> Part:
     px, py = p.speaker_w / 2 + p.speaker_clear, p.speaker_d / 2 + p.speaker_clear
     ox, oy = p.rail_gap / 2, py + p.end_wall
     r, tip = p.rail / 2, p.rail_gap / 2 + p.rail_deep + p.prong_reach
-    prongs = [rect(ox - 1, tip, r, r + p.prong_t), rect(ox - 1, tip, -r - p.prong_t, -r)]
+    y0 = r + p.prong_t  # the back prong's outer face
+    brace = poly((ox - 1, y0 - 1), (ox + p.brace, y0 - 1), (ox + p.brace, y0), (ox, y0 + p.brace),
+                 (ox - 1, y0 + p.brace))  # triangle between the prong and the tray side, overlapping both
+    prongs = [rect(ox - 1, tip, r, y0), rect(ox - 1, tip, -y0, -r), brace, mirror(brace, Plane.XZ)]
     prongs += [mirror(s, Plane.YZ) for s in prongs]
     tray = rect(-ox, ox, -oy, oy)
     out = (extrude(Sketch() + [tray], p.floor_t) + extrude(Sketch() + [tray] - [rect(-px, px, -py, py)], p.wall_h)

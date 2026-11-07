@@ -21,6 +21,7 @@ class Params:
     wall_h: float = 12.0  # walls and U's, floor included
     prong_t: float = 4.0  # each arm of a U, front and back of the rail
     prong_reach: float = 2.6  # past the rail's outer face
+    brace: float = 10.0  # triangle braces outside each prong: legs along the prong and along the tray side
 
     # Rail fork: push each slot onto a rail; the snug one is the rail's real size.
     fork_slots: tuple = (12.4, 12.6, 12.8, 13.0, 13.2, 13.4, 13.6, 13.8)

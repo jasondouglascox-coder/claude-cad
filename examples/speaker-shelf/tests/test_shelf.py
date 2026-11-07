@@ -1,6 +1,6 @@
 """The shelf: print rules, the U's, the speaker fit, the rails in the U's. Expectations from params."""
 import pytest
-from build123d import Align, Box, Pos
+from build123d import Align, Box, Plane, Pos
 
 from cadkit.checks import downward_faces, off_layer_z, open_edges, printable_problems
 from cadkit.clash import find_clashes
@@ -86,3 +86,23 @@ def test_pocket_fits_the_speaker_with_clearance(body):
 def test_speaker_centered_on_the_rails():
     c = speaker_box(P).bounding_box().center()
     assert (c.X, c.Y) == pytest.approx((0, 0), abs=1e-6)
+
+
+@pytest.mark.parametrize("sx", [1, -1])
+@pytest.mark.parametrize("sy", [1, -1])
+def test_each_prong_is_braced_to_the_tray(body, sx, sy):
+    """Solid in the corner outside each prong (between it and the tray side), most of the way along both legs."""
+    x0, y0 = P.rail_gap / 2, P.rail / 2 + P.prong_t
+    inside = _box(x0 + 0.5, x0 + 1.5, y0 + 0.5, y0 + P.brace - 2.5, MID, MID + 0.1)  # along the tray side
+    along = _box(x0 + 0.5, x0 + P.brace - 2.5, y0 + 0.5, y0 + 1.5, MID, MID + 0.1)  # along the prong
+    for probe in (inside, along):
+        probe = Pos(0, 0, 0) * probe
+        if sx < 0:
+            probe = probe.mirror(Plane.YZ)
+        if sy < 0:
+            probe = probe.mirror(Plane.XZ)
+        assert (body & probe).volume == pytest.approx(probe.volume, rel=1e-6)
+
+
+def test_braces_leave_the_prong_tips_free():
+    assert P.brace < P.rail_deep + P.prong_reach

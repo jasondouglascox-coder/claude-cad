@@ -27,3 +27,5 @@
   diagonal and twisted into place; the rails have lots of play. So no arms or hooks: a tray exactly rail_gap (86)
   wide, its sides the U bottoms, prongs 4 mm thick front and back of each rail (12.3 apart), reaching 2.6 past the
   rail, all 12 mm tall. Side walls are 1 mm (gap minus speaker and clearance). Speaker centered both ways.
+- 2026-11-07: triangle braces (10 mm legs, full height) outside each prong, tying it to the tray side so the U's can't
+  spread; the last 5 mm of each prong stays free.
