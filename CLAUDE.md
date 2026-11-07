@@ -53,6 +53,9 @@
   (package `cat_decals`), drawn in shapely and written as R12 DXF in inches: one of each on a 24 × 24 mat (the user
   duplicates and scales in Studio), a 1" test square because Studio guesses DXF units, ⅛" minimum feature. Its `out/`
   is committed (the cut file).
+- `examples/speaker-shelf/`: a black shelf (package `speaker_shelf`) that snaps onto two 13 mm square banister rails
+  86 mm apart and holds a vertical speaker between them, offset forward so its weight cocks the clips onto the rails;
+  fit coupon (rail fork + gap gauge) first, the shelf after.
 - `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
   with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves, the banner's folds and tails sunk 2 and 4
   layers below it; QR + URL on the back, 22 swaps. Its plate's
@@ -79,6 +82,7 @@ cd examples/circle-jig && uv run pytest -n 6                         # ~40 s, bo
 cd examples/halloween-gnome && uv run pytest -n 6                    # ~10 s, all three plates through Bambu
 cd examples/mini-sunflower && uv run pytest -n 6                     # ~25 s, the plate through Bambu
 cd examples/cat-decals && uv run pytest -n 4                         # ~2 s, DXF sheets read back
+cd examples/speaker-shelf && uv run pytest -n 6                      # ~20 s, the coupon through Bambu
 ```
 
 ## Rules
