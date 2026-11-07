@@ -6,9 +6,29 @@ from cadkit import Printer
 
 @dataclass(frozen=True)
 class Params:
-    # The banister, by ruler (docs/measurements.md); the coupon finds the real numbers.
-    rail: float = 13.0  # square tube
-    rail_gap: float = 86.0  # face to face between two rails
+    # The banister, from the fit coupon (docs/measurements.md).
+    rail: float = 12.3  # clip jaw spacing: the fork's 12.4 slot slid on right, the user asked one step tighter
+    rail_gap: float = 88.0  # face to face: the gauge's widest step went in (maybe a bit more; the arms flex to take it)
+
+    # The speaker and the shelf (rail frame: rails at y = 0, +y toward the back, the speaker forward at -y).
+    speaker_w: float = 83.0  # along the banister
+    speaker_d: float = 75.0
+    speaker_clear: float = 0.5  # each side, in the pocket
+    speaker_offset: float = 30.0  # speaker center forward of the rail line: its weight cocks the clips onto the rails
+    mu: float = 0.3  # PLA on painted steel, a cautious guess; the clips hold if offset > clip_h / (2 mu)
+    floor_t: float = 3.0
+    wall: float = 1.6  # pocket walls (4 lines)
+    wall_h: float = 12.0  # pocket walls, floor included
+    clip_h: float = 10.0  # front jaw, arm and hook: the pinch span
+    jaw_t: float = 3.0  # front jaw, in front of each rail
+    arm_t: float = 2.4  # the flexing arm along each rail's outer face
+    arm_gap: float = 0.1  # arm to rail outer face
+    arm_slot: float = 0.6  # frees the arm from the floor and jaw
+    arm_free: float = 50.0  # flexing length, root to arm end
+    hook_depth: float = 4.3  # how far the hook reaches behind the rail
+    hook_tip: float = 0.8  # the hook's tip, before its 45-degree lead-in
+    tab: float = 4.0  # finger tab on the arm end, to pull it open
+    tab_w: float = 3.0
 
     # Rail fork: push each slot onto a rail; the snug one is the rail's real size.
     fork_slots: tuple = (12.4, 12.6, 12.8, 13.0, 13.2, 13.4, 13.6, 13.8)
@@ -28,7 +48,7 @@ class Params:
     printer: Printer = Printer()
 
     def __post_init__(self):
-        for name in ("fork_h", "gap_h"):
+        for name in ("fork_h", "gap_h", "floor_t", "wall_h", "clip_h"):
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
         object.__setattr__(self, "label_depth", self.printer.layers(self.label_depth))
 

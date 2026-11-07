@@ -61,11 +61,6 @@ def test_gap_step_lengths(gauge, k):
     assert pieces[0].max.X - pieces[0].min.X == pytest.approx(L, abs=0.01)
 
 
-def test_gap_steps_cover_the_measurement():
-    assert min(P.gap_steps) < P.rail_gap < max(P.gap_steps)
-    assert min(P.fork_slots) < P.rail < max(P.fork_slots)
-
-
 def test_build_writes_one_black_plate(tmp_path):
     assert build.main(["--out", str(tmp_path)]) == 0
     assert (tmp_path / "render" / "fit_coupon.png").exists()
@@ -80,3 +75,13 @@ def test_slicer_slices_it_in_one_color(tmp_path):
     s = slicers.active()
     report = s.slice_report(tmp_path / "plates" / f"fit_coupon{s.project_suffix}", tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(P.filament_black,)]
+
+
+@pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
+def test_slicer_slices_the_shelf_in_one_color(tmp_path):
+    build.main(["--out", str(tmp_path)])
+    s = slicers.active()
+    report = s.slice_report(tmp_path / "plates" / f"speaker_shelf{s.project_suffix}", tmp_path / "s.3mf")
+    assert [r[0] for r in report["layers"]] == [(P.filament_black,)]
+    got = dict((n, parts) for n, _, parts in s.read_filaments(tmp_path / "plates" / f"speaker_shelf{s.project_suffix}"))
+    assert set(got) == {"speaker_shelf"}

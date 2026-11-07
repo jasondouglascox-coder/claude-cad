@@ -11,3 +11,8 @@
 - Fit coupon first: a rail fork (slots 12.4–13.8) and a stepped gap gauge (84–88) to replace ruler numbers.
 
 ## Amendments
+
+- 2026-11-07, after the fit coupon: clip jaw-to-hook spacing 12.3 (the 12.4 slot fit; the user asked tighter), rail gap
+  88. With the wider gap the rails no longer act as the speaker's side walls: the pocket gets four walls of its own
+  (1.6 mm, 0.4 mm clear of the rails). The arm sits 0.1 mm off the rail's outer face and flexes out if the gap is
+  over 88.
