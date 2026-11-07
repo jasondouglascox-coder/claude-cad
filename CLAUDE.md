@@ -53,9 +53,9 @@
   (package `cat_decals`), drawn in shapely and written as R12 DXF in inches: one of each on a 24 × 24 mat (the user
   duplicates and scales in Studio), a 1" test square because Studio guesses DXF units, ⅛" minimum feature. Its `out/`
   is committed (the cut file).
-- `examples/speaker-shelf/`: a black shelf (package `speaker_shelf`) that snaps onto two 13 mm square banister rails
-  86 mm apart and holds a vertical speaker between them, offset forward so its weight cocks the clips onto the rails;
-  fit coupon (rail fork + gap gauge) first, the shelf after.
+- `examples/speaker-shelf/`: a black tray for a vertical speaker between two banister rails (package `speaker_shelf`):
+  exactly as wide as the 86 mm gap, a U on each side opening out round a rail, twisted into place; fit coupon (rail
+  fork + gap gauge) set the sizes.
 - `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
   with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves, the banner's folds and tails sunk 2 and 4
   layers below it; QR + URL on the back, 22 swaps. Its plate's

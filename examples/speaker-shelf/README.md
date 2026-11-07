@@ -1,13 +1,14 @@
 # speaker-shelf
 
-A little black shelf that clips onto two banister rails (about 12.4 mm square tubes, 86 mm apart) and holds a vertical
-speaker (base 83 × 75 mm) centered on them both ways: its middle sits between the rails, which are its side walls
-there. No hardware: the clips squeeze each rail front to back (12.3 mm jaws), with about 1 mm of side play.
+A little black shelf for a vertical speaker (base 83 × 75 mm) between two banister rails (about 12.4 mm square, 86 mm
+apart): a rectangular tray, exactly as wide as the gap, with a U on each side opening outward around a rail. The
+speaker sits centered on the rails both ways.
 
 <img src="docs/images/with_speaker.png" width="49%" alt="shelf on two rails with the speaker"> <img src="docs/images/shelf_on_rails.png" width="49%" alt="shelf clipped on two rails">
 
-Print `out/plates/speaker_shelf.3mf` (black, no supports). Push it onto the rails from the front: each hook rides
-over its rail and snaps behind it. Then set the speaker in. To take it off, pull the little tab at the back of each arm outward.
+Print `out/plates/speaker_shelf.3mf` (black, no supports). Hold it at an angle between the rails, twist it level so
+each rail drops into its U, then set the speaker in. The rails' spring holds it; for more grip, raise `rail_gap` in
+`params.py` a little (the tray gets wider and the rails pinch it).
 
 <img src="docs/images/fit_coupon.png" width="49%" alt="fit coupon: rail fork and gap gauge">
 

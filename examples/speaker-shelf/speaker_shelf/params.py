@@ -7,30 +7,20 @@ from cadkit import Printer
 @dataclass(frozen=True)
 class Params:
     # The banister, from the fit coupon (docs/measurements.md).
-    rail: float = 12.3  # clip jaw spacing: the fork's 12.4 slot slid on right, the user asked one step tighter
-    rail_gap: float = 86.0  # face to face, the real gap (gap gauge)
-    clip_gap: float = 88.0  # the clip arms sit as if the rails were 88 apart: about 1 mm play each side (user's call)
-    rail_clear: float = 0.5  # floor and walls between the rails to each rail's inner face
+    rail: float = 12.3  # each U, front to back: the fork's 12.4 slot slid on right, the user asked one step tighter
+    rail_deep: float = 12.4  # the rail, inner face to outer face (the fork's fit)
+    rail_gap: float = 86.0  # face to face, the real gap (gap gauge); the U bottoms sit exactly this far apart
 
-    # The speaker and the shelf (rail frame: rails at y = 0, +y toward the back). The speaker sits centered on the
-    # rail line, its middle between the rails, which are its side walls there.
+    # The shelf (rail frame: rails at y = 0, +y toward the back): a rectangular tray, the speaker centered on it, a U
+    # on each side opening outward around a rail. Angle it in between the rails and twist the U's onto them.
     speaker_w: float = 83.0  # along the banister
     speaker_d: float = 75.0
     speaker_clear: float = 0.5  # each side, in the pocket
     floor_t: float = 3.0
-    wall: float = 1.6  # pocket walls (4 lines)
-    wall_h: float = 12.0  # pocket walls, floor included
-    clip_h: float = 10.0  # front jaw, arm and hook
-    jaw_t: float = 3.0  # front jaw, in front of each rail
-    arm_t: float = 2.0  # the flexing arm along each rail's outer face
-    arm_gap: float = 0.1  # arm to rail outer face
-    arm_slot: float = 0.6  # frees the arm from the floor and jaw
-    arm_free: float = 42.0  # flexing length, root to arm end
-    arm_root: float = 8.0  # at least this much of the arm stays fused to the floor
-    hook_depth: float = 5.3  # behind the rail, from the arm's design face: 4.3 on the real rail
-    hook_tip: float = 0.8  # the hook's tip, before its 45-degree lead-in
-    tab: float = 4.0  # finger tab on the arm end, to pull it open
-    tab_w: float = 3.0
+    end_wall: float = 2.0  # front and back walls
+    wall_h: float = 12.0  # walls and U's, floor included
+    prong_t: float = 4.0  # each arm of a U, front and back of the rail
+    prong_reach: float = 2.6  # past the rail's outer face
 
     # Rail fork: push each slot onto a rail; the snug one is the rail's real size.
     fork_slots: tuple = (12.4, 12.6, 12.8, 13.0, 13.2, 13.4, 13.6, 13.8)
@@ -50,7 +40,7 @@ class Params:
     printer: Printer = Printer()
 
     def __post_init__(self):
-        for name in ("fork_h", "gap_h", "floor_t", "wall_h", "clip_h"):
+        for name in ("fork_h", "gap_h", "floor_t", "wall_h"):
             object.__setattr__(self, name, self.printer.snap(getattr(self, name)))
         object.__setattr__(self, "label_depth", self.printer.layers(self.label_depth))
 
@@ -64,3 +54,8 @@ class Params:
 
 
 P = Params()
+
+
+def side_wall(p: Params = P) -> float:
+    """The tray's side walls: from the pocket out to the U bottoms (the tray is exactly rail_gap wide)."""
+    return p.rail_gap / 2 - p.speaker_w / 2 - p.speaker_clear

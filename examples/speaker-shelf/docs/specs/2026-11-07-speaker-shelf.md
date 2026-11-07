@@ -22,3 +22,8 @@
   (the rails are its walls, the floor 0.5 clear of them), only its back wall. The arm is shorter and thinner (42 mm,
   2 mm) so its fused root stays at least 8 mm long; the hook is 5.3 deep from the arm, 4.3 on the real rail.
   If it creeps down the rails, the fix is to move the speaker forward again (the first design) or add a pinch screw.
+- 2026-11-07, the user, after the review (the squeeze from 1 mm play and a 0.1 mm hook overlap wouldn't hold, the arm
+  root was overstressed, 0.5 mm wall slivers): "just a rectangle, with a U on both sides pointing out", put in at a
+  diagonal and twisted into place; the rails have lots of play. So no arms or hooks: a tray exactly rail_gap (86)
+  wide, its sides the U bottoms, prongs 4 mm thick front and back of each rail (12.3 apart), reaching 2.6 past the
+  rail, all 12 mm tall. Side walls are 1 mm (gap minus speaker and clearance). Speaker centered both ways.
