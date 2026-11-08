@@ -136,7 +136,7 @@ def _frame_solid_at(fr, x: float, z: float, depth: float) -> bool:
 def test_frame_u_channel_hugs_the_ties():
     """Outer face solid gray down past the deck; two inward ledges above and below the tie band; tabs gone."""
     fr = bow_frame.make(P, 160)
-    t, lg, fit = P.bow_frame_t, P.frame_ledge, P.fit_slide
+    t, lg, fit = P.bow_frame_t, P.frame_ledge, P.fit_frame
     mid = t + lg / 2
     assert not _frame_solid_at(fr, 80, P.tie_h / 2, mid)  # groove the tie ends slide into
     assert _frame_solid_at(fr, 80, P.tie_h + fit + P.frame_ledge_hi / 2, mid)  # upper ledge
@@ -151,7 +151,7 @@ def test_frame_u_channel_hugs_the_ties():
 
 def test_lower_ledge_stops_short_of_the_floor_beams():
     fr = bow_frame.make(P, 160)
-    z = -P.fit_slide - P.frame_ledge_lo / 2
+    z = -P.fit_frame - P.frame_ledge_lo / 2
     assert not _frame_solid_at(fr, 1.0, z, P.bow_frame_t + P.frame_ledge / 2)
     assert not _frame_solid_at(fr, 159.0, z, P.bow_frame_t + P.frame_ledge / 2)
 
@@ -237,11 +237,11 @@ def test_deck_prints_with_one_color_change(curved):
 
 @pytest.mark.parametrize("curved", [False, True])
 def test_deck_ties_end_inside_the_truss_u(curved):
-    """Ties reach the trusses' inner faces (less the slide fit), deep in the U, and no further."""
+    """Ties reach the trusses' inner faces (less the frame fit), deep in the U, and no further."""
     from hotrain.span_geom import span_geom
     g = span_geom(P, curved)
     bb = bow_deck.bodies(P, curved)["wood"].bounding_box()
-    inner = P.bow_frame_y - P.bow_frame_t / 2 - P.fit_slide
+    inner = P.bow_frame_y - P.bow_frame_t / 2 - P.fit_frame
     assert bb.max.Y - g.yc == pytest.approx(inner, abs=1e-3)
     assert g.yc - bb.min.Y == pytest.approx(inner, abs=1e-3)
 
@@ -252,7 +252,7 @@ def test_frames_hug_the_deck_without_clashing(curved):
     for kind, yl, xs, ln in A.frame_lines(P, curved):
         fr = A.frame_location(P, curved, yl, xs, ln) * bow_frame.make(P, ln)
         assert (deck & fr).volume < 1e-3
-        assert deck.distance_to(fr) <= P.fit_slide + 1e-3
+        assert deck.distance_to(fr) <= P.fit_frame + 1e-3
 
 
 def test_colored_deck_matches_print_part_and_colors():

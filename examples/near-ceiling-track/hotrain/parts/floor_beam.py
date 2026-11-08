@@ -10,7 +10,7 @@ import math
 from build123d import Circle, Location, Part, Pos, Rot, Sketch, extrude
 
 from hotrain.corner_layout import chord_sagitta
-from hotrain.joints import rect
+from hotrain.joints import poly, rect
 from hotrain.params import P, Params
 from hotrain.span_geom import span_geom
 
@@ -24,7 +24,7 @@ def half_len(p: Params, drop: bool = False) -> float:
 
 def thickness(p: Params, rods: bool = True) -> float:
     """Along the track: fb_t on rods; rodless, out under both spans' ends to just short of their frames' skirts."""
-    return p.fb_t if rods else p.fb_t + 2 * (p.portal_gap + p.frame_ledge_end - p.fit_slide)
+    return p.fb_t if rods else p.fb_t + 2 * (p.portal_gap + p.frame_ledge_end - p.fb_seat_room)
 
 
 def bottom(p: Params) -> float:
@@ -67,12 +67,15 @@ def key_u(p: Params, crossing_deg: float, rods: bool = False) -> float:
 
 
 def profile(p: Params, drop: bool = False, rods: bool = True, key_deg: float | None = None) -> Sketch:
-    """(u, z): u left of the track (toward the curve center), z = 0 at the tie underside. A lip on the top at the wall
-    end keeps the bus against the frames. key_deg: keys under the beam either side of a deep bracket crossing it at
+    """(u, z): u left of the track (toward the curve center), z = 0 at the tie underside. A V ridge along the top
+    under the track's centre keys the decks across the track; a lip on the top at the wall end keeps the bus against
+    the frames. key_deg: keys under the beam either side of a deep bracket crossing it at
     that angle."""
     u, uw, zb = half_len(p, drop), wall_end(p, drop), bottom(p)
     lip = bus_u(p) - p.bus_w / 2 - p.fit_slide
-    body = Sketch() + [rect(-uw, u, zb, 0), rect(lip - p.finger_lip_w, lip, -1, p.corner_bus_lip_h)]
+    w, h = p.fb_ridge_w / 2, p.fb_ridge_h
+    body = Sketch() + [rect(-uw, u, zb, 0), rect(lip - p.finger_lip_w, lip, -1, p.corner_bus_lip_h),
+                       poly((-w, -0.01), (w, -0.01), (0, h))]  # the V ridge the decks' notches sit on
     if key_deg is not None:
         k = key_u(p, key_deg, rods)
         body += [rect(k, k + p.fb_key_w, zb - p.fb_key_h, zb + 1), rect(-k - p.fb_key_w, -k, zb - p.fb_key_h, zb + 1)]

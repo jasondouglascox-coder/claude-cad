@@ -63,10 +63,50 @@ def beam_key(p: Params, c: C.Corner, i: int) -> float:
     return h if wall == "A" else 90 - h
 
 
+def seat_grooves(p: Params, c: C.Corner) -> Part:
+    """Where the trusses' skirts drop into the seats' tops (rodless corners, 2026-11-08), in the corner frame: along
+    each frame's line from its span's portal to the next, fit_tab wider than its web each side, from the skirt's
+    bottom up past the beam top."""
+    t, zb, f = p.bow_frame_t, bow_frame.u_bottom(p), p.fit_tab
+    ps, out = C.portals(p, c), []
+    for sp in C.spans(p, c):
+        a, b = ps[sp.index], ps[sp.index + 1]
+        between = (Pos(a.x, a.y, 0) * Rot(0, 0, a.heading) * Box(400, 400, 40, align=(Align.MIN, Align.CENTER, Align.CENTER))
+                   & Pos(b.x, b.y, 0) * Rot(0, 0, b.heading) * Box(400, 400, 40, align=(Align.MAX, Align.CENTER, Align.CENTER)))
+        for _, yl, xs, ln in frame_lines(p, sp.curved):
+            web = Pos(-20, 0, -f) * Box(ln + 40, -zb + 1, t + 2 * f, align=(Align.MIN, Align.MIN, Align.MIN))
+            out.append(span_location(sp) * frame_location(p, sp.curved, yl, xs, ln) * web & between)
+    return Part(Compound(children=out).solids())
+
+
+def supports(p: Params, c: C.Corner) -> list[tuple[int, str, Part, Location]]:
+    """(portal index, name, print-orientation part, its location in the corner) of the floor beam or portal bracket
+    under each portal between the anchors; rodless, each with the grooves its trusses' skirts sit in. A portal
+    bracket's grooves step where the straight span's trusses meet the curve's, so P1's and the last one's differ."""
+    ps, walls, out = C.portals(p, c), dict(c.portal), []
+    grooves = None if c.rods else seat_grooves(p, c)
+    for i, pt in enumerate(ps[1:-1], start=1):
+        if i not in walls:
+            key = None if c.rods else beam_key(p, c, i)  # rodless: keyed to its deep bracket
+            part = floor_beam.make(p, rods=c.rods, key_deg=key)
+            name = "floor_beam" if c.rods else f"floor_beam_seat_{key:.0f}"
+            loc = floor_beam.place(p, pt.x, pt.y, pt.heading, rods=c.rods, key_deg=key)
+        else:
+            part = portal_bracket.make(p)
+            name = "portal_bracket" if i == 1 else "portal_bracket_out"
+            loc = portal_bracket.place(p, pt.x) if walls[i] == "A" else (wall_b_frame(p, c)
+                                                                         * portal_bracket.place(p, pt.y))
+        if grooves is not None:
+            part = Part((part - loc.inverse() * grooves).solids())
+        part.label = name
+        out.append((i, name, part, loc))
+    return out
+
+
 def placed_parts(p: Params = P, c: C.Corner = C.inside_corner()) -> list[tuple[str, Part]]:
     out = []
-    decks = {cv: bow_deck.painted(p, cv) for cv in (False, True)}  # one part each, gray tie plates painted on
-    end_in, end_out = (bow_deck.painted(p, False, end=e) for e in ("in", "out"))  # where a run meets the corner
+    decks = {cv: bow_deck.painted(p, cv, rods=c.rods) for cv in (False, True)}  # one each, tie plates painted gray
+    end_in, end_out = (bow_deck.painted(p, False, end=e, rods=c.rods) for e in ("in", "out"))  # where a run meets the corner
     spans = C.spans(p, c)
     for sp in spans:
         loc = span_location(sp)
@@ -82,19 +122,8 @@ def placed_parts(p: Params = P, c: C.Corner = C.inside_corner()) -> list[tuple[s
             side = "inner" if yl > span_geom(p, sp.curved).yc else "outer"
             out.append((f"frame{sp.index}_{side}", loc * frame_location(p, sp.curved, yl, xs, ln) * fr))
     ps = C.portals(p, c)
-    pb = portal_bracket.make(p)
-    pb.label = "portal_bracket"
-    walls = dict(c.portal)
-    for i, pt in enumerate(ps[1:-1], start=1):
-        if i not in walls:
-            key = None if c.rods else beam_key(p, c, i)  # rodless: keyed to its deep bracket
-            beam = floor_beam.make(p, rods=c.rods, key_deg=key)
-            beam.label = "floor_beam" if c.rods else f"floor_beam_seat_{key:.0f}"
-            out.append((f"floor_beam{i}", floor_beam.place(p, pt.x, pt.y, pt.heading, rods=c.rods, key_deg=key) * beam))
-        elif walls[i] == "A":
-            out.append((f"portal{i}", portal_bracket.place(p, pt.x) * pb))
-        else:
-            out.append((f"portal{i}", wall_b_frame(p, c) * portal_bracket.place(p, pt.y) * pb))
+    for i, name, part, loc in supports(p, c):
+        out.append((f"{'portal' if name.startswith('portal') else 'floor_beam'}{i}", loc * part))
     anchor = ceiling_anchor.make(p)
     anchor.label = "ceiling_anchor"
     for i in c.ceiling:

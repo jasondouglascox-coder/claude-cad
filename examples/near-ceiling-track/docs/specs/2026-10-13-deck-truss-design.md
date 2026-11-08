@@ -385,3 +385,9 @@ plates and packing, and the bus cradle.
   as installed, floor down.
 - One per bracket between two bays, in that bay's kit (none in the last kit, none at a run's free end, none for
   the arch style, whose rib leaves the pier there). The room-side truss takes the same clip if it spreads too.
+
+### Amendment (2026-11-08): deck bowties as tight as the keystones
+- The user found the ladders' jigsaw joints looser than the truss panels' keystone bowties. The sockets had
+  `fit_snap` (0.05 mm) all round; the keystone coupon had already shown 0.05 loose and 0.0 right (`fit_key`). The
+  ladder sockets now use `fit_jig` = 0.0. Only the sockets change, so ladders already printed fit the new ones.
+  The corner decks' sockets match (corners spec §18).

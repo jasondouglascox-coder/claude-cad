@@ -232,7 +232,7 @@ The bus leaves the viaduct's wall-side cradle at each corner anchor and runs und
   are thicker along the track (`fb_seat`), so each span's frame ends, runner ends and end ties sit on them. The frames' ends
   come down to the tie underside, so the trusses bear on the seat. Rails, continuous over the portals, and the end
   decks' jigsaw sockets keep the spans in line.
-- `Corner.rods` (inside: False, bridge: True). Decks keep their shallow rod grooves (shared with the bridge), and
+- `Corner.rods` (inside: False, bridge: True). Decks keep their shallow rod grooves (shared with the bridge; gone since §18), and
   the run ladders keep their rod-tail reliefs, unused.
 - **The bus at track height (both corners).** It hung in hooks under the floor beams, in plain view under the
   bridge (the user: "it's the corners where it's under the bridge"). It now lies on each floor beam's top just
@@ -252,3 +252,34 @@ The bus leaves the viaduct's wall-side cradle at each corner anchor and runs und
   brackets' bottoms with their screws at the deep brackets' heights (one set of marks; their top screw head had also
   rubbed the beam). Between decks the stubs stop `portal_gap`/2 short of the portal and the sockets run on past the
   tabs' tips, so a deck drops in between two others; the run joints at the anchors are unchanged.
+
+## 18. Amendment (2026-11-08): from the first corner prints
+
+The user printed a corner and found four things:
+- **The trusses didn't lock in.** The frames' U had `fit_slide` (0.2 mm) on every side of the tie ends. It now has
+  `fit_frame` (0.05 mm): the ledges grip the ties top and bottom, and the tie ends reach to 0.05 mm off the web.
+  Still glued.
+- **The floor beams did nothing for the decks.** Each floor beam (and portal bracket) now has a 45-degree V ridge
+  along its top under the track's centre (`fb_ridge_w` 2.4 × `fb_ridge_h` 1.2). At each end over a beam, a deck has a
+  pad between its runners with a V notch under it (`fit_ridge` off the flanks), so the beam centres the decks across
+  the track. The notch's roofs are 45 degrees, so it prints with no bridge on the bed side. Both corners.
+- **The rod groove under the rodless decks failed prints.** Inside-corner decks (`rods=False`) have no rod grooves
+  now. The bridge corner's decks keep theirs (they sit on its rods). The run ladders' rod-tail reliefs are unchanged
+  (their own kit, shared by both kinds of corner).
+- **The deck bowties were looser than the truss bowties.** The jigsaw sockets had `fit_snap` (0.05 mm) all round,
+  and between corner decks they ran on past the tabs' tips (0.4 mm of slack along the track). Every deck socket,
+  straight runs and corners, is now `fit_jig` = 0.0, the keystones' fit from their coupon, and the slack is gone: the
+  tab's tip seats on the socket's end. Older ladders' tabs fit the new sockets (only the sockets changed).
+- **The beams hold the trusses too** (the user, same day: grooves for the part of the truss that hangs down). The
+  trusses' skirts now run their full length (no step at the ends), and in the inside corners each seat beam and
+  portal bracket has a groove under each truss end: `fit_tab` wider than the web each side, its floor at the
+  skirt's bottom, cut along each frame's own line (`corner_assembly.seat_grooves`). On the four curve-to-curve
+  beams the grooves run straight through. Where the straight end span meets the curve the trusses step 2–3 mm, so
+  the two portal brackets' grooves step at the portal, mirrored: P6's prints as `portal_bracket_out`. The anchors and
+  the bridge corner (whose frames stop short of its beams) are untouched.
+- **From the review (same day).** With the bowties tight, the deck notches' ends against the ridges' ends and the
+  trusses' lower ledges 0.14 mm off the seats left the inside corner no give along the track: every seat would have
+  had to be marked to ±0.2 mm. The notch now runs `deck_notch_room` (1.5 mm) past each end of the ridge, and the
+  rodless seats are `fb_seat_room` (0.75 mm) shorter each side along the track, so the beams locate the decks and
+  trusses across the track only. The bridge corner's decks keep the arched rod groove that failed under the
+  inside-corner decks (they ride the rods): open question for the user.

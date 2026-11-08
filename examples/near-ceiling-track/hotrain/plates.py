@@ -150,26 +150,18 @@ def all_in_one(p: Params, bays: list[float], ends: tuple = L.RUN_ENDS, name: str
 def corner_kit(p: Params, corner) -> list[tuple[str, Shape]]:
     """Every printed part of one corner, named like out/corners/*.step."""
     from hotrain import corner_assembly as CA
-    from hotrain.parts import bow_deck, bow_frame, deep_bracket, floor_beam, portal_bracket, rod_anchor
+    from hotrain.parts import bow_deck, bow_frame, deep_bracket, rod_anchor
     from hotrain import corner_layout as CL
     items = []
     spans = CL.spans(p, corner)
     for sp in spans:
         end = "in" if sp == spans[0] else "out" if sp == spans[-1] else ""  # meets a run: sockets for its tabs
         kind = f"end_{end}" if end else "curve" if sp.curved else "straight"
-        items.append((f"corner_deck_{kind}", bow_deck.make_colored(p, sp.curved, end)))  # wood + steel bodies
+        items.append((f"corner_deck_{kind}", bow_deck.make_colored(p, sp.curved, end, corner.rods)))  # wood + steel bodies
         for k, _, _, ln in CA.frame_lines(p, sp.curved):
             items.append((f"corner_frame_{k}", bow_frame.make(p, ln)))
     from hotrain.parts import ceiling_anchor
-    held = dict(corner.portal)  # rodless: portal brackets carry their own beams
-    for i in range(1, len(CL.portals(p, corner)) - 1):
-        if i in held:
-            items.append(("portal_bracket", portal_bracket.make(p)))
-        elif corner.rods:
-            items.append(("floor_beam", floor_beam.make(p)))
-        else:  # keyed to its deep bracket, at its angle
-            key = CA.beam_key(p, corner, i)
-            items.append((f"floor_beam_seat_{key:.0f}", floor_beam.make(p, rods=False, key_deg=key)))
+    items += [(name, part) for _, name, part, _ in CA.supports(p, corner)]  # beams, or portal brackets with theirs
     items += [("ceiling_anchor", ceiling_anchor.make(p)) for _ in range(2 * len(corner.ceiling))]
     items.append(("rod_anchor", rod_anchor.make(p)))
     items.append(("rod_anchor", rod_anchor.make(p)) if corner.wall_b else

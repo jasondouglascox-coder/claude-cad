@@ -1,7 +1,8 @@
 """Corner deck for one span, one flat printable part like the straight tie ladder: open ties on two
 runners under the rails, a groove sunk in them for each rail's base following the true track curve, gray clips over
-the base on every clip_every-th tie, spike heads clear of it on the rest. It rests on the two aluminum rods, which sit in shallow part-circle grooves
-under the ties (alignment), and its tie ends slide into the side frames' U ledges (glued). Two colors, one change:
+the base on every clip_every-th tie, spike heads clear of it on the rest. On the bridge it rests on the two aluminum
+rods, which sit in shallow part-circle grooves under the ties (alignment); the inside corners' decks have no grooves.
+Its ends sit on the floor beams' V ridges, and its tie ends slide into the side frames' U ledges (glued). Two colors, one change:
 brown ties/runners, gray clips on top."""
 import math
 
@@ -10,7 +11,7 @@ from build123d import Axis, Circle, Compound, Location, Part, Plane, Polygon, Po
 from cadkit.shapes import dovetail
 from hotrain.joints import jigsaw, poly, rect
 from hotrain.params import P, Params
-from hotrain.parts import bow_frame, tie_ladder
+from hotrain.parts import bow_frame, floor_beam, tie_ladder
 from hotrain.span_geom import SpanGeom, end_fractions, frame_x_range, offset_at, span_geom, track_at, track_len
 
 
@@ -30,8 +31,8 @@ def _clip(g: SpanGeom) -> Sketch:
 
 
 def _band(g: SpanGeom, p: Params) -> Sketch:
-    """Ties end at the frames' inner faces (less the slide fit), inside the frames' U ledges."""
-    lim = p.bow_frame_y - p.bow_frame_t / 2 - p.fit_slide
+    """Ties end at the frames' inner faces (less the frame fit), inside the frames' U ledges."""
+    lim = p.bow_frame_y - p.bow_frame_t / 2 - p.fit_frame
     return rect(-50, g.s + 50, g.yc - lim, g.yc + lim)
 
 
@@ -89,18 +90,32 @@ def _dovetail(p: Params, gap: float, clearance: float = 0.0) -> Sketch:
 
 
 def _socket(p: Params, g: SpanGeom, f: float, u: float, gap: float = 0.0) -> Sketch:
-    """The socket in a stub for a tab coming in across the portal (gap 0: a run ladder's tab). Between decks it runs
-    on past the tab's tip by both stubs' gaps, so the decks can close up that much."""
+    """The socket in a stub for a tab coming in across the portal (gap 0: a run ladder's tab), fit_jig all round: no
+    slack along the track either (2026-11-08: the room past the tab's tip let the decks shuffle)."""
     if not gap:
-        return _at_portal(p, g, f, u, back=f == 1) * jigsaw(p, 0, 0, p.fit_snap)
-    room = rect(p.jig_len - 0.01, p.jig_len + 2 * gap + p.fit_snap, -p.jig_head / 2 - p.fit_snap,
-                p.jig_head / 2 + p.fit_snap)
-    return _at_portal(p, g, f, u, back=f == 1) * (_dovetail(p, gap, p.fit_snap) + room)
+        return _at_portal(p, g, f, u, back=f == 1) * jigsaw(p, 0, 0, p.fit_jig)
+    return _at_portal(p, g, f, u, back=f == 1) * _dovetail(p, gap, p.fit_jig)
 
 
 def _tab(p: Params, g: SpanGeom, f: float, u: float, gap: float) -> Sketch:
     """A tab out across the portal into the next deck's socket, from this deck's stub end."""
     return _at_portal(p, g, f, u, back=f == 0) * _dovetail(p, gap)
+
+
+def _pad(p: Params, g: SpanGeom, f: float, gap: float, rods: bool) -> Sketch:
+    """Between the runners (into them a little, clear of the rail grooves) from gap short of the portal on over the
+    floor beam under it: the notch's roof."""
+    ln = floor_beam.thickness(p, rods) / 2 + p.deck_notch_room + 0.5 - gap
+    return _at_portal(p, g, f, 0, back=f == 1) * Pos(gap + ln / 2, 0) * Rectangle(ln, p.rail_ctc - p.runner_w + 1)
+
+
+def _notch(p: Params, g: SpanGeom, f: float, rods: bool) -> Part:
+    """The V notch over the beam's ridge, fit_ridge off its flanks, from past the deck's end to deck_notch_room past
+    the beam, so it locates the deck across the track only (45-degree roofs: no bridge on the bed side)."""
+    a = p.fb_ridge_h + p.fit_ridge * math.sqrt(2)
+    ln = floor_beam.thickness(p, rods) / 2 + p.deck_notch_room + 1
+    v = extrude(Plane.YZ * poly((-(a + 1), -1), (a + 1, -1), (0, a)), ln)
+    return _at_portal(p, g, f, 0, back=f == 1) * Pos(-1, 0, 0) * v
 
 
 def ends(end) -> tuple[str, str]:
@@ -120,12 +135,14 @@ def tie_fracs(p: Params, g: SpanGeom) -> list[float]:
     return [f0 + (f1 - f0) * (k + 0.5) / n for k in range(n)]
 
 
-def bodies(p: Params, curved: bool, end: str | bool = "") -> dict[str, Part]:
+def bodies(p: Params, curved: bool, end: str | bool = "", rods: bool = True) -> dict[str, Part]:
     """Deck in the span frame as two print colors: "wood" (ties + rod runners, one connected piece, all at or
     below the tie tops) and "steel" (the rail clips, all above): one color change.
     Its runners reach both portals, over the floor beams, with a jigsaw socket at one end and a tab at the other, so
     the decks lock together (the user, 2026-11-07). end: "in" or "out", a corner's first or (turned round) last
-    straight span, where a run meets it: sockets at the anchor for the run deck's tabs (see `ends`)."""
+    straight span, where a run meets it: sockets at the anchor for the run deck's tabs (see `ends`).
+    Over each floor beam a pad between the runners has a V notch under it that sits on the beam's ridge (2026-11-08).
+    rods=False (inside corners): no rod grooves under the ties (they failed prints)."""
     if end and curved:
         raise ValueError("a corner's end spans are straight")
     g = span_geom(p, curved)
@@ -139,13 +156,16 @@ def bodies(p: Params, curved: bool, end: str | bool = "") -> dict[str, Part]:
     wood = extrude(ties, p.tie_h)
     for u in (p.rail_ctc / 2, -p.rail_ctc / 2):
         wood += _rail_runner(p, g, u)
-    for u in (p.rod_y, -p.rod_y):
+    for u in (p.rod_y, -p.rod_y) if rods else ():
         wood -= _rod_groove(p, g, u)
     for u in (p.rail_ctc / 2, -p.rail_ctc / 2):
         wood -= _rail_groove(p, g, u)
     for f, kind in zip((0.0, 1.0), ends(end)):  # every deck's runners reach both its portals, over the floor beams
         gap = 0.0 if kind == "run" else p.portal_gap / 2  # between decks: slack, so each drops in between two
         wood += extrude(Sketch() + [_stub(p, g, f, u, gap) for u in p.rail_ys], p.tie_h)
+        if kind != "run":  # over a floor beam (a run end sits on the anchor)
+            wood += extrude(_pad(p, g, f, gap, rods), p.tie_h)
+            wood -= _notch(p, g, f, rods)
         wood -= Pos(0, 0, p.rail_base_z) * extrude(Sketch() + [_stub_groove(p, g, f, u) for u in p.rail_ys],
                                                    p.rail_sink + 1)
         if kind == "tab":  # flat at the groove floor, like the run ladders' tabs: the rail slides over it
@@ -167,27 +187,27 @@ def bodies(p: Params, curved: bool, end: str | bool = "") -> dict[str, Part]:
     return {"wood": wood, "steel": steel}
 
 
-def build(p: Params, curved: bool, end: str | bool = "") -> Part:
+def build(p: Params, curved: bool, end: str | bool = "", rods: bool = True) -> Part:
     """Deck in the span frame (both colors fused)."""
-    b = bodies(p, curved, end)
+    b = bodies(p, curved, end, rods)
     return b["wood"] + b["steel"]
 
 
 
 
 
-def make(p: Params = P, curved: bool = True, end: str | bool = "") -> Part:
-    """Print orientation: tie undersides on the bed (rod grooves face the bed), tie plates up."""
-    d = build(p, curved, end)
+def make(p: Params = P, curved: bool = True, end: str | bool = "", rods: bool = True) -> Part:
+    """Print orientation: tie undersides on the bed (rod grooves and beam notches face the bed), tie plates up."""
+    d = build(p, curved, end, rods)
     bb = d.bounding_box()
     return Pos(-bb.min.X, -bb.min.Y, -bb.min.Z) * d
 
 
-def painted(p: Params, curved: bool, end: str | bool = "") -> Part:
+def painted(p: Params, curved: bool, end: str | bool = "", rods: bool = True) -> Part:
     """The deck as ONE solid in the span frame (CAD/assemblies), tie plates painted gray."""
     from cadkit import paint
     from hotrain.room import IRON, TIE_BROWN
-    b = bodies(p, curved, end)
+    b = bodies(p, curved, end, rods)
     d = paint.painted(b["wood"], TIE_BROWN, b["steel"], IRON)
     d.label = f"corner_deck_{_kind(curved, end)}"
     return d
@@ -199,11 +219,11 @@ def _kind(curved: bool, end: str | bool) -> str:
     return "curve" if curved else "straight"
 
 
-def make_colored(p: Params = P, curved: bool = True, end: str | bool = "") -> Compound:
+def make_colored(p: Params = P, curved: bool = True, end: str | bool = "", rods: bool = True) -> Compound:
     """Print orientation like make(), as wood + steel bodies for a multi-color printer."""
     from hotrain.room import IRON, TIE_BROWN
     kind = _kind(curved, end)
-    b = bodies(p, curved, end)
+    b = bodies(p, curved, end, rods)
     bb = (b["wood"] + b["steel"]).bounding_box()
     out = []
     for name, col in (("wood", TIE_BROWN), ("steel", IRON)):

@@ -60,15 +60,19 @@ Common to both:
 - The inside corner has 7 spans; the bridge corner has 9.
 - **Inside corners: no rods.** A support under every portal: the end anchors, a **portal bracket** (floor beam and
   bracket in one) at each end of the curve, and deep brackets under the other four floor beams. Each span is a short
-  bridge whose frame ends and end ties sit on the floor beams' seats.
+  bridge whose frame ends and end ties sit on the floor beams' seats, the trusses' bottoms down in grooves in each
+  seat's top. The two portal brackets' grooves are mirror images: `portal_bracket` goes at the entry end of the
+  curve, `portal_bracket_out` at the exit.
 - **Bridge corner:** two ¼" aluminum rods bent to the curve carry it over the alcove. Floor beams cradle the rods;
   wall anchors and a 6" deep bracket hold the floor beams and rod ends. The printed bending jig is a **gauge**: bend
   a little past it, since 6061 springs back.
 - **Deck:** one flat printable ladder per span (brown ties with the rail grooves, gray clips on top). Its runners
   reach both portals and **lock to the next deck with a jigsaw tab**, flat at the groove floor; the end decks take
-  the runs' tabs. On the bridge the decks also rest on the rods, in shallow grooves under the ties.
+  the runs' tabs. Over each floor beam a pad between the runners sits on a V ridge along the beam's top, which
+  centres the decks across the track. On the bridge the decks also rest on the rods, in shallow grooves under the
+  ties; the inside corners' decks have no rod grooves.
 - **Side frames:** Pratt **pony trusses** (`corner_style="pony"`; `"bowstring"` also builds).
-  - Ledges on the inside of each truss's bottom form a U that hugs the deck's tie ends (glued).
+  - Ledges on the inside of each truss's bottom form a U that grips the deck's tie ends (0.05 mm, glued).
   - The outside reads as solid gray.
   - A step at each end sits the truss on the floor beam.
 - **Bridge corner drop:** 50 lb **braided** line (not monofilament, which creeps) around tie ends outside a truss,

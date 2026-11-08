@@ -63,7 +63,7 @@ def bodies(p: Params, ties: list, x_start: float, x_end: float, tab_xs: list[flo
             px, py = (p.peg_w + p.fit_slide) / 2, (p.handrail_t + p.fit_slide) / 2  # slide fit + a drop of glue
             cuts.append(rect(t.x - px, t.x + px, p.handrail_offset - py, p.handrail_offset + py))
     if female_start:
-        cuts += [jigsaw(p, x_start, y, p.fit_snap) for y in p.rail_ys]
+        cuts += [jigsaw(p, x_start, y, p.fit_jig) for y in p.rail_ys]
     footprint = (Sketch() + base) - cuts
     wood = extrude(footprint, p.tie_h)
     if gaps:  # feeder groove across both runners, between the full tie and the first gap tie, over a floor

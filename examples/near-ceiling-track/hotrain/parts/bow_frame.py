@@ -1,5 +1,5 @@
 """Corner side frame. Its outer face runs down past the deck edge, and two ledges on its inner face (above
-and below the tie band) form a U the deck's tie ends slide into, glued. Printed outer face down, so the
+and below the tie band) form a U the deck's tie ends slide into, snug (fit_frame), glued. Printed outer face down, so the
 U opens upward and needs no supports; all gray, one color.
 
 Two styles (`P.corner_style`): a Pratt pony truss (inclined end posts, verticals, diagonals sloping
@@ -19,7 +19,7 @@ def tab_xs(p: Params, length: float) -> list[float]:
 
 def u_bottom(p: Params) -> float:
     """Bottom of the frame (and its lower ledge), z = 0 at the tie underside."""
-    return -p.fit_slide - p.frame_ledge_lo
+    return -p.fit_frame - p.frame_ledge_lo
 
 
 def top_z(p: Params) -> float:
@@ -36,11 +36,10 @@ def _bar(a: tuple[float, float], b: tuple[float, float], w: float) -> Sketch:
 
 
 def _skirt(p: Params, length: float, z0: float) -> list[Sketch]:
-    """Outer face carried down past the deck edge to the bottom of the U, except at each end, where the
-    frame sits on the floor beam (the step locates the span along the track): from the tie underside, so the ends
-    bear on a rodless corner's seat beams."""
-    e = p.frame_ledge_end
-    return [rect(e, length - e, u_bottom(p), z0 + 0.5), rect(0, length, 0, z0 + 0.5)]
+    """Outer face carried down past the deck edge to the bottom of the U, the whole length: at a rodless corner's
+    seats its ends drop into grooves in the beam's top (the user, 2026-11-08), which hold the truss across the
+    track."""
+    return [rect(0, length, u_bottom(p), z0 + 0.5)]
 
 
 def pony_profile(p: Params, length: float) -> Sketch:
@@ -105,7 +104,7 @@ def profile(p: Params, length: float) -> Sketch:
 
 def ledges(p: Params, length: float) -> Sketch:
     """(x, z) of the two inward ledges: over the ties full length, under the ties clear of the floor beams."""
-    f, e = p.fit_slide, p.frame_ledge_end
+    f, e = p.fit_frame, p.frame_ledge_end
     return Sketch() + [rect(0, length, p.tie_h + f, p.tie_h + f + p.frame_ledge_hi),
                        rect(e, length - e, -f - p.frame_ledge_lo, -f)]
 

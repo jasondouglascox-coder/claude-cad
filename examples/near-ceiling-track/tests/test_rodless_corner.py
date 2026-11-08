@@ -10,7 +10,7 @@ from hotrain import corner_layout as C
 from hotrain import plates
 from hotrain.checks import printable_problems
 from hotrain.params import P
-from hotrain.parts import deep_bracket, floor_beam, portal_bracket
+from hotrain.parts import bow_frame, deep_bracket, floor_beam, portal_bracket
 from hotrain.span_geom import span_geom
 
 IN = C.inside_corner()
@@ -54,8 +54,8 @@ def _probe(sp, yl: float, x: float, z0: float, z1: float, size: float = 1.0):
 
 
 def test_every_frame_end_bears_on_a_seat(items):
-    """Just inside each end of each frame (but at the end anchors): the frame comes down to the tie underside, and
-    a floor beam or portal bracket is right under it."""
+    """Just inside each end of each frame (but at the end anchors): the frame comes down into the seat's groove
+    (2026-11-08), and a floor beam or portal bracket is right under it."""
     frames = {n: s for n, s in items if n.startswith("frame")}
     supports = [s for n, s in items if n.startswith(SUPPORTS)]
     spans = C.spans(P, IN)
@@ -64,8 +64,9 @@ def test_every_frame_end_bears_on_a_seat(items):
             fr = frames[f"frame{sp.index}_{'inner' if yl > span_geom(P, sp.curved).yc else 'outer'}"]
             ends = [x for x, at_anchor in ((xs + 1.0, sp == spans[0]), (xs + ln - 1.0, sp == spans[-1])) if not at_anchor]
             for x in ends:
-                assert (fr & _probe(sp, yl, x, 0.02, 0.3)).volume > 0, (sp.index, side, x)
-                under = _probe(sp, yl, x, -0.3, -0.02)
+                zb = bow_frame.u_bottom(P)
+                assert (fr & _probe(sp, yl, x, zb + 0.02, zb + 0.3)).volume > 0, (sp.index, side, x)
+                under = _probe(sp, yl, x, zb - 0.3, zb - 0.02)
                 assert any((s & under).volume > 0 for s in supports), (sp.index, side, x)
 
 
@@ -98,7 +99,7 @@ def test_inside_corner_kit_has_a_seat_beam_or_bracket_at_every_portal():
     assert {"portal_bracket", "floor_beam_seat_18", "floor_beam_seat_36", "deep_bracket"} <= names
     assert "floor_beam" not in names
     counts = [n for n, _ in plates.corner_kit(P, IN)]
-    assert counts.count("portal_bracket") == len(IN.portal)
+    assert sum(n.startswith("portal_bracket") for n in counts) == len(IN.portal)  # P1's, and _out (mirrored grooves)
     assert sum(n.startswith("floor_beam_seat") for n in counts) == len(IN.deep)
     assert counts.count("deep_bracket") == len(IN.deep)
 

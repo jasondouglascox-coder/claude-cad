@@ -72,7 +72,8 @@ def decks(request):
 
 def test_corner_decks_lock_together_at_every_portal(decks):
     """The user, 2026-11-07: the corner decks should interlock. Each deck's flat jigsaw tab sits in the next one's
-    socket: they touch nowhere else, and pulled apart along the track by a hair they catch."""
+    socket: they touch nowhere else, and pulled apart along the track by a hair they catch (pushed together too:
+    test_corner_keys, 2026-11-08)."""
     c, ds = decks
     ps = C.portals(D, c)
     for i in range(1, len(ps) - 1):
@@ -81,8 +82,6 @@ def test_corner_decks_lock_together_at_every_portal(decks):
         h = math.radians(ps[i].heading)
         pulled = Pos(0.3 * math.cos(h), 0.3 * math.sin(h), 0) * b
         assert (a & pulled).volume > 1e-3, i
-        pushed = Pos(-0.3 * math.cos(h), -0.3 * math.sin(h), 0) * b  # slack, so a deck drops in between two
-        assert (a & pushed).volume < 1e-3, i
 
 
 @pytest.mark.parametrize("curved", [False, True])

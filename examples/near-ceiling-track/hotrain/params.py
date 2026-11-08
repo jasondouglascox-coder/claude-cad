@@ -218,6 +218,11 @@ class Params:
     fb_drop: float = 6.0  # floor beam depth below the runners
     fb_key_w: float = 1.6  # rodless seat beams: keys hanging under the beam either side of its deep bracket, so it
     fb_key_h: float = 4.0  # can't slide along its own length (the rods held it)
+    fb_ridge_w: float = 2.4  # V ridge along each floor beam's top (45-degree flanks) into a notch under the decks'
+    fb_ridge_h: float = 1.2  # centre pads over it: it locates them across the track (the user, 2026-11-08)
+    deck_notch_room: float = 1.5  # the notch runs on this far past the ridge's ends: across the track only, so the
+    # brackets' marks needn't hold the decks' length to a fraction of a mm (review, 2026-11-08)
+    fb_seat_room: float = 0.75  # a rodless seat stops this short of the trusses' lower ledges, each side
     corner_bus_clear: float = 1.0  # corner bus beside the wall-side frames' outer faces, on the beams' tops
     corner_bus_lip_h: float = 3.0  # lip on the beam top at the bus's wall side
     corner_bus_wall_gap: float = 0.5  # beams stop this short of the wall at the curve's ends
@@ -276,6 +281,10 @@ class Params:
     fit_tab: float = 0.10  # truss tab into the tie ladder's slot: fit-test variant 1 (0.10 and 0.20 both fit)
     fit_cf: float = -0.10  # cross-frame slots over the panels, a press fit: clip coupon 2 (2026-10-26)
     fit_pier: float = 0.10  # pier in the bracket's (and corner anchors') slot: tighter than fit_slide (latch coupon)
+    fit_jig: float = 0.0  # deck bowtie (jigsaw) sockets, as tight as the keystones (fit_key); fit_snap's 0.05 felt
+    # loose next to them (the user, 2026-11-08)
+    fit_frame: float = 0.05  # tie ends in the corner frames' U, each side: fit_slide let the frames rattle (2026-11-08)
+    fit_ridge: float = 0.10  # deck notch over a floor beam's V ridge, normal to its flanks
 
     # printer: yours, from cadkit.settings (CADKIT_BED... or cadkit.toml); with nothing set, the A1's 256 x 256 mm.
     # Half spans and ladders are sized to fit bed_usable; a smaller bed fails the fit tests with the numbers.
