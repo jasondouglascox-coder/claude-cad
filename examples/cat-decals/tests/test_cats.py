@@ -14,9 +14,15 @@ def test_a_dozen_poses():
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_one_solid_piece(name):
+def test_each_part_one_solid_piece(name):
+    """The cat is one piece; a pose's extras (the yarn ball) are pieces of their own, a weedable gap apart."""
     c = cats.cat(name)
-    assert isinstance(c, Polygon) and c.is_valid and not c.is_empty
+    pieces = cats.pieces(c)
+    assert c.is_valid and len(pieces) == cats.part_count(name)
+    assert all(isinstance(q, Polygon) for q in pieces)
+    for i, a in enumerate(pieces):
+        for b in pieces[i + 1:]:
+            assert a.distance(b) >= P.min_gap
 
 
 @pytest.mark.parametrize("name", NAMES)
@@ -38,7 +44,7 @@ def test_nothing_too_thin_to_weed(name):
 
 @pytest.mark.parametrize("name", NAMES)
 def test_holes_weedable(name):
-    for ring in cats.cat(name).interiors:
+    for ring in (r for q in cats.pieces(cats.cat(name)) for r in q.interiors):
         hole = Polygon(ring)
         assert hole.area >= P.min_hole_area, f"{name}: a hole of {hole.area:.3f} sq in"
         assert not hole.buffer(-P.min_gap / 2).is_empty, f"{name}: a hole narrower than {P.min_gap} in"
@@ -68,7 +74,7 @@ def test_dxf_reads_back_closed_and_to_scale(tmp_path):
     doc = ezdxf.readfile(path)
     lines = list(doc.modelspace())
     assert lines and all(e.dxftype() == "POLYLINE" and e.is_closed for e in lines)
-    rings = sum(1 + len(s.interiors) for _, s in shapes)
+    rings = sum(1 + len(q.interiors) for _, s in shapes for q in cats.pieces(s))
     assert len(lines) == rings  # every outline and hole is its own closed cut
     xs = [v.dxf.location.x for e in lines for v in e.vertices]
     ys = [v.dxf.location.y for e in lines for v in e.vertices]

@@ -6,9 +6,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import PathPatch  # noqa: E402
 from matplotlib.path import Path as MPath  # noqa: E402
 
+from .shapes import pieces  # noqa: E402
 
-def _patch(poly, **kw):
-    rings = [poly.exterior, *poly.interiors]
+
+def _patch(shape, **kw):
+    rings = [r for q in pieces(shape) for r in (q.exterior, *q.interiors)]
     verts, codes = [], []
     for r in rings:
         xy = list(r.coords)

@@ -33,3 +33,9 @@ silhouette that has to read from its shape alone.
 - **2026-10-31: one of each, inches only.** The user duplicates and scales cats in Studio, so the sheet carries each
   pose once (plus the test square), ½" apart (was ¼"), across the top of the mat where the Cameo starts. The repeated
   53-cat fill, the `_mm` sheet and the per-pose DXFs are gone: only `out/cat_sheet_in.dxf`.
+- **2026-11-08: smoother, after the user's references.** The blob-and-stick cats looked rough. Poses are being redrawn
+  as single smooth outlines (closed splines with sharp ear tips: `shapes.outline`), with tapered legs, filleted joins
+  (`blend`), and one spline head for the profile and one for the front. Deliberate gaps (yarn slits, tucked-tail
+  notches) are cut after smoothing (`Cut`) so they survive it. A pose may have separate pieces, at least `min_gap` from
+  the cat: the butterfly pose (3 butterflies, after the user's reference) and the yarn ball. The arched cat bristles
+  (`fur`). Redrawn so far: from behind, sitting, walking, butterflies (replacing batting), asleep, stretching, arched.
