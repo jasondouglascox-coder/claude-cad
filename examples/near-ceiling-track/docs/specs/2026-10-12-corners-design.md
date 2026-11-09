@@ -283,3 +283,41 @@ The user printed a corner and found four things:
   rodless seats are `fb_seat_room` (0.75 mm) shorter each side along the track, so the beams locate the decks and
   trusses across the track only. The bridge corner's decks keep the arched rod groove that failed under the
   inside-corner decks (they ride the rods): open question for the user.
+
+## 19. Amendment (2026-11-09): tabs from the seats into the decks
+
+- **Why.** With §18 printed, the inside corner still flexed: the user, "the rail is really the only thing making
+  this whole thing ridgid". They asked for tabs on the cross bar (the floor beam), 11 mm long, pushed up tight into
+  each deck's first gap, with the bar wider to carry them.
+- **Tabs into today's gap.** The user chose to keep the decks they had already fought onto the rail (a plug filling a
+  pocket in the deck's end would print better and hold more; for future corners). Each rodless seat (seat beams and
+  portal brackets) now has a tab `fb_tab_l` (11 mm) across the track, tie-high, in each deck's first open gap between
+  its runners: from the centre pad's end (8.25 from the portal) to the second tie (10.29 at its nearest: a curve's
+  ties are radial, nearer the portal on the inside). The tab is whole layers (the beam prints standing on end): 1.8
+  mm, 8.4 to 10.2 from the portal. The gap is 2.0–2.1 in the model but prints about 1.8 (the user measured it), so
+  the tab is a push fit (`fit_beam_tab` 0.05 is the least it leaves in the model).
+- **The seat grows to them.** `floor_beam.thickness` (rodless) is now twice the tab's outer face, 20.4 mm (was 12.5).
+  `seat_half` (6.25) keeps what the decks' pads and notches were sized to, so the decks are unchanged. The V ridge
+  stays within it, its ends at 45 degrees so it prints standing up. Past `ledge_cut` (6.2) the seat is cut clear of
+  the trusses' lower ledges (`corner_assembly.ledge_room`), as before. The deep brackets' bands and stops follow the
+  wider beam, so they reprint too.
+- **Portal brackets' marks.** The plate thickens toward the beam's bed-side face (4.0 mm, whole layers) instead of
+  moving, and the flange runs on from it, so the flange and its keyholes stay put (0.05 mm off): the screws in the
+  wall still fit.
+- **Print.** The tab at the bed end prints on the bed; the far one prints as a 2.4 mm shelf (its portal-side face,
+  11 × 2.4 mm²) over air, the cost of keeping today's decks: it may need a file. The ledge clearances leave roofs of a
+  few mm².
+- **No give along the track now** (the user asked for tight): the seats take their place from the decks. The deep
+  brackets' and portal brackets' keyholes ride ½" crossbars, so lay the decks on the beams before tightening the
+  bracket screws. The bridge corner is unchanged.
+- **From the review (same day).** Decks unchanged (identical to the printed ones); no clashes with decks, trusses,
+  bus, brackets or anchors; the portal brackets' keyholes 0.05 mm from where they were. Three fixes:
+  - The deep brackets' stops held each seat within `portal_gap` (0.4) along their plate, and the seats now take
+    their place from the decks: with the chain fixed at P0, P1, P6, P7 the marks at P2–P5 would have had to be right
+    to ±0.4 mm. Rodless, the stops stand `deep_stop_room` (1.25) off the seat; they only keep it on the arm.
+  - The 18-degree seats' room-side key (further out, the beam being wider) hung 0.95 mm past the beam's end: a
+    keyed seat now reaches 0.5 past its key.
+  - The tabs' tops have a 45-degree lead-in, `fb_tab_lead` (0.4), along the track: each deck goes down onto two
+    press-fit tabs (the rail clipped across several decks means several at once).
+  - Not changed: on the curve decks the radial second tie makes the gap a wedge, so the tab grips at its inner end
+    and is ~0.2 mm looser at its outer end. Following the tie would tilt the tabs' faces off the layers.

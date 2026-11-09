@@ -102,10 +102,16 @@ def _tab(p: Params, g: SpanGeom, f: float, u: float, gap: float) -> Sketch:
     return _at_portal(p, g, f, u, back=f == 0) * _dovetail(p, gap)
 
 
+def pad_end(p: Params, rods: bool) -> float:
+    """How far past the portal a deck's pad reaches: over the seat and its notch's room (where the first gap starts,
+    which a rodless seat's tab rises into)."""
+    return floor_beam.seat_half(p, rods) + p.deck_notch_room + 0.5
+
+
 def _pad(p: Params, g: SpanGeom, f: float, gap: float, rods: bool) -> Sketch:
     """Between the runners (into them a little, clear of the rail grooves) from gap short of the portal on over the
     floor beam under it: the notch's roof."""
-    ln = floor_beam.thickness(p, rods) / 2 + p.deck_notch_room + 0.5 - gap
+    ln = pad_end(p, rods) - gap
     return _at_portal(p, g, f, 0, back=f == 1) * Pos(gap + ln / 2, 0) * Rectangle(ln, p.rail_ctc - p.runner_w + 1)
 
 
@@ -113,7 +119,7 @@ def _notch(p: Params, g: SpanGeom, f: float, rods: bool) -> Part:
     """The V notch over the beam's ridge, fit_ridge off its flanks, from past the deck's end to deck_notch_room past
     the beam, so it locates the deck across the track only (45-degree roofs: no bridge on the bed side)."""
     a = p.fb_ridge_h + p.fit_ridge * math.sqrt(2)
-    ln = floor_beam.thickness(p, rods) / 2 + p.deck_notch_room + 1
+    ln = floor_beam.seat_half(p, rods) + p.deck_notch_room + 1
     v = extrude(Plane.YZ * poly((-(a + 1), -1), (a + 1, -1), (0, a)), ln)
     return _at_portal(p, g, f, 0, back=f == 1) * Pos(-1, 0, 0) * v
 

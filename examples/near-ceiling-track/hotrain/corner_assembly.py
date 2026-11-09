@@ -79,12 +79,30 @@ def seat_grooves(p: Params, c: C.Corner) -> Part:
     return Part(Compound(children=out).solids())
 
 
+def ledge_room(p: Params, c: C.Corner) -> Part:
+    """Where the trusses' lower ledges come down over the rodless seats, which reach past their ends to the decks'
+    first gaps (2026-11-09), in the corner frame: along each frame's line within its span, from fit_slide under the
+    ledge up past the beam top, from the web out fit_slide past the ledge. Each seat cuts it beyond ledge_cut."""
+    zb, ps, out = bow_frame.u_bottom(p), C.portals(p, c), []
+    t, w, f = p.bow_frame_t, p.frame_ledge, p.fit_slide
+    for sp in C.spans(p, c):
+        a, b = ps[sp.index], ps[sp.index + 1]
+        between = (Pos(a.x, a.y, 0) * Rot(0, 0, a.heading) * Box(400, 400, 40, align=(Align.MIN, Align.CENTER, Align.CENTER))
+                   & Pos(b.x, b.y, 0) * Rot(0, 0, b.heading) * Box(400, 400, 40, align=(Align.MAX, Align.CENTER, Align.CENTER)))
+        for _, yl, xs, ln in frame_lines(p, sp.curved):
+            box = Pos(-20, -f, 0) * Box(ln + 40, -zb + 1 + f, t + w + f, align=(Align.MIN, Align.MIN, Align.MIN))
+            out.append(span_location(sp) * frame_location(p, sp.curved, yl, xs, ln) * box & between)
+    return Part(Compound(children=out).solids())
+
+
 def supports(p: Params, c: C.Corner) -> list[tuple[int, str, Part, Location]]:
     """(portal index, name, print-orientation part, its location in the corner) of the floor beam or portal bracket
     under each portal between the anchors; rodless, each with the grooves its trusses' skirts sit in. A portal
     bracket's grooves step where the straight span's trusses meet the curve's, so P1's and the last one's differ."""
     ps, walls, out = C.portals(p, c), dict(c.portal), []
     grooves = None if c.rods else seat_grooves(p, c)
+    ledges = None if c.rods else ledge_room(p, c)
+    keep = floor_beam.ledge_cut(p)
     for i, pt in enumerate(ps[1:-1], start=1):
         if i not in walls:
             key = None if c.rods else beam_key(p, c, i)  # rodless: keyed to its deep bracket
@@ -97,7 +115,8 @@ def supports(p: Params, c: C.Corner) -> list[tuple[int, str, Part, Location]]:
             loc = portal_bracket.place(p, pt.x) if walls[i] == "A" else (wall_b_frame(p, c)
                                                                          * portal_bracket.place(p, pt.y))
         if grooves is not None:
-            part = Part((part - loc.inverse() * grooves).solids())
+            near = Pos(pt.x, pt.y, 0) * Rot(0, 0, pt.heading) * Box(2 * keep, 400, 60)
+            part = Part((part - loc.inverse() * (grooves + (ledges - near))).solids())
         part.label = name
         out.append((i, name, part, loc))
     return out
@@ -175,7 +194,7 @@ def _flat(p: Params, c: C.Corner, i: int) -> float:
         return p.flange_w - p.bracket_t / 2 + 1 if i == 0 else p.bracket_t / 2 + 1
     t = floor_beam.thickness(p, c.rods)
     flange_toward_anchor = i == n - 1 and dict(c.portal).get(i) == "B"
-    return p.flange_w - t / 2 + 1 if flange_toward_anchor else t / 2 + 1
+    return p.flange_w - floor_beam.seat_half(p, c.rods) + 1 if flange_toward_anchor else t / 2 + 1
 
 
 def bus_points(p: Params, c: C.Corner) -> list[tuple[float, float, float]]:

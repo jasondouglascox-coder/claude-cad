@@ -220,6 +220,9 @@ class Params:
     fb_key_h: float = 4.0  # can't slide along its own length (the rods held it)
     fb_ridge_w: float = 2.4  # V ridge along each floor beam's top (45-degree flanks) into a notch under the decks'
     fb_ridge_h: float = 1.2  # centre pads over it: it locates them across the track (the user, 2026-11-08)
+    fb_tab_l: float = 11.0  # rodless seats: a tab this long across the track up into each deck's first gap, between
+    # its runners (the user, 2026-11-09: the rail was the only thing keeping the corners rigid)
+    fb_tab_lead: float = 0.4  # 45-degree lead-in on the tabs' tops, along the track: the deck pushes down onto them
     deck_notch_room: float = 1.5  # the notch runs on this far past the ridge's ends: across the track only, so the
     # brackets' marks needn't hold the decks' length to a fraction of a mm (review, 2026-11-08)
     fb_seat_room: float = 0.75  # a rodless seat stops this short of the trusses' lower ledges, each side
@@ -244,6 +247,8 @@ class Params:
     cleat_horn_tip: float = 1.8  # horn thickness at the tip
     portal_gap: float = 0.4
     deep_reach_margin: float = 12.0
+    deep_stop_room: float = 1.25  # rodless: the deep brackets' stops this far off the seat each side along the plate
+    # (the seats' tabs lock them to the decks, so the decks place them, not the marks; review, 2026-11-09)
 
     # stainless wire rail on a printed web: the curve test piece (docs/specs/2026-10-16-wire-rail-design.md).
     # Wire equators sit `gauge` apart; the wire top is rail_top.
@@ -285,6 +290,7 @@ class Params:
     # loose next to them (the user, 2026-11-08)
     fit_frame: float = 0.05  # tie ends in the corner frames' U, each side: fit_slide let the frames rattle (2026-11-08)
     fit_ridge: float = 0.10  # deck notch over a floor beam's V ridge, normal to its flanks
+    fit_beam_tab: float = 0.05  # a floor beam's tabs in the decks' first gaps, each side along the track: a push fit
 
     # printer: yours, from cadkit.settings (CADKIT_BED... or cadkit.toml); with nothing set, the A1's 256 x 256 mm.
     # Half spans and ladders are sized to fit bed_usable; a smaller bed fails the fit tests with the numbers.

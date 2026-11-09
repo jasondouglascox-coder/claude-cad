@@ -84,7 +84,7 @@ def test_beams_with_ridges_still_print(make):
 
 
 def test_ridge_is_45_degrees_on_the_beam_top():
-    prof = floor_beam.profile(P, rods=False)
+    prof = floor_beam.profile(P)  # rodless the same ridge is in seat_top (test_beam_tabs)
     h = P.fb_ridge_h
     solid = lambda u, z: (prof & (Pos(u, z) * _square(0.05))).area > 1e-6
     assert P.fb_ridge_w == pytest.approx(2 * h)  # 45-degree flanks: the deck's notch prints without a bridge
@@ -211,8 +211,11 @@ def test_kit_seats_match_the_assembly():
 
 def test_decks_can_shift_along_their_beams(corner):
     """Review, 2026-11-08: the beams locate the decks across the track only. Along it, a deck (and its trusses)
-    can move a little against the seats, so the chain of tight bowties needn't match the brackets' marks exactly."""
+    can move a little against the seats, so the chain of tight bowties needn't match the brackets' marks exactly.
+    Since 2026-11-09 only on the bridge: the inside corners' seats have tabs into the decks (test_beam_tabs)."""
     c, ds, seats = corner
+    if not c.rods:
+        pytest.skip("rodless seats lock the decks along the track")
     ps = C.portals(D, c)
     room = min(P.deck_notch_room, P.fb_seat_room) - 0.1
     for i, seat in seats.items():

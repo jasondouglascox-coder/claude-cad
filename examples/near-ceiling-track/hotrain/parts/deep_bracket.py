@@ -34,7 +34,7 @@ def _strut(a: tuple, b: tuple, w: float, ext: float) -> Sketch:
 
 def profile(p: Params, w_beam: float, beam_angle_deg: float, rods: bool = True) -> Sketch:
     """(w, z): w out from the wall, z from the bottom; the beam crosses at w = w_beam."""
-    bw = band(p, beam_angle_deg, rods) + p.portal_gap
+    bw = band(p, beam_angle_deg, rods) + (p.portal_gap if rods else p.deep_stop_room)
     end = w_beam + bw + 3 + p.deep_reach_margin
     m, f = p.bracket_member, p.flange_t
     bound = rect(0, end, 0, DEPTH)

@@ -61,8 +61,10 @@ Common to both:
 - **Inside corners: no rods.** A support under every portal: the end anchors, a **portal bracket** (floor beam and
   bracket in one) at each end of the curve, and deep brackets under the other four floor beams. Each span is a short
   bridge whose frame ends and end ties sit on the floor beams' seats, the trusses' bottoms down in grooves in each
-  seat's top. The two portal brackets' grooves are mirror images: `portal_bracket` goes at the entry end of the
-  curve, `portal_bracket_out` at the exit.
+  seat's top. Each seat reaches along the track under both decks' first gaps, and a tab 11 mm long rises from it
+  tight into each gap (between the deck's centre pad and its second tie), so the beams stiffen the joints. The two
+  portal brackets' grooves are mirror images: `portal_bracket` goes at the entry end of the curve,
+  `portal_bracket_out` at the exit.
 - **Bridge corner:** two ¼" aluminum rods bent to the curve carry it over the alcove. Floor beams cradle the rods;
   wall anchors and a 6" deep bracket hold the floor beams and rod ends. The printed bending jig is a **gauge**: bend
   a little past it, since 6061 springs back.

@@ -43,8 +43,14 @@ def plate(p: Params) -> Sketch:
 
 def make(p: Params = P) -> Part:
     """Print orientation: the beam's face and the plate flat on the bed (the beam floor_beam.thickness tall, the
-    plate bracket_t), the flange standing along the wall edge."""
-    return bracket.flanged(p, plate(p), depth(p), screw_lines(p)) + extrude(beam(p), floor_beam.thickness(p, False))
+    plate bracket_t), the flange standing along the wall edge. Since the beam grew along the track to its tabs
+    (2026-11-09), the plate thickens by as much toward the bed and the flange runs on from it: the flange and its
+    keyholes stay where they were (to the nearest layer), so the screws in the wall still fit."""
+    th, lay = floor_beam.thickness(p, False), p.printer.layer
+    e = round((th / 2 - floor_beam.seat_half(p, False)) / lay) * lay  # whole layers: the keyholes stay on layers
+    held = bracket.flanged(p, plate(p), depth(p), screw_lines(p), extra=e) + extrude(plate(p), p.bracket_t + e)
+    top = Pos(p.track_offset, depth(p)) * floor_beam.seat_top(p)
+    return Part((held + extrude(beam(p), th) + top).solids())
 
 
 def place(p: Params, x_plane: float) -> Location:
