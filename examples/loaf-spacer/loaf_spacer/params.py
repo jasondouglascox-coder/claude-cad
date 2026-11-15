@@ -1,7 +1,7 @@
 """Every dimension in one place (mm). A design change is a one-line edit here; tests derive from these.
 
 The pan's inside cross-section, from the bottom up: bottom_w wide, straight up to wall_h, out to the sides
-(about 45 degrees) until slant_top_h, where it's top_w wide, then straight up to rim_h."""
+(about 40 degrees) until slant_top_h, where it's top_w wide, then straight up to rim_h."""
 from dataclasses import dataclass
 
 from cadkit import Printer
@@ -9,7 +9,7 @@ from cadkit import Printer
 
 @dataclass(frozen=True)
 class Params:
-    bottom_w: float = 65.0  # pan floor, inside
+    bottom_w: float = 70.0  # pan floor, inside: 65 measured, printed 5 mm too narrow (2026-11-15)
     wall_h: float = 20.0  # straight wall before the slant
     slant_top_h: float = 35.0  # where the slant ends
     top_w: float = 94.0  # inside width from slant_top_h up to the rim
