@@ -21,7 +21,9 @@ class Params:
     hole_d: float = 22.0  # finger hole through the tab
     corner_r: float = 3.0  # sheet's top corners and where the tab meets the sheet
     tab_r: float = 8.0  # tab's top corners
-    t: float = 0.8  # sheet thickness: 4 layers, the thinnest that stays a sheet
+    t: float = 0.6  # sheet thickness: 3 layers, thin but stiff enough to pull out of dough
+    # the AMS lite as loaded (type, color) per slot, so the project opens with the spacer in black PLA
+    filaments: tuple = (("PLA", "#F07A1A"), ("PLA", "#F5C400"), ("PLA", "#000000"), ("PLA", "#6F4A2A"))
     filament_black: int = 3  # AMS slot
     printer: Printer = Printer()
 

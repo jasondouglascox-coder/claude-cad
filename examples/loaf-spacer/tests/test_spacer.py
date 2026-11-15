@@ -94,6 +94,17 @@ def test_build_writes_a_black_plate(tmp_path):
     assert got == {"loaf_spacer": settings().filament(P.filament_black)}
 
 
+def test_plate_opens_as_black_pla(tmp_path):
+    """The project names the loaded AMS set, so the spacer's slot reads black PLA, not the template's color."""
+    import json, zipfile
+    build.main(["--out", str(tmp_path)])
+    s = slicers.active()
+    with zipfile.ZipFile(tmp_path / "plates" / f"loaf_spacer_1{s.project_suffix}") as z:
+        cfg = json.loads(z.read("Metadata/project_settings.config"))
+    i = P.filament_black - 1
+    assert (cfg["filament_type"][i], cfg["filament_colour"][i].upper()) == P.filaments[i] == ("PLA", "#000000")
+
+
 @pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")
 def test_slicer_slices_it_in_black_only(tmp_path):
     build.main(["--out", str(tmp_path)])

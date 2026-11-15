@@ -6,6 +6,7 @@ from pathlib import Path
 
 from build123d import Color, export_step
 
+from cadkit import bambu3mf
 from cadkit.export import write_plates
 from cadkit.plates import Plate, pack
 from cadkit.render import render
@@ -22,8 +23,9 @@ def main(argv: list[str] | None = None) -> int:
     step.parent.mkdir(parents=True, exist_ok=True)
     export_step(s, step)
     beds = pack([("loaf_spacer", s)], P.printer)
+    ams = bambu3mf.write_settings(out / "bambu_project_settings.config", list(P.filaments))
     write_plates([Plate(f"loaf_spacer_{n + 1}", 1, items) for n, items in enumerate(beds)], out / "plates",
-                 out / "plates.csv", lambda name: P.filament_black)
+                 out / "plates.csv", lambda name: P.filament_black, settings=ams)
     gray = Color(0.18, 0.18, 0.18)  # black filament, lifted enough to see the shading
     render([(s, gray)], out / "render" / "front.png", view=(0, 0, 1), px=600)
     render([(s, gray)], out / "render" / "iso.png", view=(0.4, -0.6, 1), px=600)

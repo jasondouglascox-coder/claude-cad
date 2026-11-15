@@ -13,9 +13,11 @@ A removable divider for a loaf pan, only for rising: pulled out before the pan g
 
 ## Print
 
-- Lies flat: one 0.8 mm sheet (4 layers at 0.2 mm), the thinnest that stays a sheet you can pull out of dough.
-- Black PLA (AMS slot 3), one plate, no supports, no color changes.
+- Lies flat: one 0.6 mm sheet (3 layers at 0.2 mm).
+- Black PLA (AMS slot 3; the project names the AMS set as loaded so it opens black), one plate, no supports, no
+  color changes.
 
 ## Amendments
 
-None yet.
+- 2026-11-15: 0.8 mm (4 layers) → 0.6 mm (3 layers), the user's call. 2 layers was weighed and turned down:
+  too floppy to set in and pull out of dough, and it curls coming off the bed.

@@ -56,7 +56,7 @@
 - `examples/speaker-shelf/`: a black tray for a vertical speaker between two banister rails (package `speaker_shelf`):
   exactly as wide as the 86 mm gap, a U on each side opening out round a rail, twisted into place; fit coupon (rail
   fork + gap gauge) set the sizes.
-- `examples/loaf-spacer/`: a 0.8 mm black sheet shaped like a loaf pan's cross-section (package `loaf_spacer`)
+- `examples/loaf-spacer/`: a 0.6 mm black sheet shaped like a loaf pan's cross-section (package `loaf_spacer`)
   that splits the pan while dough rises, with a pull tab and finger hole; out before baking.
 - `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
   with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves, the banner's folds and tails sunk 2 and 4
