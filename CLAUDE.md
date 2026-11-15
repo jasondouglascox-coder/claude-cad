@@ -56,6 +56,8 @@
 - `examples/speaker-shelf/`: a black tray for a vertical speaker between two banister rails (package `speaker_shelf`):
   exactly as wide as the 86 mm gap, a U on each side opening out round a rail, twisted into place; fit coupon (rail
   fork + gap gauge) set the sizes.
+- `examples/loaf-spacer/`: a 0.8 mm black sheet shaped like a loaf pan's cross-section (package `loaf_spacer`)
+  that splits the pan while dough rises, with a pull tab and finger hole; out before baking.
 - `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
   with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves, the banner's folds and tails sunk 2 and 4
   layers below it; QR + URL on the back, 22 swaps. Its plate's
@@ -83,6 +85,7 @@ cd examples/halloween-gnome && uv run pytest -n 6                    # ~10 s, al
 cd examples/mini-sunflower && uv run pytest -n 6                     # ~25 s, the plate through Bambu
 cd examples/cat-decals && uv run pytest -n 4                         # ~2 s, DXF sheets read back
 cd examples/speaker-shelf && uv run pytest -n 6                      # ~20 s, the coupon through Bambu
+cd examples/loaf-spacer && uv run pytest -n 6                       # ~10 s, the plate through Bambu
 ```
 
 ## Rules
