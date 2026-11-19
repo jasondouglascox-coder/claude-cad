@@ -51,7 +51,8 @@ def _overlaps(s: Shape, rect: tuple) -> bool:
 
 def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for: Callable[[str], int],
                  preview_dir: Path | None = None, settings: Path | None = None, slicer=None,
-                 colors: int | None = None, color_changes: int | None = None, combined: str | None = None) -> None:
+                 colors: int | None = None, color_changes: int | None = None, combined: str | None = None,
+                 part_settings: Callable[[str], dict] | None = None) -> None:
     """Each plate as STEP (painted) + the slicer's project file + an optional SVG, and csv_path listing what to print
     and how many. slicer: default the one in your settings (cadkit.slicers.active()). settings: the slicer's project
     settings (for Bambu, bambu3mf.write_settings for your filaments); default its template.
@@ -68,6 +69,9 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
 
     Plate.settings: slicer settings (name -> value) for every object on that plate only, e.g. slower speeds for thin
     parts; the slicer's project settings still hold for the rest (Bambu: per-object overrides).
+
+    part_settings(body label) -> slicer settings (name -> value) for that body alone, on every plate, e.g. a gray
+    detail printed slowly on top of a brown part that keeps the project's speeds (Bambu: per-part overrides).
 
     combined: also write every plate into one project, folder/<combined> + the slicer's suffix (a tab per plate,
     "(print n)" in the name of plates printed more than once): the file to share, e.g. on MakerWorld."""
@@ -114,8 +118,10 @@ def write_plates(plates: list[Plate], folder: Path, csv_path: Path, filament_for
             if obj is None:
                 raise ValueError(f"plate {pl.name}: a support blocker for {name!r}, which isn't on the plate")
             obj.append((f"{name} blocker", volume, bambu3mf.BLOCKER))
-        if pl.settings:
-            objects = [(n, parts, dict(pl.settings)) for n, parts in objects]
+        if pl.settings or part_settings:
+            objects = [(n, parts, dict(pl.settings),
+                        {b: own for b, _, _ in parts if part_settings and (own := part_settings(b))})
+                       for n, parts in objects]
         tower = slicer.tower_keepout(settings, pad=0.0) if swaps else None  # the tower itself, not the packer's pad
         if tower is not None:
             x0, y0, x1, y1 = tower

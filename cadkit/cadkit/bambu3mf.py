@@ -121,7 +121,8 @@ def write_settings(path: Path, filaments: list[tuple[str, str]], base: Path = SE
 def write(path: Path, objects: list[tuple[str, list[tuple[str, Shape, int]]]], settings: Path = SETTINGS) -> None:
     """objects: (name, [(part name, shape in bed coordinates, filament number), ...]); one plate per file. A part
     whose filament is BLOCKER is a support blocker (after the printed parts: the first part's filament is the
-    object's)."""
+    object's). Optional third and fourth items: {setting: value} for the object, and {part name: {setting: value}}
+    for single parts (Bambu's per-object and per-part overrides)."""
     write_plates_project(path, [("", objects)], settings)
 
 
@@ -184,13 +185,17 @@ def write_plates_project(path: Path, plates: list[tuple[str, list]], settings: P
             cfg += [f'  <object id="{oid}">', f'    <metadata key="name" value={quoteattr(name)}/>',
                     f'    <metadata key="extruder" value="{parts[0][2]}"/>']
             cfg += [f'    <metadata key={quoteattr(key)} value={quoteattr(str(v))}/>' for key, v in (own[0] if own else {}).items()]
+            per_part = own[1] if len(own) > 1 else {}  # {part name: its own settings}
             for i, (part, _, fil) in zip(ids, parts):
                 if fil == BLOCKER:
                     cfg += [f'    <part id="{i}" subtype="support_blocker">',
                             f'      <metadata key="name" value={quoteattr(part)}/>', "    </part>"]
                     continue
                 cfg += [f'    <part id="{i}" subtype="normal_part">', f'      <metadata key="name" value={quoteattr(part)}/>',
-                        f'      <metadata key="extruder" value="{fil}"/>', "    </part>"]
+                        f'      <metadata key="extruder" value="{fil}"/>']
+                cfg += [f'      <metadata key={quoteattr(key)} value={quoteattr(str(v))}/>'
+                        for key, v in per_part.get(part, {}).items()]
+                cfg.append("    </part>")
             cfg.append("  </object>")
             plate += ["    <model_instance>", f'      <metadata key="object_id" value="{oid}"/>',
                       '      <metadata key="instance_id" value="0"/>', f'      <metadata key="identify_id" value="{k}"/>',

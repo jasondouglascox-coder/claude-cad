@@ -401,3 +401,15 @@ plates and packing, and the bus cradle.
   `rivet_speed` (20 mm/s), using Bambu's small-perimeter settings. Bigger loops keep their speeds. A pair of
   halves takes 13 s longer. The slow rivet test checks the head layers' loops in the G-code.
 - Already-printed bays don't change. Re-export (`build sections`) to pick it up for the next prints.
+
+## Amendments (2026-11-19): the gray on the ties prints slowly
+
+- **The user: the gray "nails" (spike heads) on the decks come out sloppy.** In the G-code their loops already ran at
+  20 mm/s (the rivet amendment above), but the inside of each 1.3 × 0.8 mm head, and of each clip, was gap infill
+  at 250 mm/s.
+- Every gray body printed on a brown part (`*_steel`: ladders, corner decks; the clips and spike heads) now carries
+  Bambu per-part settings: walls, gap infill, solid infill and top surface all at `spike_speed` (20 mm/s). The
+  brown ties under them, and every one-color part, keep the project's speeds. The gray is three layers of tiny
+  islands, so a ladder plate takes about a minute longer.
+- Per-part settings come from cadkit (`write_plates(part_settings=...)`). The slow ladder test checks every gray
+  feature in the G-code.

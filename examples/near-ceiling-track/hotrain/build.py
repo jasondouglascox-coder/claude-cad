@@ -121,7 +121,17 @@ def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = 
     combined, also one project holding every plate (combined + .3mf). settings default: print_settings."""
     settings = settings or print_settings(p, d / "project_settings.json")
     cad_export.write_plates(pls, d, csv_path, lambda name: filament(p, name), preview_dir, settings=settings,
-                            combined=combined)
+                            combined=combined, part_settings=lambda name: part_settings(p, name))
+
+
+SLOW_GRAY = ("outer_wall_speed", "inner_wall_speed", "gap_infill_speed", "internal_solid_infill_speed",
+             "top_surface_speed")
+
+
+def part_settings(p: Params, name: str) -> dict:
+    """Slicer settings for one body: the gray on a brown part (clips and spike heads on the ties, tiny) prints
+    everything at spike_speed; Bambu laid the inside of each spike head at 250 mm/s. Every other body: the project's."""
+    return dict.fromkeys(SLOW_GRAY, f"{p.spike_speed:g}") if name.endswith("_steel") else {}
 
 
 def print_settings(p: Params, path: Path, **overrides) -> Path | None:

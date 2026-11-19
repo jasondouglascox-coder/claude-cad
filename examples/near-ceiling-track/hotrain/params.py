@@ -93,6 +93,7 @@ class Params:
     rivet_margin: float = 0.2  # heads stay this far inside a member's edges
     rivet_speed: float = 20.0  # mm/s for the heads' tiny loops (the user, 2026-11-19: rough at the outer wall's ~190)
     rivet_loop_r: float = 1.0  # Bambu slows every loop shorter than 2 pi times this (mm) to rivet_speed
+    spike_speed: float = 20.0  # mm/s for all the gray on the ties: clips and spike heads ("nails", the user, 2026-11-19)
     pier_relief: float = 0.4  # deck truss: the concrete pier stands this proud of the steel on the room face
     pier_cap_h: float = 4.0  # concrete-look pier: ledge under the top chord
     pier_cap_out: float = 1.5

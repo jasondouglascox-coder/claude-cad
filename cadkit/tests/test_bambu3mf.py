@@ -318,6 +318,47 @@ def test_plate_settings_go_on_every_object_on_it(tmp_path, two_color):
     assert "outer_wall_speed" not in zipfile.ZipFile(tmp_path / "deck.3mf").read("Metadata/model_settings.config").decode()
 
 
+def _part_meta(path):
+    """{(object name, part name): that part's own settings}, from Metadata/model_settings.config."""
+    import xml.etree.ElementTree as ET
+    out = {}
+    for o in ET.fromstring(zipfile.ZipFile(path).read("Metadata/model_settings.config")).iter("object"):
+        for pt in o.findall("part"):
+            meta = bambu3mf._meta(pt)
+            key = (bambu3mf._meta(o)["name"], meta.pop("name"))
+            out[key] = {k: v for k, v in meta.items() if k != "extruder"}
+    return out
+
+
+def test_part_settings_go_on_that_body_only(tmp_path, two_color):
+    """part_settings(body label) -> slicer settings for that body alone (Bambu: per-part overrides), e.g. the gray
+    details on a brown part printed slowly while the brown keeps the project's speeds."""
+    slow = lambda name: {"gap_infill_speed": "20"} if name == "deck_steel" else {}
+    kit = [Plate("deck", 1, [("deck", two_color())]), Plate("rail", 1, [("rail", box(0, 0, 0, 100, 3, 2))])]
+    write_plates(kit, tmp_path, tmp_path / "p.csv", filament, colors=4, combined="kit", part_settings=slow)
+    for f in (tmp_path / "deck.3mf", tmp_path / "kit.3mf"):
+        meta = _part_meta(f)
+        assert meta[("deck", "deck_steel")] == {"gap_infill_speed": "20"}
+        assert meta[("deck", "deck_wood")] == {}
+    assert all(v == {} for v in _part_meta(tmp_path / "rail.3mf").values())
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
+def test_bambu_prints_a_part_at_its_own_speed(tmp_path, two_color):
+    from cadkit import gcode
+    keys = ("outer_wall_speed", "inner_wall_speed", "gap_infill_speed", "internal_solid_infill_speed",
+            "top_surface_speed")
+    slow = lambda name: dict.fromkeys(keys, "20") if name == "deck_steel" else {}
+    write_plates([Plate("deck", 1, [("deck", two_color(seam=2.4))])], tmp_path, tmp_path / "p.csv", filament,
+                 colors=4, part_settings=slow)
+    bambu.slice_report(tmp_path / "deck.3mf", tmp_path / "s.3mf")
+    g = bambu.plate_gcode(tmp_path / "s.3mf", 1)
+    top = {k: v for k, v in gcode.speeds(g, above=2.4 + 1e-6).items() if k != "Prime tower"}
+    assert top and max(top.values()) <= 20 + 0.5, top  # the gray, above the seam
+    assert gcode.speeds(g, above=0.3)["Inner wall"] > 60  # the brown keeps the project's speeds
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(bambu.find() is None, reason="Bambu Studio not installed")
 def test_bambu_prints_a_plate_at_its_own_speeds(tmp_path, two_color):

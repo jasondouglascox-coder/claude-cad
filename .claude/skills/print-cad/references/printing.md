@@ -56,6 +56,10 @@ Some do (a flower's curled petals). Set them per project, and prove them in the 
   "outer_wall_speed": "40", ...})` writes Bambu per-object overrides on every object of that plate; the other plates
   of a combined project keep the project's speeds. `cadkit.gcode.speeds(gcode, above=first layer)` checks what the
   slice did (`examples/near-ceiling-track`'s handrail plates).
+- **One color body slower than the rest** (tiny gray details on a brown part): `write_plates(...,
+  part_settings=lambda label: {...})` writes Bambu per-part overrides on that body only, on every plate. Set every
+  feature it prints, not just walls: Bambu fills the inside of a sub-millimetre island with gap infill at 250 mm/s.
+  `gcode.speeds(g, above=seam)` checks the gray layers (the railroad's spike heads).
 - **Check the slice:** `cadkit.gcode.extrusions(bambu.plate_gcode(sliced))` gives every extruding move with its layer
   and feature (`Support`, `Support interface`, `Overhang wall`...). Assert there's no support inside the regions
   that must stay open, and that the overhangs you meant to support have some under them.

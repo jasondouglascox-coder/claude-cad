@@ -13,7 +13,8 @@ from build123d import Shape
 from cadkit import bambu3mf
 
 # objects for a project file: (object name, [(part name, shape, filament number from 1)]), and optionally a third
-# item, {setting: value} for that object only (Plate.settings)
+# item, {setting: value} for that object only (Plate.settings), and a fourth, {part name: {setting: value}} for
+# single parts (write_plates' part_settings)
 Objects = list[tuple]
 
 

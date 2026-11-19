@@ -45,7 +45,8 @@ def speeds(text: str, above: float = 0.0) -> dict[str, float]:
             m = re.search(r"F([\d.]+)", code)
             f = float(m.group(1)) / 60 if m else f
             e = re.search(r"E(-?[\d.]+)", code)
-            if e and float(e.group(1)) > 0 and z > above and feature:
+            moves = re.search(r"[XY]-?[\d.]", code)  # an unretract (E alone) prints nothing
+            if e and float(e.group(1)) > 0 and moves and z > above and feature:
                 out[feature] = max(out.get(feature, 0.0), f)
     return out
 

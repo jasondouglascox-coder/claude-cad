@@ -66,3 +66,55 @@ def test_rivet_heads_print_slowly(tmp_path):
     assert cfg["small_perimeter_threshold"] == [f"{P.rivet_loop_r:g}"]
     assert math.pi * P.rivet_d < 2 * math.pi * P.rivet_loop_r  # a head's loop is caught
     assert P.rivet_speed < float(cfg["outer_wall_speed"][0])
+
+
+def test_gray_on_the_ties_prints_slowly(tmp_path):
+    """The user, 2026-11-19: the gray "nails" (spike heads) come out sloppy. Their outer loops were already slowed
+    with the rivets; inside each one Bambu laid gap infill at 250 mm/s. Every gray body on a brown part (the clips
+    and spike heads on the ties) gets spike_speed for everything it prints; the brown keeps the project's speeds."""
+    import xml.etree.ElementTree as ET
+    from build123d import Compound, Pos, Box, Align
+    from cadkit import bambu3mf
+    from hotrain.room import IRON, TIE_BROWN
+    from hotrain.plates import Plate
+    wood = Box(40, 10, P.tie_h, align=(Align.MIN,) * 3)
+    steel = Pos(2, 2, P.tie_h) * Box(1.3, 0.8, P.clip_h, align=(Align.MIN,) * 3)
+    wood.label, wood.color, steel.label, steel.color = "ladder_wood", TIE_BROWN, "ladder_steel", IRON
+    plain = Pos(0, 20, 0) * Box(40, 10, 2, align=(Align.MIN,) * 3)
+    build.write_plates([Plate("pl", 1, [("ladder", Compound(children=[wood, steel], label="ladder")),
+                                        ("cross_frame", plain)])], tmp_path, tmp_path / "p.csv", p=P)
+    parts = {}
+    for o in ET.fromstring(zipfile.ZipFile(tmp_path / "pl.3mf").read("Metadata/model_settings.config")).iter("object"):
+        for pt in o.findall("part"):
+            meta = bambu3mf._meta(pt)
+            name = meta.pop("name")
+            parts[name] = {k: v for k, v in meta.items() if k != "extruder"}
+    assert parts["ladder_wood"] == {} and parts["cross_frame"] == {}
+    slow = parts["ladder_steel"]
+    assert {"outer_wall_speed", "inner_wall_speed", "gap_infill_speed"} <= set(slow)
+    assert all(v == f"{P.spike_speed:g}" for v in slow.values())
+
+
+@pytest.mark.slow
+def test_bambu_prints_a_ladders_gray_slowly(tmp_path):
+    from cadkit import gcode
+    from hotrain import layout as L
+    from hotrain.parts import tie_ladder
+    from hotrain.plates import Plate
+    s = slicers.active()
+    if not s.available():
+        pytest.skip("no slicer installed (settings: slicer)")
+    bays = [16 * 25.4]
+    lad = tie_ladder.make_colored(P, bays, L.segments(P, bays)[0])
+    build.write_plates([Plate("lad", 1, plates_pack(lad))], tmp_path, tmp_path / "p.csv", p=P)
+    s.slice_report(tmp_path / "lad.3mf", tmp_path / "s.3mf")
+    g = zipfile.ZipFile(tmp_path / "s.3mf").read("Metadata/plate_1.gcode").decode()
+    gray = {k: v for k, v in gcode.speeds(g, above=P.tie_h + 1e-6).items() if k != "Prime tower"}
+    assert "Gap infill" in gray and "Outer wall" in gray, gray
+    assert max(gray.values()) <= P.spike_speed + 0.5, gray
+    assert gcode.speeds(g, above=0.3)["Inner wall"] > 2 * P.spike_speed  # the brown ties keep theirs
+
+
+def plates_pack(part):
+    from hotrain import plates
+    return plates.pack(P, [("ladder", part)])[0]
