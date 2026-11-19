@@ -2,6 +2,7 @@
 Each panel is a start half and an end half; the start half prints as the mirror image so its rivets face the room
 too. The arch style and the corners get none."""
 import math
+import re
 from dataclasses import replace
 from functools import lru_cache
 
@@ -128,6 +129,13 @@ def test_bambu_prints_the_rivet_heads(tmp_path):
         g = zipfile.ZipFile(tmp_path / f"s{s.project_suffix}").read("Metadata/plate_1.gcode").decode()
         last = g.split(f"; Z_HEIGHT: {top:g}")[1]
         assert last.count("; FEATURE: Outer wall") + last.count("G1") > 2 * len(arch_half.rivet_points(D, BAY))
+        for k in range(1, round(D.printer.layers(D.rivet_h) / D.printer.layer) + 1):  # each head layer: every head's loop
+            z = D.panel_t + k * D.printer.layer  # at rivet_speed (the piers' raised outlines keep the wall speed)
+            layer = g.split(f"; Z_HEIGHT: {z:g}")[1].split("; CHANGE_LAYER")[0]
+            walls = [b.split("; FEATURE:")[0] for b in layer.split("; FEATURE: Outer wall")[1:]]
+            feeds = [float(m) / 60 for w in walls for m in re.findall(r"^G1 F([\d.]+)$", w, re.M)]
+            slow = sum(f <= D.rivet_speed + 1e-6 for f in feeds)
+            assert slow >= 2 * len(arch_half.rivet_points(D, BAY)), (z, slow, len(feeds))
 
 
 def test_no_rivet_under_a_cross_frame():

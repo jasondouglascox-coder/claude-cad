@@ -391,3 +391,13 @@ plates and packing, and the bus cradle.
   `fit_snap` (0.05 mm) all round; the keystone coupon had already shown 0.05 loose and 0.0 right (`fit_key`). The
   ladder sockets now use `fit_jig` = 0.0. Only the sockets change, so ladders already printed fit the new ones.
   The corner decks' sockets match (corners spec §18).
+
+## Amendments (2026-11-19): rivet heads print slowly
+
+- **The user: rivets sometimes print rough.** In the sliced G-code each head is one loop under a millimetre round,
+  at the outer wall's ~190 mm/s, between a retract, a hop and a wipe. A half-span plate's head layers aren't always
+  its last layers (taller parts share the plates), so this is a speed for small loops, not for the top layers.
+- Every plate's settings now slow loops shorter than 2π × `rivet_loop_r` (1 mm, so under ~6.3 mm round) to
+  `rivet_speed` (20 mm/s), using Bambu's small-perimeter settings. Bigger loops keep their speeds. A pair of
+  halves takes 13 s longer. The slow rivet test checks the head layers' loops in the G-code.
+- Already-printed bays don't change. Re-export (`build sections`) to pick it up for the next prints.

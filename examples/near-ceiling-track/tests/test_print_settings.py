@@ -54,3 +54,15 @@ def test_petg_first_layer_bed_is_hotter_and_the_rest_unchanged(tmp_path):
             assert first == P.first_layer_bed_temp > float(tmpl["textured_plate_temp_initial_layer"][i])
         else:
             assert first == float(tmpl["textured_plate_temp_initial_layer"][i])
+
+
+def test_rivet_heads_print_slowly(tmp_path):
+    """The user, 2026-11-19: rivets sometimes print rough. Each head is a loop under a millimetre round, printed at the
+    outer wall's ~190 mm/s between a retract, a hop and a wipe. Every loop shorter than 2 pi rivet_loop_r slows to
+    rivet_speed (Bambu's small perimeters); the rest of the print keeps its speeds."""
+    import math
+    cfg = json.loads(build.print_settings(P, tmp_path / "s.json").read_text())
+    assert cfg["small_perimeter_speed"] == [f"{P.rivet_speed:g}"]
+    assert cfg["small_perimeter_threshold"] == [f"{P.rivet_loop_r:g}"]
+    assert math.pi * P.rivet_d < 2 * math.pi * P.rivet_loop_r  # a head's loop is caught
+    assert P.rivet_speed < float(cfg["outer_wall_speed"][0])

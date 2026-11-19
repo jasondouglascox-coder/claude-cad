@@ -126,7 +126,7 @@ def write_plates(pls: list, d: Path, csv_path: Path, preview_dir: Path | None = 
 
 def print_settings(p: Params, path: Path, **overrides) -> Path | None:
     """Your slicer settings (Bambu Studio) with this project's first layer (slow, and a hotter textured plate under
-    PETG), plus any overrides (setting name -> value). None for another slicer: set those there by hand."""
+    PETG), the rivet heads' loops slowed, plus any overrides (setting name -> value). None for another slicer: set those there by hand."""
     import json
     from cadkit import slicers
     from cadkit.settings import settings as cfg
@@ -139,6 +139,8 @@ def print_settings(p: Params, path: Path, **overrides) -> Path | None:
     key = "textured_plate_temp_initial_layer"  # PETG slots: a hotter first layer; PLA keeps its own
     conf[key] = [f"{p.first_layer_bed_temp:g}" if kind == "PETG" else t
                  for kind, t in zip(conf["filament_type"], conf[key])]
+    conf["small_perimeter_speed"] = [f"{p.rivet_speed:g}"]  # the rivet heads (and any loop as small)
+    conf["small_perimeter_threshold"] = [f"{p.rivet_loop_r:g}"]
     conf.update({k: str(v) for k, v in overrides.items()})
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(conf, indent=4))
