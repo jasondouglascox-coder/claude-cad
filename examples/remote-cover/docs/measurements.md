@@ -26,3 +26,7 @@ Pocket, from the photo of the first print lying in it (the print's 24.9 x 14.9 b
 | Ear recess | 6.2 mm wide, round end 6.9 mm above the pocket's top edge | 6.8 and 7.4 in the two photos |
 | Insert center | 2.6 mm above the top edge, centered | empty-pocket photo |
 | Tab slots | ~2.9 mm wide, centers 4.8 (left) and 6.8 (right) from the middle, seen from outside | empty-pocket photo; the old cover's tabs are off center the same way |
+
+Second print (0.2 mm clearance) in the pocket, 2026-11-21: the outline fits. The tongue is about 0.5 mm too long
+(user, by eye), and the indent round the insert is the recess's round end: in a straight-on photo of the empty
+pocket the dark circular indent fills the recess's tip, centered on the brass insert.

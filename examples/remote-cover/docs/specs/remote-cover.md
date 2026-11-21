@@ -32,3 +32,12 @@ center: 4.8 and 6.8 from the middle (left and right, seen from outside); the use
 - The plug is now a locator, 4.6 against the ~5 mm indent, so a photo error in where the indent is doesn't stop the
   cover seating; the snug outline holds it in.
 - The hole sits over the insert, no longer at the ear's round end.
+
+### 2026-11-21: plug at the tongue's round end, tongue shorter, one clearance
+
+The 0.2 mm cover fit the pocket. The user found the tongue about 0.5 mm too long and the plug too far from the
+tongue's end; a straight-on photo shows the indent is the ear recess's round end itself, centered on the insert.
+
+- Clearance 0.2 on every side, no longer a ladder.
+- The plug (now 4.8) and the hole are concentric with the tongue's round end: hole_up = ear_tip - ear_w / 2.
+- The tongue (ear_tip) drops from 6.9 to 6.4; the plate prints 6.2, 6.4 and 6.6, engraved "62", "64", "66".

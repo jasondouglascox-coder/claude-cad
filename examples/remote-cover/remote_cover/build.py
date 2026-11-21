@@ -1,4 +1,4 @@
-"""uv run python -m remote_cover.build [--out out]: STEP for CAD, one Bambu Studio plate of the clearance ladder (opens
+"""uv run python -m remote_cover.build [--out out]: STEP for CAD, one Bambu Studio plate of the tongue-length ladder (opens
 in gray PETG), and shaded previews in out/render/ (copy iso.png to docs/images/ after a visible change)."""
 import argparse
 import sys
@@ -14,15 +14,15 @@ from remote_cover.params import P
 from remote_cover.parts import cover
 
 
-def name(clearance: float) -> str:
-    return f"cover_gap_{clearance:.1f}".replace(".", "_")
+def name(q) -> str:
+    return f"cover_tongue_{q.ear_tip:.1f}".replace(".", "_")
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="remote_cover.build")
     ap.add_argument("--out", default="out")
     out = Path(ap.parse_args(argv).out)
-    covers = [(name(k), cover(P, k)) for k in P.clearances]
+    covers = [(name(q), cover(q)) for q in P.ladder()]
     mid = covers[len(covers) // 2][1]
     step = out / "step" / "remote_cover.step"
     step.parent.mkdir(parents=True, exist_ok=True)
