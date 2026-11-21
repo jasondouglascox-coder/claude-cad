@@ -1,5 +1,5 @@
-"""Test first: each cover prints flat, one solid, the original's outline (less the fit), tabs flush with the
-inside face, and a plug of its ladder size round the screw hole. Expectations come from params.
+"""Test first: each cover prints flat, one solid, the pocket's outline less its clearance, tabs flush with the inside
+face over the slots, and a plug round the screw hole. Expectations come from params.
 
 Print orientation: the outside face on the bed (Z = 0), the inside face up at Z = t, the ear toward +Y."""
 import pytest
@@ -13,7 +13,7 @@ from remote_cover.params import P, Params
 from remote_cover.parts import cover
 
 
-@pytest.fixture(scope="module", params=P.plug_ds)
+@pytest.fixture(scope="module", params=P.clearances)
 def part(request):
     return request.param, cover(P, request.param)
 
@@ -28,6 +28,9 @@ def pieces(part, x=None, y=None, z=(0, 10)):
     return sorted((s.bounding_box() for s in (part & probe).solids()), key=lambda b: (b.min.X, b.min.Y))
 
 
+PLATE = (0.1, 0.5)  # a slice of the plate below the tabs, the plug and the engraving
+
+
 def test_prints_flat_one_solid_watertight_on_layers(part):
     _, c = part
     assert printable_problems(c, P.printer) == []
@@ -36,70 +39,72 @@ def test_prints_flat_one_solid_watertight_on_layers(part):
 
 
 def test_only_overhangs_are_the_two_tabs(part):
-    """The tabs sit flush with the inside face, so their undersides print over air: 1 mm (plus the fit), one each."""
+    """The tabs sit flush with the inside face, so their undersides print over air, one each."""
     _, c = part
     got = sorted(downward_faces(c))
     assert [z for z, _ in got] == pytest.approx([P.t - P.tab_t] * 2)
-    assert [a for _, a in got] == pytest.approx([P.tab_w * (P.tab_out + P.fit)] * 2, abs=1e-3)
+    assert [a for _, a in got] == pytest.approx([P.tab_w * P.tab_out] * 2, abs=1e-3)
 
 
-def test_plate_width_length_and_thickness(part):
+def test_fills_the_pocket_less_the_clearance(part):
+    k, c = part
+    (b,) = pieces(c, y=P.y0 + P.pocket_h / 2, z=PLATE)
+    assert (b.min.X, b.max.X) == pytest.approx((k, P.pocket_w - k), abs=0.02)
+    (b,) = pieces(c, x=P.pocket_r + 1, z=PLATE)  # beside the tabs and the ear
+    assert (b.min.Y, b.max.Y) == pytest.approx((P.y0 + k, P.top - k), abs=0.02)
+
+
+def test_ear_fills_its_recess(part):
+    k, c = part
+    (b,) = pieces(c, y=P.top + P.shoulder_r + 0.3, z=PLATE)  # the ear's straight part, below the hole
+    assert (b.min.X, b.max.X) == pytest.approx((P.cx - P.ear_w / 2 + k, P.cx + P.ear_w / 2 - k), abs=0.02)
+    assert c.bounding_box().max.Y == pytest.approx(P.top + P.ear_tip - k, abs=0.02)
+
+
+def test_screw_hole_over_the_insert_through_ear_and_plug(part):
     _, c = part
-    (b,) = pieces(c, y=P.y0 + P.h / 2, z=(0.1, P.t - 0.1))
-    assert b.max.X - b.min.X == pytest.approx(P.w - 2 * P.fit, abs=0.02)
-    (b,) = pieces(c, x=P.tab_in / 2, z=(0.1, P.t - 0.1))  # beside the tabs
-    assert b.max.Y - b.min.Y == pytest.approx(P.h - 2 * P.fit, abs=0.02)
-    bb = c.bounding_box()
-    assert bb.min.Z == pytest.approx(0, abs=1e-6)
-
-
-def test_ear_round_end_and_width(part):
-    _, c = part
-    (b,) = pieces(c, y=P.hole_y - P.hole_d, z=(0.1, P.t - 0.1))  # the ear's straight part, below the hole
-    assert len(pieces(c, y=P.hole_y, z=(0.1, P.t - 0.1))) == 2  # the hole splits the ear
-    assert b.max.X - b.min.X == pytest.approx(P.ear_w - 2 * P.fit, abs=0.05)
-    assert c.bounding_box().max.Y == pytest.approx(P.y0 + P.h + P.ear_len - P.fit, abs=0.02)
-    assert (b.min.X + b.max.X) / 2 == pytest.approx(P.hole_x, abs=0.02)
-
-
-def test_screw_hole_goes_through_ear_and_plug(part):
-    _, c = part
-    for z in ((0.1, P.t - 0.1), (P.t + 0.1, P.t + P.plug_h - 0.3)):
+    for z in (PLATE, (P.t + 0.1, P.t + P.plug_h - 0.3)):
         a, b = pieces(c, y=P.hole_y, z=z)
         assert b.min.X - a.max.X == pytest.approx(P.hole_d, abs=0.05)
+        assert (a.max.X + b.min.X) / 2 == pytest.approx(P.cx, abs=0.02)
 
 
 def test_plug_size_and_height(part):
-    d, c = part
+    _, c = part
     a, b = pieces(c, y=P.hole_y, z=(P.t + 0.05, P.t + 0.15))
-    assert b.max.X - a.min.X == pytest.approx(d, abs=0.02)
-    assert (a.min.X + b.max.X) / 2 == pytest.approx(P.hole_x, abs=0.02)
+    assert (a.min.X, b.max.X) == pytest.approx((P.cx - P.plug_d / 2, P.cx + P.plug_d / 2), abs=0.02)
     assert c.bounding_box().max.Z == pytest.approx(P.t + P.plug_h, abs=1e-6)
 
 
-def test_tabs_flush_with_inside_face(part):
-    _, c = part
-    got = pieces(c, y=P.tab_out / 2)
-    assert [x for b in got for x in (b.min.X, b.max.X)] == pytest.approx(
-        [x for xs in P.tab_xs() for x in xs], abs=0.02)
+def test_tabs_over_the_slots_flush_with_inside_face(part):
+    k, c = part
+    got = pieces(c, y=P.y0 + k - P.tab_out / 2)
+    assert [x for b in got for x in (b.min.X, b.max.X)] == pytest.approx([x for xs in P.tab_xs() for x in xs],
+                                                                        abs=0.02)
     for b in got:
         assert (b.min.Z, b.max.Z) == pytest.approx((P.t - P.tab_t, P.t), abs=1e-6)
-    assert c.bounding_box().min.Y == pytest.approx(0, abs=1e-6)  # the tab tips
+    assert c.bounding_box().min.Y == pytest.approx(P.y0 + k - P.tab_out, abs=1e-6)
 
 
-def test_size_engraved_on_inside_face(part):
-    """The plug size is cut into the inside face, so the covers can be told apart off the bed."""
-    d, c = part
-    assert cover(P, d, mark=False).volume - c.volume > 0.2
+def test_tabs_are_spaced_like_the_slots():
+    (a0, a1), (b0, b1) = P.tab_xs()
+    assert (b0 + b1) / 2 - (a0 + a1) / 2 == pytest.approx(abs(P.tab_dx[1] - P.tab_dx[0]))
+
+
+def test_clearance_engraved_on_inside_face(part):
+    k, c = part
+    assert cover(P, k, mark=False).volume - c.volume > 0.1
     lowest = min(f.center().Z for f in c.faces() if f.normal_at().Z > 1 - 1e-9 and f.center().Z > 0.01)
     assert lowest == pytest.approx(P.t - P.mark_depth, abs=1e-6)
 
 
 def test_bad_params_are_refused():
-    with pytest.raises(ValueError, match="plug_ds"):
-        Params(plug_ds=(6.0,))
+    with pytest.raises(ValueError, match="plug_d"):
+        Params(plug_d=6.5)
     with pytest.raises(ValueError, match="tab_t"):
         Params(tab_t=2.0)
+    with pytest.raises(ValueError, match="corner"):
+        Params(tab_dx=(-12.5, 4.8))
 
 
 def test_build_writes_one_gray_plate_of_the_ladder(tmp_path):
@@ -108,7 +113,7 @@ def test_build_writes_one_gray_plate_of_the_ladder(tmp_path):
     assert (tmp_path / "render" / "iso.png").exists()
     s = slicers.active()
     got = {n: f for n, f, _ in s.read_filaments(tmp_path / "plates" / f"remote_cover{s.project_suffix}")}
-    assert got == {build.name(d): settings().filament(P.filament_gray) for d in P.plug_ds}
+    assert got == {build.name(k): settings().filament(P.filament_gray) for k in P.clearances}
 
 
 @pytest.mark.skipif(not slicers.active().available(), reason="no slicer installed (settings: slicer)")

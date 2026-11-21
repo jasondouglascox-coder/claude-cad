@@ -58,9 +58,9 @@
   fork + gap gauge) set the sizes.
 - `examples/loaf-spacer/`: a 0.6 mm black sheet shaped like a loaf pan's cross-section (package `loaf_spacer`)
   that splits the pan while dough rises, with a pull tab and finger hole; out before baking.
-- `examples/remote-cover/`: a battery cover for a HEXBUG remote (package `remote_cover`), gray PETG: the lost
-  original's outline with two tabs, and no screw: a plug under the ear presses into the indent round the brass
-  insert. One plate of five covers, plugs 4.8–5.2 mm, the size engraved inside.
+- `examples/remote-cover/`: a battery cover for a HEXBUG remote (package `remote_cover`), gray PETG: the pocket's
+  outline (measured off photos) less a clearance, off-center tabs, and no screw: a plug under the ear sits in the
+  indent round the brass insert. One plate of three covers, 0.1–0.3 mm clearance, engraved inside.
 - `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
   with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves, the banner's folds and tails sunk 2 and 4
   layers below it; QR + URL on the back, 22 swaps. Its plate's

@@ -16,3 +16,13 @@ Taken 2026-11-21 off the remote's other (good) cover and from photos of the empt
 | Pocket width | ~25.4 mm | ruler photo; the 25 mm cover drops in |
 | Pocket's ear recess | ~6.2 mm wide at the hole | ruler photo; the 5.5 mm ear clears it |
 | Hole above the pocket's top edge | ~2.65 mm | ruler photo; the model has 2.75 (ear 5.5 long, round end) |
+
+Pocket, from the photo of the first print lying in it (the print's 24.9 x 14.9 body as the scale, 43.5 px/mm across,
+44.1 down) and the empty-pocket photo (46.2 px/mm, pocket width as the scale):
+
+| What | Value | From |
+|---|---|---|
+| Pocket | 26.1 x 16.2 mm, ~1 mm corners | both photos agree within 0.1 |
+| Ear recess | 6.2 mm wide, round end 6.9 mm above the pocket's top edge | 6.8 and 7.4 in the two photos |
+| Insert center | 2.6 mm above the top edge, centered | empty-pocket photo |
+| Tab slots | ~2.9 mm wide, centers 4.8 (left) and 6.8 (right) from the middle, seen from outside | empty-pocket photo; the old cover's tabs are off center the same way |
