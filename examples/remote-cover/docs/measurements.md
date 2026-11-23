@@ -30,3 +30,6 @@ Pocket, from the photo of the first print lying in it (the print's 24.9 x 14.9 b
 Second print (0.2 mm clearance) in the pocket, 2026-11-21: the outline fits. The tongue is about 0.5 mm too long
 (user, by eye), and the indent round the insert is the recess's round end: in a straight-on photo of the empty
 pocket the dark circular indent fills the recess's tip, centered on the brass insert.
+
+Third print (tongues 6.2 / 6.4 / 6.6, plug at the tongue's round end), 2026-11-23: all three fit, none better than
+the others (user). The 1.6 mm screw hole wants to be slightly bigger.

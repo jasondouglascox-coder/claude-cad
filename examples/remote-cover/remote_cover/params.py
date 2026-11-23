@@ -3,8 +3,8 @@
 The HEXBUG remote's battery pocket, measured off photos (docs/measurements.md): a rounded rectangle with an ear
 recess on top over the brass screw insert, and slots under its bottom edge for the cover's tabs. The cover fills the
 pocket less a clearance on every side; with no screw, a round plug under the ear sits in the indent, which is the
-recess's round end, concentric with the insert, and the snug outline holds it. The tongue's length is a guess (the
-second print's was about 0.5 too long), so the plate prints a ladder of tongue lengths.
+recess's round end, concentric with the insert, and the snug outline holds it. The tongue's length settled at 6.4 (6.2, 6.4 and
+6.6 all fit the third print); the plate now prints a ladder of screw-hole sizes, a touch bigger than the 1.6 printed.
 
 Model frame: the pocket's outline at Z = 0, X across the remote, the ear toward +Y, seen from the INSIDE face (the
 print's top). Seen from outside the remote, left and right swap."""
@@ -19,12 +19,13 @@ class Params:
     pocket_h: float = 16.2  # bottom edge to top edge, ear recess not included
     pocket_r: float = 1.0  # the pocket's corners
     ear_w: float = 6.2  # the ear recess, centered on the top edge
-    ear_tip: float = 6.4  # how far the recess's round end reaches above the top edge: 6.9 printed ~0.5 too long
-    ear_tips: tuple = (6.2, 6.4, 6.6)  # one cover each on the plate; keep the one that drops in
+    ear_tip: float = 6.4  # how far the recess's round end reaches above the top edge: 6.2, 6.4, 6.6 all fit
     shoulder_r: float = 1.0  # where the ear recess meets the top edge
     clearance: float = 0.2  # gap on every side: of 0.1 / 0.2 / 0.3, the 0.2 cover fit
     t: float = 1.6  # plate thickness: the first print sat about flush
-    hole_d: float = 1.6  # through the ear and plug: clears an M1.4 screw if one turns up
+    hole_d: float = 2.0  # through the ear and plug: 1.6 printed a touch small
+    hole_ds: tuple = (1.8, 2.0, 2.2)  # one cover each on the plate; keep the one you like
+    min_wall: float = 1.0  # plug wall round the hole
     tab_dx: tuple = (-6.8, 4.8)  # tab centers from the pocket's center (inside view; outside: 4.8 left, 6.8 right)
     tab_w: float = 2.0  # along the bottom edge (slots about 2.9)
     tab_out: float = 1.0  # past the cover's bottom edge, under the pocket's lip
@@ -32,7 +33,7 @@ class Params:
     plug_d: float = 4.8  # the indent (the recess's round end) is about 5, centered on the insert
     plug_h: float = 0.8  # how far the plug stands off the inside face (indent depth not measured)
     plug_chamfer: float = 0.2  # lead-in round the plug's top edge
-    mark_size: float = 3.2  # the tongue length engraved on the inside face, in tenths: "64" = 6.4 mm
+    mark_size: float = 3.2  # the hole size engraved on the inside face, in tenths: "20" = 2.0 mm
     mark_depth: float = 0.2
     # the AMS lite (type, color) per slot: the cover prints in gray PETG, slot 1 as for the railroad
     filaments: tuple = (("PETG", "#8A8A8A"), ("PETG", "#5A3A1E"), ("PLA", "#000000"), ("PLA", "#6F4A2A"))
@@ -47,6 +48,8 @@ class Params:
             raise ValueError(f"tab_t {self.tab_t} must be thinner than the plate t {self.t}")
         if self.plug_d > self.ear_w - 2 * self.clearance:
             raise ValueError(f"plug_d {self.plug_d} won't fit under a {self.ear_w} ear")
+        if self.plug_d - self.hole_d < 2 * self.min_wall:
+            raise ValueError(f"hole_d {self.hole_d} leaves the {self.plug_d} plug under {self.min_wall} of wall")
         if self.ear_tip - self.ear_w / 2 < self.shoulder_r:
             raise ValueError(f"ear_tip {self.ear_tip} is too short for a round end on a {self.ear_w} ear")
         for dx in self.tab_dx:
@@ -76,8 +79,8 @@ class Params:
         return self.top + self.hole_up
 
     def ladder(self) -> list["Params"]:
-        """These params once per tongue length in ear_tips."""
-        return [replace(self, ear_tip=e) for e in self.ear_tips]
+        """These params once per hole size in hole_ds."""
+        return [replace(self, hole_d=d) for d in self.hole_ds]
 
     def tab_xs(self) -> list[tuple[float, float]]:
         """(x0, x1) of each tab along the bottom edge, left to right in the model."""

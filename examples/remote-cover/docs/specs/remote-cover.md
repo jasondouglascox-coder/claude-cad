@@ -41,3 +41,11 @@ tongue's end; a straight-on photo shows the indent is the ear recess's round end
 - Clearance 0.2 on every side, no longer a ladder.
 - The plug (now 4.8) and the hole are concentric with the tongue's round end: hole_up = ear_tip - ear_w / 2.
 - The tongue (ear_tip) drops from 6.9 to 6.4; the plate prints 6.2, 6.4 and 6.6, engraved "62", "64", "66".
+
+### 2026-11-23: tongue settled, a ladder of hole sizes
+
+All three tongues (6.2, 6.4, 6.6) fit the third print equally, so ear_tip stays 6.4. The user wanted the screw hole
+slightly bigger than 1.6.
+
+- The plate prints three covers with holes 1.8, 2.0 and 2.2 (engraved "18", "20", "22"); hole_d defaults to 2.0.
+- The plug keeps at least 1 mm of wall round the hole (min_wall), checked in params.

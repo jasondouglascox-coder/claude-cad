@@ -1,4 +1,4 @@
-"""uv run python -m remote_cover.build [--out out]: STEP for CAD, one Bambu Studio plate of the tongue-length ladder (opens
+"""uv run python -m remote_cover.build [--out out]: STEP for CAD, one Bambu Studio plate of the hole-size ladder (opens
 in gray PETG), and shaded previews in out/render/ (copy iso.png to docs/images/ after a visible change)."""
 import argparse
 import sys
@@ -15,7 +15,7 @@ from remote_cover.parts import cover
 
 
 def name(q) -> str:
-    return f"cover_tongue_{q.ear_tip:.1f}".replace(".", "_")
+    return f"cover_hole_{q.hole_d:.1f}".replace(".", "_")
 
 
 def main(argv: list[str] | None = None) -> int:

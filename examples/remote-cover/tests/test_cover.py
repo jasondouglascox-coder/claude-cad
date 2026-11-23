@@ -13,7 +13,7 @@ from remote_cover.params import P, Params
 from remote_cover.parts import cover
 
 
-@pytest.fixture(scope="module", params=P.ladder(), ids=lambda q: f"tip{q.ear_tip}")
+@pytest.fixture(scope="module", params=P.ladder(), ids=lambda q: f"hole{q.hole_d}")
 def part(request):
     q = request.param
     return q, cover(q)
@@ -102,7 +102,13 @@ def test_tabs_are_spaced_like_the_slots():
     assert (b0 + b1) / 2 - (a0 + a1) / 2 == pytest.approx(abs(P.tab_dx[1] - P.tab_dx[0]))
 
 
-def test_tongue_length_engraved_on_inside_face(part):
+def test_ladder_steps_the_hole_up_from_the_last_print():
+    assert [q.hole_d for q in P.ladder()] == list(P.hole_ds)
+    assert min(P.hole_ds) > 1.6  # the third print's hole, which the user wanted slightly bigger
+    assert len({build.name(q) for q in P.ladder()}) == len(P.hole_ds)
+
+
+def test_hole_size_engraved_on_inside_face(part):
     q, c = part
     assert cover(q, mark=False).volume - c.volume > 0.1
     lowest = min(f.center().Z for f in c.faces() if f.normal_at().Z > 1 - 1e-9 and f.center().Z > 0.01)
@@ -116,6 +122,8 @@ def test_bad_params_are_refused():
         Params(ear_tip=3.5)
     with pytest.raises(ValueError, match="tab_t"):
         Params(tab_t=2.0)
+    with pytest.raises(ValueError, match="hole_d"):
+        Params(hole_d=4.0)
     with pytest.raises(ValueError, match="corner"):
         Params(tab_dx=(-12.5, 4.8))
 

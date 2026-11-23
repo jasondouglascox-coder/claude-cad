@@ -5,13 +5,12 @@
 A replacement for the lost battery cover on a HEXBUG remote, printed in gray PETG. It fills the remote's battery
 pocket (26.1 × 16.2 mm, measured off photos) less a small clearance, 1.6 mm thick, with a round-ended ear over the
 screw insert and two tabs on the bottom edge that hook under the pocket's lip. The screw was lost too, so a round plug
-at the tongue's end sits in the round indent over the brass insert and the snug outline holds the cover in. The hole through the
-ear still takes an M1.4 screw (an eyeglass screw) if one turns up.
+at the tongue's end sits in the round indent over the brass insert and the snug outline holds the cover in. A hole runs through the
+ear and plug over the insert.
 
-The outline is 0.2 mm in from the pocket on every side (the second print fit). The tongue's length is still a guess,
-so the plate prints three covers with tongues 6.2, 6.4 and 6.6 mm past the top edge, engraved "62", "64", "66" on the
-inside face, each with its plug at the tongue's round end. Keep the one that drops in and set `ear_tip` in
-`params.py`.
+The outline is 0.2 mm in from the pocket on every side (the second print fit) and the tongue reaches 6.4 mm past
+the top edge (6.2 to 6.6 all fit the third). The plate prints three covers with screw holes 1.8, 2.0 and 2.2 mm,
+engraved "18", "20", "22" on the inside face. Keep the one you like and set `hole_d` in `params.py`.
 
 <img src="docs/images/overlay.png" width="49%" alt="The cover's outline drawn over a photo of the empty pocket">
 Sizes in `remote_cover/params.py`; decisions in `docs/specs/remote-cover.md`.

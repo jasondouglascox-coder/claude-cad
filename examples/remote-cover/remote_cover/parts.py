@@ -24,7 +24,7 @@ def pocket(p: Params = P):
 
 
 def cover(p: Params = P, mark: bool = True) -> Part:
-    """One cover: the pocket less p.clearance on every side, tabs, a plug at the ear's round end, the tongue length
+    """One cover: the pocket less p.clearance on every side, tabs, a plug at the ear's round end, the hole size
     engraved."""
     clearance = p.clearance
     with BuildSketch() as sk:
@@ -38,7 +38,7 @@ def cover(p: Params = P, mark: bool = True) -> Part:
     body += chamfer(plug.edges().sort_by(Axis.Z)[-1], p.plug_chamfer)
     if mark:
         with BuildSketch() as txt:
-            Text(f"{p.ear_tip * 10:.0f}", p.mark_size)
+            Text(f"{p.hole_d * 10:.0f}", p.mark_size)
         body -= Pos(p.cx, p.y0 + p.pocket_h / 2, p.t - p.mark_depth) * extrude(txt.sketch, p.mark_depth + 0.1)
     body -= Pos(p.cx, p.hole_y, -1) * Cylinder(p.hole_d / 2, p.t + p.plug_h + 2,
                                               align=(Align.CENTER, Align.CENTER, Align.MIN))
