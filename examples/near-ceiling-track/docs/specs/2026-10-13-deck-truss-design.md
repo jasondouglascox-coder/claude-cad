@@ -413,3 +413,12 @@ plates and packing, and the bus cradle.
   islands, so a ladder plate takes about a minute longer.
 - Per-part settings come from cadkit (`write_plates(part_settings=...)`). The slow ladder test checks every gray
   feature in the G-code.
+
+### Amendment (2026-11-23): a one-legged leg clip where a run meets a corner
+- The user wanted the leg clip at the run's ends too, where the wall-side truss's end leg sits in a corner's rod
+  anchor and nothing holds its bottom. `leg_clip.make_end` is the same clip cut down to one leg: the leg's pocket
+  on one side, the notch the anchor's bottom bar passes through, and a wall on the anchor's far (corner) side that
+  hooks it, so the leg can't pull away. Same walls, floor and grip; it prints floor down.
+- Two in each corner kit, one per rod anchor (deck-truss style only), turned round at the far anchor
+  (`place_end(..., side)`). The tests place it at the inside corner's first anchor with the run's last bay: it
+  touches nothing, and the leg pushed out or sideways hits it.

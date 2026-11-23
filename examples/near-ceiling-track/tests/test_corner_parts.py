@@ -275,23 +275,36 @@ def test_bus_on_wall_side():
 
 
 # ---- size notches: which corner truss is which on the bench (the user, 2026-11-23) --------------------------
-def _bottom_pieces(fr, y: float) -> int:
-    """Pieces of a thin cut along the frame at print height y (y = 0 the bottom edge), all through its thickness."""
+# gaps in the upper inside ledge (the bar over the ties), so the outer face stays whole
+def _pieces(fr, y: float, z0: float, z1: float) -> int:
+    """Pieces of a thin cut along the frame at print height y, between print depths z0 and z1."""
     bb = fr.bounding_box()
-    probe = Pos(bb.min.X - 1, y, -1) * Box(bb.size.X + 2, 0.1, bb.size.Z + 2, align=(Align.MIN, Align.MIN, Align.MIN))
+    probe = Pos(bb.min.X - 1, y, z0) * Box(bb.size.X + 2, 0.1, z1 - z0, align=(Align.MIN, Align.MIN, Align.MIN))
     return len((fr & probe).solids())
 
 
+def _ledge_y() -> float:
+    """Print height of the upper ledge's middle."""
+    return P.tie_h + P.fit_frame + P.frame_ledge_hi / 2 - bow_frame.u_bottom(P)
+
+
+def _ledge_gaps(fr) -> int:
+    return _pieces(fr, _ledge_y(), P.bow_frame_t + 0.1, P.bow_frame_t + P.frame_ledge - 0.1) - 1
+
+
 @pytest.mark.parametrize("n", [0, 1, 2, 3])
-def test_size_notches_cut_the_bottom_edge_at_mid_span(n):
+def test_size_notches_cut_the_upper_ledge_at_mid_span(n):
     fr = bow_frame.make(P, 160, notches=n)
     assert printable_problems(fr) == []
-    assert _bottom_pieces(fr, P.frame_notch_d / 2) == n + 1  # n gaps in the bottom edge
-    assert _bottom_pieces(fr, P.frame_notch_d + 0.1) == 1  # no deeper than frame_notch_d
+    assert _ledge_gaps(fr) == n
+    t = P.bow_frame_t
+    for y in (0.05, 0.5, _ledge_y()):  # the outer face (the web) is whole: nothing shows outside
+        assert _pieces(fr, y, 0.05, t - 0.55) == 1, y
+    assert _pieces(fr, 0.5, t + 0.1, t + P.frame_ledge - 0.1) == 1  # the lower ledge is whole
     if n:
         bb = fr.bounding_box()
-        probe = Pos(bb.min.X - 1, P.frame_notch_d / 2, -1) * Box(bb.size.X + 2, 0.1, bb.size.Z + 2,
-                                                                  align=(Align.MIN, Align.MIN, Align.MIN))
+        probe = Pos(bb.min.X - 1, _ledge_y(), t + 0.1) * Box(bb.size.X + 2, 0.1, P.frame_ledge - 0.2,
+                                                             align=(Align.MIN, Align.MIN, Align.MIN))
         ends = sorted(x for s in (fr & probe).solids() for x in (s.bounding_box().min.X, s.bounding_box().max.X))
         gaps = [(ends[2 * k + 1], ends[2 * k + 2]) for k in range(n)]
         assert [b - a for a, b in gaps] == pytest.approx([P.frame_notch_w] * n, abs=0.01)
@@ -309,4 +322,4 @@ def test_every_corner_truss_carries_its_size_notches():
         frames = [(n, s) for n, s in plates.corner_kit(P, c) if n.startswith("corner_frame_")]
         assert {n for n, _ in frames} == {f"corner_frame_{k}" for k in want}
         for name, fr in frames:
-            assert _bottom_pieces(fr, P.frame_notch_d / 2) == want[name.removeprefix("corner_frame_")] + 1, name
+            assert _ledge_gaps(fr) == want[name.removeprefix("corner_frame_")], name

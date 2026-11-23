@@ -166,6 +166,8 @@ def corner_kit(p: Params, corner) -> list[tuple[str, Shape]]:
     items.append(("rod_anchor", rod_anchor.make(p)))
     items.append(("rod_anchor", rod_anchor.make(p)) if corner.wall_b else
                  ("rod_anchor_bump_out", rod_anchor.make(p, bump_out=True)))  # off the bump-out's corner bead
+    if p.run_style == "deck_truss":  # each anchor holds a run's end leg: its one-legged clip (the arch has ribs there)
+        items += [("leg_clip_end", leg_clip.make_end(p)) for _ in range(2)]
     ps = CL.portals(p, corner)
     for i, wall in corner.deep:
         pt = ps[i]

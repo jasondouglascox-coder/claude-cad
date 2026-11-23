@@ -117,13 +117,15 @@ def notch_count(p: Params, kind: str) -> int:
 def make(p: Params = P, length: float = 160.0, notches: int = 0) -> Part:
     """Print orientation: outer face down (Z = 0), x along the frame, Y = height above the frame bottom
     (z = u_bottom); the web is bow_frame_t thick and the ledges add frame_ledge on top (the inner side).
-    notches: that many size notches cut into the bottom edge at mid-span (`notch_count`)."""
+    notches: that many size notches at mid-span, gaps through the upper (inside) ledge only, so the outer
+    face shows none (`notch_count`)."""
     t = p.bow_frame_t
     web = extrude(profile(p, length), t)
     led = Pos(0, 0, t - 0.5) * extrude(ledges(p, length), p.frame_ledge + 0.5)
     out = Pos(0, -u_bottom(p), 0) * Part((web + led).solids())
+    y = p.tie_h + p.fit_frame - u_bottom(p)  # the upper ledge's underside: gaps right through it, the web whole
     for k in range(notches):
         x = length / 2 + (k - (notches - 1) / 2) * p.frame_notch_pitch
-        out -= Pos(x, -1, -1) * Box(p.frame_notch_w, p.frame_notch_d + 1, t + p.frame_ledge + 2,
-                                    align=(Align.CENTER, Align.MIN, Align.MIN))
+        out -= Pos(x, y - 0.5, t) * Box(p.frame_notch_w, p.frame_ledge_hi + 1, p.frame_ledge + 1,
+                                        align=(Align.CENTER, Align.MIN, Align.MIN))
     return out

@@ -326,3 +326,6 @@ The user printed a corner and found four things:
   2 on the inner curve ones, 3 on the outer. Each is `frame_notch_w` (1.2) wide and `frame_notch_d` (1.0) deep,
   `frame_notch_pitch` (3.0) apart, cut through the web and the lower ledge, which keeps 0.6 of its 1.6 there. No
   floor beam or seat is at mid-span, so the fits don't change. Both corners get them.
+- **Size notches moved inside (same day).** The user didn't want them seen from the room: they are now gaps right
+  through the upper inside ledge (the bar over the ties), `frame_notch_w` (1.2) wide, the web and the lower ledge
+  whole. `frame_notch_d` is gone.
