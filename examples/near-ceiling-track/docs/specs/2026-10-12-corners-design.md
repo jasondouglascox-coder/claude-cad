@@ -321,3 +321,8 @@ The user printed a corner and found four things:
     press-fit tabs (the rail clipped across several decks means several at once).
   - Not changed: on the curve decks the radial second tie makes the gap a wedge, so the tab grips at its inner end
     and is ~0.2 mm looser at its outer end. Following the tie would tilt the tabs' faces off the layers.
+- **Size notches on the trusses (2026-11-23).** The three truss lengths look alike on the bench (the user). Each
+  corner truss has notches in its bottom edge at mid-span, `frame_notches`: 1 on the end-span (straight) trusses,
+  2 on the inner curve ones, 3 on the outer. Each is `frame_notch_w` (1.2) wide and `frame_notch_d` (1.0) deep,
+  `frame_notch_pitch` (3.0) apart, cut through the web and the lower ledge, which keeps 0.6 of its 1.6 there. No
+  floor beam or seat is at mid-span, so the fits don't change. Both corners get them.

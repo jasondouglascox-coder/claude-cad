@@ -136,7 +136,7 @@ def placed_parts(p: Params = P, c: C.Corner = C.inside_corner()) -> list[tuple[s
         else:
             out.append((f"deck{sp.index}", loc * decks[sp.curved]))
         for kind, yl, xs, ln in frame_lines(p, sp.curved):
-            fr = bow_frame.make(p, ln)
+            fr = bow_frame.make(p, ln, bow_frame.notch_count(p, kind))
             fr.label = f"corner_frame_{kind}"
             side = "inner" if yl > span_geom(p, sp.curved).yc else "outer"
             out.append((f"frame{sp.index}_{side}", loc * frame_location(p, sp.curved, yl, xs, ln) * fr))

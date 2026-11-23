@@ -201,6 +201,12 @@ class Params:
     frame_ledge_lo: float = 1.6  # ledge under the ties
     frame_ledge_hi: float = 1.2  # ledge over the ties
     frame_ledge_end: float = 3.6  # lower ledge stops this short of each frame end (clears the floor beams)
+    # size notches in each corner truss's bottom edge at mid-span, so they sort on the bench (the user, 2026-11-23):
+    # 1 on the end-span (straight) trusses, 2 on the inner curve ones, 3 on the outer
+    frame_notches: tuple = (("straight", 1), ("inner", 2), ("outer", 3))
+    frame_notch_w: float = 1.2
+    frame_notch_d: float = 1.0  # leaves 0.6 of the 1.6 lower ledge
+    frame_notch_pitch: float = 3.0  # notch to notch
     corner_style: str = "pony"  # side frames: "pony" (Pratt pony truss) or "bowstring"
     truss_rise: float = 42.0  # pony truss top chord top above the rail top
     truss_panels: int = 6  # first and last panels are the inclined end posts

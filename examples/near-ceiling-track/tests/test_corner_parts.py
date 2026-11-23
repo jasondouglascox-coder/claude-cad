@@ -272,3 +272,41 @@ def test_bus_on_wall_side():
     """u is measured left of the track = toward the curve center = the room; the walls are at -u."""
     assert floor_beam.bus_u(P) < -P.rod_y
     assert floor_beam.bus_u(P) - P.bus_w / 2 > -floor_beam.wall_end(P)  # the bus stays on the beam
+
+
+# ---- size notches: which corner truss is which on the bench (the user, 2026-11-23) --------------------------
+def _bottom_pieces(fr, y: float) -> int:
+    """Pieces of a thin cut along the frame at print height y (y = 0 the bottom edge), all through its thickness."""
+    bb = fr.bounding_box()
+    probe = Pos(bb.min.X - 1, y, -1) * Box(bb.size.X + 2, 0.1, bb.size.Z + 2, align=(Align.MIN, Align.MIN, Align.MIN))
+    return len((fr & probe).solids())
+
+
+@pytest.mark.parametrize("n", [0, 1, 2, 3])
+def test_size_notches_cut_the_bottom_edge_at_mid_span(n):
+    fr = bow_frame.make(P, 160, notches=n)
+    assert printable_problems(fr) == []
+    assert _bottom_pieces(fr, P.frame_notch_d / 2) == n + 1  # n gaps in the bottom edge
+    assert _bottom_pieces(fr, P.frame_notch_d + 0.1) == 1  # no deeper than frame_notch_d
+    if n:
+        bb = fr.bounding_box()
+        probe = Pos(bb.min.X - 1, P.frame_notch_d / 2, -1) * Box(bb.size.X + 2, 0.1, bb.size.Z + 2,
+                                                                  align=(Align.MIN, Align.MIN, Align.MIN))
+        ends = sorted(x for s in (fr & probe).solids() for x in (s.bounding_box().min.X, s.bounding_box().max.X))
+        gaps = [(ends[2 * k + 1], ends[2 * k + 2]) for k in range(n)]
+        assert [b - a for a, b in gaps] == pytest.approx([P.frame_notch_w] * n, abs=0.01)
+        assert (gaps[0][0] + gaps[-1][1]) / 2 == pytest.approx(80, abs=0.01)  # centred on mid-span
+
+
+def test_every_corner_truss_carries_its_size_notches():
+    """1 notch on the end-span (straight) trusses, 2 on the inner curve ones, 3 on the outer: in the kit and the
+    assembly alike."""
+    from hotrain import corner_layout as CL
+    from hotrain import plates
+    want = dict(P.frame_notches)
+    assert want == {"straight": 1, "inner": 2, "outer": 3}
+    for c in (CL.inside_corner(), CL.bridge_corner()):
+        frames = [(n, s) for n, s in plates.corner_kit(P, c) if n.startswith("corner_frame_")]
+        assert {n for n, _ in frames} == {f"corner_frame_{k}" for k in want}
+        for name, fr in frames:
+            assert _bottom_pieces(fr, P.frame_notch_d / 2) == want[name.removeprefix("corner_frame_")] + 1, name

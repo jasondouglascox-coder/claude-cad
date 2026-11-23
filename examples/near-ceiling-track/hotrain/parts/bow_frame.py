@@ -7,7 +7,7 @@ down toward mid-span, open top) or the original bowstring (bottom chord, arch ri
 """
 import math
 
-from build123d import Bezier, Face, Line, Part, Pos, Sketch, Wire, extrude
+from build123d import Align, Bezier, Box, Face, Line, Part, Pos, Sketch, Wire, extrude
 
 from hotrain.joints import poly, rect
 from hotrain.params import P, Params
@@ -109,10 +109,21 @@ def ledges(p: Params, length: float) -> Sketch:
                        rect(e, length - e, -f - p.frame_ledge_lo, -f)]
 
 
-def make(p: Params = P, length: float = 160.0) -> Part:
+def notch_count(p: Params, kind: str) -> int:
+    """Size notches for a corner truss of this kind ("straight", "inner", "outer")."""
+    return dict(p.frame_notches)[kind]
+
+
+def make(p: Params = P, length: float = 160.0, notches: int = 0) -> Part:
     """Print orientation: outer face down (Z = 0), x along the frame, Y = height above the frame bottom
-    (z = u_bottom); the web is bow_frame_t thick and the ledges add frame_ledge on top (the inner side)."""
+    (z = u_bottom); the web is bow_frame_t thick and the ledges add frame_ledge on top (the inner side).
+    notches: that many size notches cut into the bottom edge at mid-span (`notch_count`)."""
     t = p.bow_frame_t
     web = extrude(profile(p, length), t)
     led = Pos(0, 0, t - 0.5) * extrude(ledges(p, length), p.frame_ledge + 0.5)
-    return Pos(0, -u_bottom(p), 0) * Part((web + led).solids())
+    out = Pos(0, -u_bottom(p), 0) * Part((web + led).solids())
+    for k in range(notches):
+        x = length / 2 + (k - (notches - 1) / 2) * p.frame_notch_pitch
+        out -= Pos(x, -1, -1) * Box(p.frame_notch_w, p.frame_notch_d + 1, t + p.frame_ledge + 2,
+                                    align=(Align.CENTER, Align.MIN, Align.MIN))
+    return out

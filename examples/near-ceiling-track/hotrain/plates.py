@@ -159,7 +159,7 @@ def corner_kit(p: Params, corner) -> list[tuple[str, Shape]]:
         kind = f"end_{end}" if end else "curve" if sp.curved else "straight"
         items.append((f"corner_deck_{kind}", bow_deck.make_colored(p, sp.curved, end, corner.rods)))  # wood + steel bodies
         for k, _, _, ln in CA.frame_lines(p, sp.curved):
-            items.append((f"corner_frame_{k}", bow_frame.make(p, ln)))
+            items.append((f"corner_frame_{k}", bow_frame.make(p, ln, bow_frame.notch_count(p, k))))
     from hotrain.parts import ceiling_anchor
     items += [(name, part) for _, name, part, _ in CA.supports(p, corner)]  # beams, or portal brackets with theirs
     items += [("ceiling_anchor", ceiling_anchor.make(p)) for _ in range(2 * len(corner.ceiling))]
