@@ -17,7 +17,7 @@ class Params:
     head_r: float = 30.0  # the head's top arc, seen from behind: a guess from the photos (chord 30 -> ~4 mm sag)
     # the nub: a short block, not the whole slot, so the slot's curve doesn't matter
     nub_w: float = 5.0  # along the slot
-    nub_h: float = 4.8  # across the slot, centered on it: 4.8 was too loose (2026-11-27); pick from the fit tabs
+    nub_h: float = 5.4  # across the slot, centered on it: fit tab 3 (2026-11-27); 4.8 was too loose
     nub_depth: float = 5.0  # into the slot (it goes at least 5 mm deep)
     nub_chamfer: float = 0.6  # lead-in on the tip
     # the fit tabs: one nub per height on a small handle, notches on top count 1, 2, 3...
@@ -51,6 +51,11 @@ class Params:
             raise ValueError(f"tip_w {self.tip_w} is under 6 lines of {self.printer.nozzle}: tips would snap off")
         if not self.root_x + self.beam_w < self.span / 2:
             raise ValueError(f"span {self.span} too narrow for roots at {self.root_x}")
+
+    @property
+    def bottom(self) -> float:
+        """The plate's bottom edge: the slot bottom, or the nub's if it's taller than the slot (centered on it)."""
+        return min(0.0, (self.slot_h - self.nub_h) / 2)
 
     @property
     def head_top(self) -> float:

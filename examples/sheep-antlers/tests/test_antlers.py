@@ -33,8 +33,8 @@ def test_prints_flat_one_solid_watertight_on_layers(part):
 def test_plate_thickness_and_size(part):
     plate = slab(part, 0.1, P.t - 0.1).bounding_box()
     assert plate.size.X == pytest.approx(P.span, abs=0.05)
-    assert plate.min.Y == pytest.approx(0, abs=1e-3)  # nothing hangs below the slot onto the sheep
-    assert plate.max.Y == pytest.approx(P.height, abs=0.05)
+    assert plate.min.Y == pytest.approx(0, abs=1e-3)  # on the bed's edge; the slot bottom is at -P.bottom
+    assert plate.max.Y == pytest.approx(P.height - P.bottom, abs=0.05)
     assert (plate.min.X + plate.max.X) / 2 == pytest.approx(center_x(P), abs=0.05)
 
 
@@ -44,7 +44,8 @@ def test_nub_fits_the_slot(part):
     bb = nub.bounding_box()
     assert bb.size.X == pytest.approx(P.nub_w, abs=0.02)
     assert bb.size.Y == pytest.approx(P.nub_h, abs=0.02)
-    assert (bb.min.Y + bb.max.Y) / 2 == pytest.approx(P.slot_h / 2, abs=0.02)  # centered on the slot
+    assert (bb.min.Y + bb.max.Y) / 2 == pytest.approx(P.slot_h / 2 - P.bottom, abs=0.02)  # centered on the slot
+    assert bb.min.Y == pytest.approx(0, abs=0.02)  # nothing hangs below the nub onto the sheep
     assert (bb.min.X + bb.max.X) / 2 == pytest.approx(center_x(P), abs=0.02)
     assert part.bounding_box().max.Z == pytest.approx(P.t + P.nub_depth, abs=1e-3)
 
@@ -60,13 +61,13 @@ def test_band_is_only_band_h_tall(part):
     probe = Pos(center_x(P) - 0.05, -1, 0.1) * Box(0.1, 200, P.t - 0.2, align=(Align.MIN,) * 3)
     spans = sorted((b.min.Y, b.max.Y) for b in (s.bounding_box() for s in (part & probe).solids()))
     assert spans[0][0] == pytest.approx(0, abs=1e-3)
-    assert spans[0][1] == pytest.approx(P.band_h, abs=0.05)
+    assert spans[0][1] == pytest.approx(P.band_h - P.bottom, abs=0.05)
     assert len(spans) == 1
 
 
 def test_tips_are_not_too_thin(part):
     """Cut across near the top: each tine there is at least tip_w wide."""
-    y = P.height - P.tip_w / 2
+    y = P.height - P.bottom - P.tip_w / 2
     probe = Pos(-500, y - 0.05, 0.1) * Box(1000, 0.1, P.t - 0.2, align=(Align.MIN,) * 3)
     widths = [s.bounding_box().size.X for s in (part & probe).solids()]
     assert len(widths) == 2 and all(w > P.tip_w * 0.6 for w in widths)  # round tips: narrower at the very top

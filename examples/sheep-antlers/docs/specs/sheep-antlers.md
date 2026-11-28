@@ -29,3 +29,4 @@ Reindeer antlers for a small black sheep-head figure, held by its slot. A Santa 
   5.0 / 5.2 / 5.4 / 5.6 / 5.8 mm tall (1–5 notches on top), their own plate. Put the winner in `nub_h`.
 - 2026-11-27: the band showed as thick brown over the head (13 mm on the center line). Now 8 mm (`band_h`), level
   with the head top, so it hides behind the head and only the antlers show.
+- 2026-11-27: fit tab 3 (5.4 mm) holds: `nub_h` 4.8 -> 5.4, 0.4 over the measured 5 mm slot. Centered on the slot it reaches 0.2 under the slot bottom, so the plate's bottom edge drops 0.2 to meet it (`Params.bottom`).

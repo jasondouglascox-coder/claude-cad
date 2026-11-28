@@ -54,19 +54,19 @@ def band(p: Params = P):
     """Behind the head: from the slot bottom up to an arc band_h high on the center line, parallel to the head's top
     arc, rounded corners."""
     arc = Point(0, p.head_top - p.head_r).buffer(p.head_r + p.band_h - p.head_top, quad_segs=64)
-    b = arc & box(-p.band_half, 0, p.band_half, p.height)
+    b = arc & box(-p.band_half, p.bottom, p.band_half, p.height)
     return b.buffer(-2, quad_segs=16).buffer(2, quad_segs=16)
 
 
 def outline(p: Params = P) -> Polygon:
-    """Band plus both antlers, inside corners rounded, nothing below the slot bottom (Y = 0)."""
+    """Band plus both antlers, inside corners rounded, nothing below the nub (p.bottom)."""
     right = antler(p)
     g = unary_union([band(p), right, affinity.scale(right, xfact=-1, origin=(0, 0))])
     g = g.buffer(p.smooth, quad_segs=16).buffer(-p.smooth, quad_segs=16)
-    g = g & box(-p.span, 0, p.span, 2 * p.height)
+    g = g & box(-p.span, p.bottom, p.span, 2 * p.height)
     if not isinstance(g, Polygon):
         raise ValueError(f"antler outline came apart into {len(g.geoms)} pieces")
-    return affinity.translate(g, center_x(p), 0)
+    return affinity.translate(g, center_x(p), -p.bottom)
 
 
 def face(g: Polygon) -> Face:
@@ -85,7 +85,7 @@ def nub(p: Params, h: float, x: float, y: float, z: float) -> Part:
 
 def antlers(p: Params = P) -> Part:
     plate = Part(extrude(face(outline(p).simplify(0.01)), p.t).solids())
-    out = Part((plate + nub(p, p.nub_h, center_x(p), p.slot_h / 2, p.t)).solids())
+    out = Part((plate + nub(p, p.nub_h, center_x(p), p.slot_h / 2 - p.bottom, p.t)).solids())
     out.label = "sheep_antlers"
     return out
 

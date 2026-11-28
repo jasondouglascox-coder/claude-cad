@@ -10,7 +10,7 @@ flat, no supports.
 <img src="docs/images/fit_tabs.png" width="60%" alt="Five fit tabs, nubs 5.0 to 5.8 mm tall, numbered by notches">
 
 Fit tabs first (`out/plates/fit_tabs_1.3mf`): nubs 5.0, 5.2, 5.4, 5.6, 5.8 mm tall, numbered 1–5 by the notches on
-top. Shove each into the slot; put the one that holds in `nub_h`.
+top. Shove each into the slot; put the one that holds in `nub_h` (tab 3, 5.4 mm, did).
 
 Sizes in `sheep_antlers/params.py`; design in `docs/specs/sheep-antlers.md`.
 
