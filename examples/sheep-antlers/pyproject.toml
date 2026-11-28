@@ -1,0 +1,24 @@
+[project]
+name = "sheep-antlers"
+version = "0.1.0"
+description = "Reindeer antlers that clip into the slot on the back of a sheep head: brown PETG, one flat piece"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "build123d==0.13.0",
+    "cadkit[render]",
+    "shapely>=2.0",
+]
+
+[tool.uv.sources]
+cadkit = { path = "../../cadkit", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-xdist>=3.8.0",
+]
+
+[tool.pytest.ini_options]
+markers = ["slow: drives Bambu Studio's CLI; skipped when it isn't installed"]
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -61,6 +61,8 @@
 - `examples/remote-cover/`: a battery cover for a HEXBUG remote (package `remote_cover`), gray PETG: the pocket's
   outline (measured off photos) less a clearance, off-center tabs, and no screw: a plug under the ear sits in the
   indent at the tongue's round end, over the brass insert. One plate of three tongue lengths, engraved inside.
+- `examples/sheep-antlers/`: reindeer antlers for a little black sheep head (package `sheep_antlers`): one flat 4 mm
+  brown PETG plate behind the head with a 5 × 4.8 × 5 mm nub that shoves into the arc slot in its back.
 - `examples/grover-keychain/`: a 4-color Grover & Pals logo keychain (package `grover`), traced from the logo's raster
   with the eyes, muzzle, paws, ears and ribbon drawn as smooth curves, the banner's folds and tails sunk 2 and 4
   layers below it; QR + URL on the back, 22 swaps. Its plate's
@@ -90,6 +92,7 @@ cd examples/cat-decals && uv run pytest -n 4                         # ~2 s, DXF
 cd examples/speaker-shelf && uv run pytest -n 6                      # ~20 s, the coupon through Bambu
 cd examples/loaf-spacer && uv run pytest -n 6                       # ~10 s, the plate through Bambu
 cd examples/remote-cover && uv run pytest -n 6                      # ~15 s, the ladder plate through Bambu
+cd examples/sheep-antlers && uv run pytest -n 6                    # ~15 s, the plate through Bambu
 ```
 
 ## Rules
