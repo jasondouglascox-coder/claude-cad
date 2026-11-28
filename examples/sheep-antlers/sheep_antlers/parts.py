@@ -1,6 +1,7 @@
 """The antlers in PRINT orientation: the plate on its back on the bed, the sheep's up along +Y, the nub pointing up
 (+Z, toward the sheep's nose). Drawn in 2D with shapely (tapered strokes, unioned and rounded), then extruded."""
-from build123d import Align, Box, Face, Part, Pos, Vector, Wire, chamfer, extrude
+from build123d import (Align, Box, BuildSketch, Face, Locations, Mode, Part, Pos, Rectangle, Vector, Wire,
+                       chamfer, extrude)
 from shapely import affinity
 from shapely.geometry import Point, Polygon, box
 from shapely.geometry.polygon import orient
@@ -50,8 +51,9 @@ def antler(p: Params = P):
 
 
 def band(p: Params = P):
-    """Behind the head: from the slot bottom up to an arc band_above over the head's top arc, rounded corners."""
-    arc = Point(0, p.head_top - p.head_r).buffer(p.head_r + p.band_above, quad_segs=64)
+    """Behind the head: from the slot bottom up to an arc band_h high on the center line, parallel to the head's top
+    arc, rounded corners."""
+    arc = Point(0, p.head_top - p.head_r).buffer(p.head_r + p.band_h - p.head_top, quad_segs=64)
     b = arc & box(-p.band_half, 0, p.band_half, p.height)
     return b.buffer(-2, quad_segs=16).buffer(2, quad_segs=16)
 
@@ -74,11 +76,33 @@ def face(g: Polygon) -> Face:
     return Face(ring(g.exterior), [ring(i) for i in g.interiors])
 
 
+def nub(p: Params, h: float, x: float, y: float, z: float) -> Part:
+    """The nub that shoves into the slot: nub_w along it, h across it (centered on y), nub_depth up from z,
+    chamfered tip."""
+    n = Pos(x, y, z) * Box(p.nub_w, h, p.nub_depth, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    return chamfer(n.edges().group_by()[-1], p.nub_chamfer)
+
+
 def antlers(p: Params = P) -> Part:
     plate = Part(extrude(face(outline(p).simplify(0.01)), p.t).solids())
-    nub = Pos(center_x(p), p.nub_fit + p.nub_h / 2, p.t) * Box(p.nub_w, p.nub_h, p.nub_depth,
-                                                                align=(Align.CENTER, Align.CENTER, Align.MIN))
-    nub = chamfer(nub.edges().group_by()[-1], p.nub_chamfer)
-    out = Part((plate + nub).solids())
+    out = Part((plate + nub(p, p.nub_h, center_x(p), p.slot_h / 2, p.t)).solids())
     out.label = "sheep_antlers"
+    return out
+
+
+def fit_tab(p: Params, i: int) -> Part:
+    """Fit tab i: a tab_w x tab_h handle, tab_t thick, with a nub fit_heights[i] tall at its bottom edge (centered on
+    the slot like the antlers'), and i + 1 notches in its top edge to tell them apart."""
+    h = p.fit_heights[i]
+    y0 = min(0.0, p.slot_h / 2 - h / 2)  # the handle reaches the bottom of the tallest nub
+    with BuildSketch() as sk:
+        Rectangle(p.tab_w, p.tab_h - y0, align=(Align.MIN, Align.MIN))
+        n = i + 1
+        pitch = 2 * p.notch_w
+        xs = [p.tab_w / 2 + (k - (n - 1) / 2) * pitch for k in range(n)]
+        with Locations(*[(x, p.tab_h - y0) for x in xs]):
+            Rectangle(p.notch_w, p.notch_d, align=(Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+    handle = Part(extrude(sk.sketch, p.tab_t).solids())
+    out = Part((handle + nub(p, h, p.tab_w / 2, p.slot_h / 2 - y0, p.tab_t)).solids())
+    out.label = f"fit_tab_{i + 1}"
     return out

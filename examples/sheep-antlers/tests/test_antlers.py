@@ -44,7 +44,7 @@ def test_nub_fits_the_slot(part):
     bb = nub.bounding_box()
     assert bb.size.X == pytest.approx(P.nub_w, abs=0.02)
     assert bb.size.Y == pytest.approx(P.nub_h, abs=0.02)
-    assert bb.min.Y == pytest.approx(P.nub_fit, abs=0.02)  # centered in the slot's height
+    assert (bb.min.Y + bb.max.Y) / 2 == pytest.approx(P.slot_h / 2, abs=0.02)  # centered on the slot
     assert (bb.min.X + bb.max.X) / 2 == pytest.approx(center_x(P), abs=0.02)
     assert part.bounding_box().max.Z == pytest.approx(P.t + P.nub_depth, abs=1e-3)
 
@@ -54,12 +54,14 @@ def test_nub_tip_has_a_lead_in(part):
     assert tip.size.Y < P.nub_h - P.nub_chamfer
 
 
-def test_band_shows_above_the_head(part):
-    """On the center line the plate runs solid from the slot up past the head top by band_above."""
+def test_band_is_only_band_h_tall(part):
+    """On the center line the plate runs solid from the slot bottom to band_h (level with the head top: no thick
+    brown showing above it), then nothing until the antlers."""
     probe = Pos(center_x(P) - 0.05, -1, 0.1) * Box(0.1, 200, P.t - 0.2, align=(Align.MIN,) * 3)
     spans = sorted((b.min.Y, b.max.Y) for b in (s.bounding_box() for s in (part & probe).solids()))
     assert spans[0][0] == pytest.approx(0, abs=1e-3)
-    assert spans[0][1] == pytest.approx(P.head_top + P.band_above, abs=0.05)
+    assert spans[0][1] == pytest.approx(P.band_h, abs=0.05)
+    assert len(spans) == 1
 
 
 def test_tips_are_not_too_thin(part):
