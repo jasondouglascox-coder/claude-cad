@@ -13,7 +13,7 @@ Reindeer antlers for a small black sheep-head figure, held by its slot. A Santa 
 
 ## Shape
 
-- A flat 4 mm plate behind the head: a band ±16 mm wide following the head's top arc (guessed at R 30 from the
+- A flat 4 mm plate behind the head: a band ±16 mm wide (now ±13, see amendments) following the head's top arc (guessed at R 30, now R 22, from the
   slot's chord) and 5 mm above it, so it shows like a headband (see amendments: now hidden).
 - Two mirrored antlers from the band: a beam curving up and out to 82 mm tip to tip (the sheep is just shy of 88 mm
   across the ears), a tall inner tine 45 mm over the head, an outer tine, a short brow tine. Strokes taper
@@ -30,3 +30,6 @@ Reindeer antlers for a small black sheep-head figure, held by its slot. A Santa 
 - 2026-11-27: the band showed as thick brown over the head (13 mm on the center line). Now 8 mm (`band_h`), level
   with the head top, so it hides behind the head and only the antlers show.
 - 2026-11-27: fit tab 3 (5.4 mm) holds: `nub_h` 4.8 -> 5.4, 0.4 over the measured 5 mm slot. Centered on the slot it reaches 0.2 under the slot bottom, so the plate's bottom edge drops 0.2 to meet it (`Params.bottom`).
+- 2026-11-27: the 5.4 nub fits well, but 1 mm+ of band showed at the sides (center flush): the head curves more
+  than the R 30 guess. The band's top arc is now R 22 (2.3 mm lower than R 30 at 16 mm out) and the band stops at
+  ±13 mm, just past the beams.

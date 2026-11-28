@@ -105,3 +105,26 @@ def test_slicer_slices_it_in_one_filament(tmp_path):
     assert s.same_objects(back, plate)
     report = s.slice_report(plate, tmp_path / "s.3mf")
     assert [r[0] for r in report["layers"]] == [(settings().filament(P.filament_brown),)]
+
+
+def test_band_stays_under_the_head_arc(part):
+    """Off center the band's top follows the head's top arc (head_r), so no brown shows above the head at the
+    sides. Probe straight up near each end of the band: its lowest piece (the band) tops out under the arc."""
+    import math
+    # outside the beams (root_x + beam_w / 2, plus the round where they join): there the antler itself rises
+    for dx in (P.band_half - 0.5, -(P.band_half - 0.5)):
+        assert abs(dx) > P.root_x + P.beam_w / 2 + P.smooth
+        x = center_x(P) + dx
+        probe = Pos(x - 0.05, 0, 0.1) * Box(0.1, P.head_top - P.bottom, P.t - 0.2, align=(Align.MIN,) * 3)
+        pieces = sorted((b.min.Y, b.max.Y) for b in (s.bounding_box() for s in (part & probe).solids()))
+        if not pieces:
+            continue  # the band's rounded end stops short of here
+        arc_y = P.head_top - P.head_r + math.sqrt(P.head_r ** 2 - dx ** 2) - P.bottom
+        assert pieces[0][1] <= arc_y + 0.05, (dx, pieces[0][1], arc_y)
+
+
+def test_head_arc_curves_enough_at_the_band_ends():
+    """The first print showed 1 mm+ of brown at the sides with head_r 30: the arc must drop more than that did."""
+    import math
+    drop = lambda r: r - math.sqrt(r * r - 16.0 ** 2)
+    assert drop(P.head_r) >= drop(30.0) + 2.0

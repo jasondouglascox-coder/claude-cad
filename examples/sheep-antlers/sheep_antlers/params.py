@@ -14,7 +14,7 @@ class Params:
     # the sheep (measured by the user, 2026-11-27)
     slot_h: float = 5.0  # slot height at its center
     slot_to_top: float = 3.0  # slot top to the top of the head, on the center line
-    head_r: float = 30.0  # the head's top arc, seen from behind: a guess from the photos (chord 30 -> ~4 mm sag)
+    head_r: float = 22.0  # the head's top arc, seen from behind: 30 (a guess) showed 1 mm+ of band at the sides
     # the nub: a short block, not the whole slot, so the slot's curve doesn't matter
     nub_w: float = 5.0  # along the slot
     nub_h: float = 5.4  # across the slot, centered on it: fit tab 3 (2026-11-27); 4.8 was too loose
@@ -29,7 +29,7 @@ class Params:
     notch_d: float = 2.0
     # the plate
     t: float = 4.0  # thickness: 20 layers, stiff in PETG
-    band_half: float = 16.0  # the band behind the head, out to here each side
+    band_half: float = 13.0  # the band behind the head, out to here each side (rounded ends)
     band_h: float = 8.0  # band from the slot bottom to its top on the center line: level with the head top, hidden
     span: float = 82.0  # antler tip to tip (sheep is just shy of 3.5" = 88 mm across the ears)
     rise: float = 45.0  # top tine above the top of the head
